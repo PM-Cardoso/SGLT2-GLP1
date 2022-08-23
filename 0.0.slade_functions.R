@@ -209,12 +209,12 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
   } else if (formula == "formula2") {
     vars_selected <- c("patid", "pateddrug", "posthba1c_final", "drugclass", "prehba1cmmol", "ncurrtx", "drugline", "hba1cmonth", "egfr_ckdepi", "prealt")
     if (model == "Linear") {
-      linear_formula <- "posthba1c_final~factor(drugclass)+prehba1cmmol+ncurrtx+drugline+rcs(hba1cmonth,3)+egfr_ckdepi+log(prealt)"
+      linear_formula <- "posthba1c_final~factor(drugclass)+prehba1cmmol+ncurrtx+drugline+rms::rcs(hba1cmonth,3)+egfr_ckdepi+log(prealt)"
     }
   } else if (formula == "formula3") {
     vars_selected <- c("patid", "pateddrug", "posthba1c_final", "drugclass", "prehba1cmmol", "ncurrtx", "drugline", "hba1cmonth", "egfr_ckdepi", "prealt", "agetx", "prebmi")
     if (model == "Linear") {
-      linear_formula <- "posthba1c_final~factor(drugclass)+rcs(prehba1cmmol,3)+ncurrtx+drugline+rcs(hba1cmonth,3)+rcs(egfr_ckdepi,3)+rcs(log(prealt),3)+rcs(agetx,3)+rcs(prebmi,3)"
+      linear_formula <- "posthba1c_final~factor(drugclass)+rms::rcs(prehba1cmmol,3)+ncurrtx+drugline+rms::rcs(hba1cmonth,3)+rms::rcs(egfr_ckdepi,3)+rms::rcs(log(prealt),3)+rms::rcs(agetx,3)+rms::rcs(prebmi,3)"
     }
   }
   
@@ -228,7 +228,7 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
   
   
   predicted_observed_complete_routine_dev_t1 <- data %>%
-    ddply("hba1c_diff.q", dplyr::summarise,
+    plyr::ddply("hba1c_diff.q", dplyr::summarise,
           N = length(hba1c_diff),
           hba1c_diff.pred = mean(hba1c_diff))
   
@@ -259,7 +259,7 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
                                               num_burn_in = 300,
                                               num_iterations_after_burn_in = 100
       )
-      effect_dev_SGLT2 <- bart_machine_get_posterior(models[[i]], patient_values %>%
+      effect_dev_SGLT2 <- bartMachine::bart_machine_get_posterior(models[[i]], patient_values %>%
                                                        filter(hba1c_diff.q == i) %>%
                                                        select(-hba1c_diff.q,
                                                               -patid,
@@ -267,7 +267,7 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
                                                               -posthba1c_final) %>%
                                                        mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
       
-      effect_dev_GLP1 <- bart_machine_get_posterior(models[[i]], patient_values %>%
+      effect_dev_GLP1 <- bartMachine::bart_machine_get_posterior(models[[i]], patient_values %>%
                                                       filter(hba1c_diff.q == i) %>%
                                                       select(-hba1c_diff.q,
                                                              -patid,
@@ -291,7 +291,6 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
     
   } else {
     # When model == Linear
-    library(rms)
     
     for(i in mnumber) {
       models[[i]] <- lm(as.formula(linear_formula),data=patient_values,subset=hba1c_diff.q==i)
