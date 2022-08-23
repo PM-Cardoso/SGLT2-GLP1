@@ -172,7 +172,7 @@ hist_plot <- function(data,sx,sy,y, title, xmin, xmax) {
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci) {
   
   #ymin <- min(data$lci); ymax <- max(data$uci);yminr  <- 2*round(ymin/2);  ymaxr <- 2*round(ymax/2)
-  ymin  <- -15;  ymax <- 15
+  ymin  <- -11;  ymax <- 11
   
   ggplot(data=data,aes_string(x=pred,y=obs)) +
     geom_point(alpha=1) + theme_bw() +
@@ -189,8 +189,43 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci) {
 
 ### Treatment effect calibration for predicted vs observed treatment effect
 
-
-effects_calibration <- function(data) {
+effects_calibration <- function(data, model = "BART", formula = "formula1", dataset = NULL) {
+  ###
+  # data: dataset used in fitting, with columns patid/pateddrug/hba1c_diff.pred
+  # model: model used to calculate observed treatment effect: BARt or linear regression
+  # formula: variables used in the calculation of observed effect
+  
+  
+  # check whether dataset has "patid" and "pateddrug"
+  if ("patid" %in% colnames(data)) {} else {stop("'patid' needs to be included in the dataset")}
+  if ("pateddrug" %in% colnames(data)) {} else {stop("'pateddrug' needs to be included in the dataset")}
+  if (is.null(dataset)) {stop("'dataset' needs to be specified whether dataset used is Dev or Val")}
+  
+  if (formula == "formula1") {
+    vars_selected <- c("patid", "pateddrug", "posthba1c_final", "drugclass")
+    if (model == "Linear") {
+      linear_formula <- "posthba1c_final~factor(drugclass)"
+    }
+  } else if (formula == "formula2") {
+    vars_selected <- c("patid", "pateddrug", "posthba1c_final", "drugclass", "prehba1cmmol", "ncurrtx", "drugline", "hba1cmonth", "egfr_ckdepi", "prealt")
+    if (model == "Linear") {
+      linear_formula <- "posthba1c_final~factor(drugclass)+prehba1cmmol+ncurrtx+drugline+rcs(hba1cmonth,3)+egfr_ckdepi+log(prealt)"
+    }
+  } else if (formula == "formula3") {
+    vars_selected <- c("patid", "pateddrug", "posthba1c_final", "drugclass", "prehba1cmmol", "ncurrtx", "drugline", "hba1cmonth", "egfr_ckdepi", "prealt", "agetx", "prebmi")
+    if (model == "Linear") {
+      linear_formula <- "posthba1c_final~factor(drugclass)+rcs(prehba1cmmol,3)+ncurrtx+drugline+rcs(hba1cmonth,3)+rcs(egfr_ckdepi,3)+rcs(log(prealt),3)+rcs(agetx,3)+rcs(prebmi,3)"
+    }
+  }
+  
+  
+  if (dataset == "Dev") {
+    patient_values <- data %>%
+      select(patid, pateddrug, hba1c_diff.q) %>%
+      left_join(final.dev %>%
+                  select(vars_selected), by = c("patid", "pateddrug"))
+  }
+  
   
   predicted_observed_complete_routine_dev_t1 <- data %>%
     ddply("hba1c_diff.q", dplyr::summarise,
@@ -200,46 +235,71 @@ effects_calibration <- function(data) {
   mnumber = c(1:10)
   models  <- as.list(1:10)
   
-  hba1c_diff.obs.unadj <- vector();lower.unadj <- vector();upper.unadj <- vector();hba1c_diff.obs.sim <- vector()
-  lower.sim <- vector();upper.sim <- vector();hba1c_diff.obs.adj <- vector();lower.adj <- vector();upper.adj <- vector() 
+  hba1c_diff.obs.unadj <- vector();lower.unadj <- vector();upper.unadj <- vector();
   
-  # #Unadj
-  for (i in mnumber) {
-    models[[i]] <- bartMachine::bartMachine(X = data %>%
-                                              filter(hba1c_diff.q == i) %>%
-                                              select(drugclass),
-                                            y = data %>%
-                                              filter(hba1c_diff.q == i) %>%
-                                              select(posthba1c_final) %>%
-                                              unlist(),
-                                            use_missing_data = TRUE,
-                                            impute_missingness_with_rf_impute = FALSE,
-                                            impute_missingness_with_x_j_bar_for_lm = TRUE,
-                                            num_trees = 50,
-                                            num_burn_in = 300,
-                                            num_iterations_after_burn_in = 100
-    )
-    effect_dev_SGLT2 <- bart_machine_get_posterior(models[[i]], data %>%
-                                                     filter(hba1c_diff.q == i) %>%
-                                                     select(drugclass) %>%
-                                                     mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
+  
+  if (model == "BART") {
     
-    effect_dev_GLP1 <- bart_machine_get_posterior(models[[i]], data %>%
-                                                    filter(hba1c_diff.q == i) %>%
-                                                    select(drugclass) %>%
-                                                    mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
-    effect_dev <- effect_dev_SGLT2$y_hat_posterior_samples - effect_dev_GLP1$y_hat_posterior_samples %>%
-      as.data.frame()
-    effects_summary_dev <- cbind(
-      `5%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
-      `50%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
-      `95%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
-      mean = apply(effect_dev, MARGIN = 1, function(x) mean(c(x)))
-    ) %>%
-      as.data.frame()
-    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(effects_summary_dev$mean))
-    lower.unadj <- append(lower.unadj,mean(effects_summary_dev$`5%`))
-    upper.unadj <- append(upper.unadj,mean(effects_summary_dev$`95%`))
+    # #Unadj
+    for (i in mnumber) {
+      models[[i]] <- bartMachine::bartMachine(X = patient_values %>%
+                                                filter(hba1c_diff.q == i) %>%
+                                                select(-hba1c_diff.q,
+                                                       -patid,
+                                                       -pateddrug,
+                                                       -posthba1c_final),
+                                              y = patient_values %>%
+                                                filter(hba1c_diff.q == i) %>%
+                                                select(posthba1c_final) %>%
+                                                unlist(),
+                                              use_missing_data = TRUE,
+                                              impute_missingness_with_rf_impute = FALSE,
+                                              impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                              num_trees = 50,
+                                              num_burn_in = 300,
+                                              num_iterations_after_burn_in = 100
+      )
+      effect_dev_SGLT2 <- bart_machine_get_posterior(models[[i]], patient_values %>%
+                                                       filter(hba1c_diff.q == i) %>%
+                                                       select(-hba1c_diff.q,
+                                                              -patid,
+                                                              -pateddrug,
+                                                              -posthba1c_final) %>%
+                                                       mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
+      
+      effect_dev_GLP1 <- bart_machine_get_posterior(models[[i]], patient_values %>%
+                                                      filter(hba1c_diff.q == i) %>%
+                                                      select(-hba1c_diff.q,
+                                                             -patid,
+                                                             -pateddrug,
+                                                             -posthba1c_final) %>%
+                                                      mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
+      effect_dev <- effect_dev_SGLT2$y_hat_posterior_samples - effect_dev_GLP1$y_hat_posterior_samples %>%
+        as.data.frame()
+      effects_summary_dev <- cbind(
+        `5%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
+        `50%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
+        `95%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
+        mean = apply(effect_dev, MARGIN = 1, function(x) mean(c(x)))
+      ) %>%
+        as.data.frame()
+      hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(effects_summary_dev$mean))
+      lower.unadj <- append(lower.unadj,mean(effects_summary_dev$`5%`))
+      upper.unadj <- append(upper.unadj,mean(effects_summary_dev$`95%`))
+      
+    }
+    
+  } else {
+    # When model == Linear
+    library(rms)
+    
+    for(i in mnumber) {
+      models[[i]] <- lm(as.formula(linear_formula),data=patient_values,subset=hba1c_diff.q==i)
+      hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,models[[i]]$coefficients[2])
+      confint_all <- confint(models[[i]], levels=0.95)
+      lower.unadj <- append(lower.unadj,confint_all[2,1])
+      upper.unadj <- append(upper.unadj,confint_all[2,2])
+    }
     
   }
   
