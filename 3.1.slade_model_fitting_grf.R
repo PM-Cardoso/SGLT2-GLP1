@@ -245,6 +245,22 @@ plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","
 
 plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
+###
+# Plot resid
+
+plot_resid_dev <- ggplot() +
+  theme_bw() +
+  # geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+  geom_point(aes(x = dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"], y = grf_model$Y.hat)) +
+  geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+  xlim(min(dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"], grf_model$Y.hat), max(dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"], grf_model$Y.hat)) +
+  ylim(min(dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"], grf_model$Y.hat), max(dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"], grf_model$Y.hat)) +
+  xlab("Observed HbA1c (mmol/mol)") +
+  ylab("Predicted HbA1c (mmol/mol)")
+
+
+
+
 
 ############
 
@@ -270,6 +286,7 @@ rate.dev$TOC %>%
 
 cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
 
+plot_resid_dev
 
 dev.off()
 
