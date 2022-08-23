@@ -10,12 +10,6 @@
 
 
 library(tidyverse)
-library(bcf)
-library(plyr)
-library(rms)
-
-
-
 
 ## path to output folder
 output_path <- "Samples"
@@ -118,7 +112,7 @@ dataset_full_bcf <- dataset_model.matrix %>%
   as.matrix()
 
 
-post <- bcf(y = dataset_full_bcf[1:nrow(data_complete_routine_dev),1],
+post <- bcf::bcf(y = dataset_full_bcf[1:nrow(data_complete_routine_dev),1],
             z = dataset_full_bcf[1:nrow(data_complete_routine_dev),19],
             x_control = dataset_full_bcf[1:nrow(data_complete_routine_dev),-c(1,19)],
             pihat = prop.score$fitted.values,
@@ -171,10 +165,41 @@ plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","
 plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
 
 
+plot_linear <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
+
+
+t1 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula1")
+
+
+t2 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula2")
+
+
+t3 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula3")
 
 
 
+#simple adj
+plotdata_1 <- t1 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+plotdata_2 <- t2 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+plotdata_3 <- t3 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
 
+
+
+plot_predicted_observed_1 <- hte_plot(plotdata_1,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
+
+
+plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
 
 
@@ -192,8 +217,9 @@ prop.score$fitted.values %>%
 
 hist_plot(effects.dev,-2.5,2.3,1100, "Dev BCF: treatment effect", -15, 20)
 
-cowplot::plot_grid(cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3),
-                   ncol = 1, nrow = 2)
+
+cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+
 
 dev.off()
 

@@ -10,9 +10,6 @@
 
 
 library(tidyverse)
-library(grf)
-library(plyr)
-library(rms)
 
 
 ## path to output folder
@@ -113,7 +110,7 @@ prop.score <- glm(drugclass ~ ncurrtx + drugline + t2dmduration + agetx +
 
 
 
-grf_model <- causal_forest(X = dataset_model.matrix %>%
+grf_model <- grf::causal_forest(X = dataset_model.matrix %>%
                              slice(1:nrow(data_complete_routine_dev)) %>%
                              select(-posthba1c_final, -drugclass),
                            Y = dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"],
@@ -145,7 +142,7 @@ rate.dev <- toc_function(dataset_model.matrix[1:nrow(data_complete_routine_dev),
 
 #Val
 prop.score_val <- predict(prop.score, dataset_full[-c(1:nrow(data_complete_routine_dev)),])
-cf.eval <- causal_forest(X = dataset_model.matrix %>%
+cf.eval <- grf::causal_forest(X = dataset_model.matrix %>%
                            slice(-c(1:nrow(data_complete_routine_dev))) %>%
                            select(-posthba1c_final, -drugclass),
                          dataset_model.matrix[-c(1:nrow(data_complete_routine_dev)), "posthba1c_final"],
@@ -212,8 +209,41 @@ plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","
 plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
 
 
+plot_linear <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
 
+t1 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula1")
+
+
+t2 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula2")
+
+
+t3 <- effects_calibration(predicted_observed_complete_routine_dev, 
+                          dataset = "Dev", 
+                          model = "BART", 
+                          formula = "formula3")
+
+
+
+#simple adj
+plotdata_1 <- t1 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+plotdata_2 <- t2 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+plotdata_3 <- t3 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+
+
+
+plot_predicted_observed_1 <- hte_plot(plotdata_1,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
+
+
+plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
 
 ############
@@ -238,8 +268,7 @@ rate.dev$TOC %>%
   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
 
-cowplot::plot_grid(cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3),
-                   ncol = 1, nrow = 2)
+cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
 
 
 dev.off()
