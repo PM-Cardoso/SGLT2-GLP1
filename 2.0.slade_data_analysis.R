@@ -1,6 +1,6 @@
 ####################
 ## Description:
-##  - This file includes a short descriptive analyses of the some of the dataset querks.
+##  - This file includes a short descriptive analyses of the some of the dataset quirks.
 ####################
 
 
