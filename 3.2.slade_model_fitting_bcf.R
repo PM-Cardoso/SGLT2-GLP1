@@ -201,6 +201,32 @@ plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","
 
 plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
+###
+# plot residuals
+
+
+resid_dev <- cbind(lower_bd = apply(post$yhat, MARGIN = 2, function(x) min(x)),
+                       upper_bd = apply(post$yhat, MARGIN = 2, function(x) max(x)),
+                       mean = apply(post$yhat, MARGIN = 2, function(x) mean(x)),
+                       orig = dataset_full_bcf[1:nrow(data_complete_routine_dev),1]) %>%
+  as.data.frame() %>%
+  mutate(resid = orig - mean,
+         resid.low = orig - lower_bd,
+         resid.high = orig - upper_bd) 
+
+
+plot_resid_dev <- resid_dev %>%
+  ggplot() +
+  theme_bw() +
+  geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+  geom_point(aes(x = orig, y = mean)) +
+  geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+  xlim(min(resid_dev$orig), max(resid_dev$orig)) +
+  ylim(min(resid_dev$orig), max(resid_dev$orig)) +
+  xlab("Observed HbA1c (mmol/mol)") +
+  ylab("Predicted HbA1c (mmol/mol)")
+  
+
 
 
 #########
@@ -220,6 +246,7 @@ hist_plot(effects.dev,-2.5,2.3,1100, "Dev BCF: treatment effect", -15, 20)
 
 cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
 
+plot_resid_dev
 
 dev.off()
 
