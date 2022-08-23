@@ -172,7 +172,7 @@ hist_plot <- function(data,sx,sy,y, title, xmin, xmax) {
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci) {
   
   #ymin <- min(data$lci); ymax <- max(data$uci);yminr  <- 2*round(ymin/2);  ymaxr <- 2*round(ymax/2)
-  ymin  <- -11;  ymax <- 11
+  ymin  <- -15;  ymax <- 15
   
   ggplot(data=data,aes_string(x=pred,y=obs)) +
     geom_point(alpha=1) + theme_bw() +
