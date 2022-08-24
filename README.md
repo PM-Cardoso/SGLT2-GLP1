@@ -7,6 +7,7 @@ Collection of functions and scripts to investigate how clinical features can be 
 Files:
 - 0.0:
     - .1: Functions for plotting and some calculations.
+    - .2: Functions for _bartMachine_ tree analysis. Slightly modified _bartMan_ R package (not kept up to date) (package requirements were modified).
 - 1.0: Detailed explanation of steps taken in the selection of patients for our cohorts.
 - 2.0: Collection of plots demonstrating specific details/quirks of the dataset.
 - 3.0: 
