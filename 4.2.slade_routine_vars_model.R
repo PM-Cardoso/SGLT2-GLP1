@@ -383,7 +383,7 @@ plot_assessment <- assessment %>%
 
 
 
-plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 1")
+plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 2")
 
 
 
@@ -455,7 +455,7 @@ plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
 #### PDF with all the plots
 
 
-pdf(file = paste0(output_path, "/Final_model/John_idea/model_plots.pdf"))
+pdf(file = paste0(output_path, "/Final_model/John_idea/model2_plots.pdf"))
 hist(1-prop_model$p_hat_train)
 plot_residuals
 plot_assessment

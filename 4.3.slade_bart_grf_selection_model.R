@@ -150,7 +150,7 @@ if (class(try(
 
 # ggplot() +
 #   geom_histogram(aes(x = 1-prop_model_final$p_hat_train)) +
-#   ggtitle("Model 1 propensity scores")
+#   ggtitle("Model 3 propensity scores")
 # 
 
 
@@ -495,7 +495,7 @@ plot_assessment <- assessment %>%
 
 
 
-plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 1")
+plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 3")
 
 
 
@@ -567,7 +567,7 @@ plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
 #### PDF with all the plots
 
 
-pdf(file = paste0(output_path, "/Final_model/With_grf/model_plots.pdf"))
+pdf(file = paste0(output_path, "/Final_model/With_grf/model3_plots.pdf"))
 hist(1-prop_model_final$p_hat_train)
 plot_residuals
 plot_assessment
