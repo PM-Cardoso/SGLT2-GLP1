@@ -10,6 +10,9 @@
 .libPaths(.libPaths()[c(2,1,3)])
 
 
+## increase memery usage to 50gb of RAM
+options(java.parameters = "-Xmx50g")
+
 library(tidyverse)
 library(bartMachine)
 
