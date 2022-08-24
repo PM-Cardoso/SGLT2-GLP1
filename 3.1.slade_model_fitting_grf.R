@@ -197,16 +197,9 @@ t3 <- effects_calibration(predicted_observed_complete_routine_dev,
 
 
 
-#simple adj
-plotdata_1 <- t1 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-plotdata_2 <- t2 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-plotdata_3 <- t3 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-
-
-
-plot_predicted_observed_1 <- hte_plot(plotdata_1,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
 
 
 plot_linear <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
@@ -231,16 +224,9 @@ t3 <- effects_calibration(predicted_observed_complete_routine_dev,
 
 
 
-#simple adj
-plotdata_1 <- t1 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-plotdata_2 <- t2 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-plotdata_3 <- t3 %>% dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-
-
-
-plot_predicted_observed_1 <- hte_plot(plotdata_1,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_2 <- hte_plot(plotdata_2,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_3 <- hte_plot(plotdata_3,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
+plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
 
 
 plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
