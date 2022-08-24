@@ -418,7 +418,7 @@ splitDensity <- function(treeData, data, colBy = NULL, display = "histogram") {
     dPlot <- tt %>%
       ggplot(aes(x = splitValue)) +
       geom_density(aes(colour = var, fill = var)) +
-      facet_wrap(~var) +
+      facet_wrap(~var, scales = "free") +
       theme_bw() +
       ylab("Density") +
       xlab("Split value") +
@@ -435,7 +435,7 @@ splitDensity <- function(treeData, data, colBy = NULL, display = "histogram") {
     dPlot <- tt %>%
       ggplot(aes(x = splitValue)) +
       geom_histogram(aes(colour = var, fill = var), bins = 30) +
-      facet_wrap(~var) +
+      facet_wrap(~var, scales = "free") +
       theme_bw() +
       ylab("Density") +
       xlab("Split value") +
@@ -454,7 +454,7 @@ splitDensity <- function(treeData, data, colBy = NULL, display = "histogram") {
     
     dPlot <- ggplot(dfList) +
       geom_density(aes(x = value, fill = .id), alpha = 0.5) +
-      facet_wrap(~variable) +
+      facet_wrap(~variable, scales = "free") +
       scale_fill_discrete(name = "", labels = c("Data", "Split Value")) +
       ylab('Density') +
       xlab("Split value") +
