@@ -223,12 +223,12 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
     patient_values <- data %>%
       select(patid, pateddrug, hba1c_diff.q) %>%
       left_join(final.dev %>%
-                  select(vars_selected), by = c("patid", "pateddrug"))
+                  select(all_of(vars_selected)), by = c("patid", "pateddrug"))
   } else if (dataset == "Val") {
     patient_values <- data %>%
       select(patid, pateddrug, hba1c_diff.q) %>%
       left_join(final.val %>%
-                  select(vars_selected), by = c("patid", "pateddrug"))
+                  select(all_of(vars_selected)), by = c("patid", "pateddrug"))
       
   }
   
