@@ -224,6 +224,12 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
       select(patid, pateddrug, hba1c_diff.q) %>%
       left_join(final.dev %>%
                   select(vars_selected), by = c("patid", "pateddrug"))
+  } else if (dataset == "Val") {
+    patient_values <- data %>%
+      select(patid, pateddrug, hba1c_diff.q) %>%
+      left_join(final.val %>%
+                  select(vars_selected), by = c("patid", "pateddrug"))
+      
   }
   
   
@@ -303,8 +309,258 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
   }
   
   #Final data.frame  
-  t1 <- data.frame(predicted_observed_complete_routine_dev_t1,cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj))
+  t1 <- data.frame(predicted_observed_complete_routine_dev_t1,cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>% 
+    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
   
   return(t1)
 }
+
+## Calculate residuals
+
+calc_resid <- function(data, posteriors) {
+  ##### Imput variables
+  # data - dataset used in the fitting 
+  # posteriors - posteriors values for the dataset inputed
+  
+  resid.SD <- apply(posteriors$y_hat_posterior_samples, MARGIN = 2, function(x) (data$posthba1c_final - x)^2) %>%
+    colSums() %>%
+    as.data.frame() %>%
+    set_names(c("SD")) %>%
+    mutate(SD = sqrt(SD/(nrow(data)-2)))
+  
+  resid <- posteriors$y_hat_posterior_samples
+  for (i in 1:nrow(data)) {
+    resid[i,] <- (data$posthba1c_final[i] - resid[i,])/resid.SD[,1]
+  }
+  
+  cred_pred <- cbind(lower_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) min(x)),
+                     upper_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) max(x)),
+                     mean = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) mean(x)),
+                     orig = data[,"posthba1c_final"]) %>%
+    as.data.frame() %>%
+    mutate(resid = orig - mean,
+           resid.low = orig - lower_bd,
+           resid.high = orig - upper_bd) %>%
+    cbind(std.resid = apply(resid, MARGIN = 1, function(x) mean(x)),
+          std.resid.low = apply(resid, MARGIN = 1, function(x) min(x)),
+          std.resid.high = apply(resid, MARGIN = 1, function(x) max(x)))
+  
+  return(cred_pred)
+}
+
+
+## Calculate assessments of prediction
+
+rsq <- function (x, y) cor(x, y) ^ 2
+
+calc_assessment <- function(data, posteriors) {
+  ##### Imput variables
+  # data - dataset used in the fitting 
+  # posteriors - posteriors values for the dataset inputed
+  
+  r2 <- posteriors$y_hat_posterior_samples %>%
+    apply(MARGIN = 2, function(x) rsq(data[,"posthba1c_final"], x)) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  RSS <- posteriors$y_hat_posterior_samples %>%
+    apply(MARGIN = 2, function(x) sum((data[,"posthba1c_final"] - x)^2)) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  RMSE <- posteriors$y_hat_posterior_samples %>%
+    apply(MARGIN = 2, function(x) sqrt(sum((data[,"posthba1c_final"] - x)^2)/nrow(data))) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  assessment_values <- list(r2 = r2, RSS = RSS, RMSE = RMSE)
+  
+  return(assessment_values)
+}
+
+## Plot predicted vs observed and standardised residuals
+
+resid_plot <- function(pred_dev, pred_val, title) {
+  ##### Imput variables
+  # pred_dev - predicted/observed values for development dataset
+  # pred_val - predicted/observed values for validation dataset
+  # title - plot title
+  
+  cowplot::plot_grid(
+    
+    #title
+    cowplot::ggdraw() +
+      cowplot::draw_label(title)
+    
+    ,
+    
+    
+    cowplot::plot_grid(
+      
+      pred_dev %>%
+        ggplot() +
+        theme_bw() +
+        geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+        geom_point(aes(x = orig, y = mean)) +
+        geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+        xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+        ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+        xlab("Observed HbA1c (mmol/mol)") +
+        ylab("Predicted HbA1c (mmol/mol)")
+      
+      ,
+      
+      pred_val %>%
+        ggplot() +
+        theme_bw() +
+        geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+        geom_point(aes(x = orig, y = mean)) +
+        geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+        xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+        ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+        xlab("Observed HbA1c (mmol/mol)") +
+        ylab("Predicted HbA1c (mmol/mol)")
+      
+      ,
+      
+      pred_dev %>%
+        ggplot() +
+        theme_bw() +
+        geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
+        geom_point(aes(x = mean, y = std.resid)) +
+        geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+        stat_smooth(aes(x = mean, y = std.resid)) +
+        xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
+        ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
+        xlab("Average Predicted HbA1c (mmol/mol)") +
+        ylab("Standardised Residuals")
+      
+      ,
+      
+      pred_val %>%
+        ggplot() +
+        theme_bw() +
+        geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
+        geom_point(aes(x = mean, y = std.resid)) +
+        geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+        stat_smooth(aes(x = mean, y = std.resid)) +
+        xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
+        ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
+        xlab("Average Predicted HbA1c (mmol/mol)") +
+        ylab("Standardised Residuals")
+      
+      , ncol = 2, nrow = 2, labels = c("A", "B", "", "")
+      
+    )
+    
+    , ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+    
+  )
+
+}
+
+## Calculate treatment effect
+
+calc_effect_summary <- function(bart_model, data) {
+  ##### Input variables
+  # bart_model - bart model used for fitting
+  # data - data being investigated
+  
+  
+  
+  effect_SGLT2 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
+                                                   select(
+                                                     colnames(bart_model$X)
+                                                   ) %>%
+                                                   mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
+  
+  effect_GLP1 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
+                                                  select(
+                                                    colnames(bart_model$X)
+                                                  ) %>%
+                                                  mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
+  
+  effect <- effect_SGLT2$y_hat_posterior_samples - effect_GLP1$y_hat_posterior_samples %>%
+    as.data.frame()
+  
+  effects_summary <- cbind(
+    `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
+    `50%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
+    `95%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
+    mean = apply(effect, MARGIN = 1, function(x) mean(c(x)))
+  ) %>%
+    as.data.frame()
+  
+  
+}
+
+plot_full_effects_validation <- function(data, dataset = NULL) {
+  ##### Input variables
+  # data - dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  
+  # Check whether 'dataset' is provided
+  if (is.null(dataset)) {stop("'dataset' needs to be specified whether dataset used is Dev or Val")}
+  
+  
+  t1 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "Linear", 
+                            formula = "formula1")
+  
+  
+  t2 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "Linear", 
+                            formula = "formula2")
+  
+  
+  t3 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "Linear", 
+                            formula = "formula3")
+  
+  
+  plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
+  plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
+  plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
+  
+  
+  plot_linear <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
+  
+  
+  
+  t1 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "BART", 
+                            formula = "formula1")
+  
+  
+  t2 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "BART", 
+                            formula = "formula2")
+  
+  
+  t3 <- effects_calibration(data, 
+                            dataset = dataset, 
+                            model = "BART", 
+                            formula = "formula3")
+  
+  
+  
+  plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
+  plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
+  plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
+  
+  
+  plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
+  
+  
+  plot <- cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+  
+  return(plot)
+}
+
+
+
+
+
+
 
