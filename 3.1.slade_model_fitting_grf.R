@@ -178,58 +178,9 @@ predicted_observed_complete_routine_dev <- data_complete_routine_dev %>%
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
 
-t1 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "Linear", 
-                          formula = "formula1")
 
+plot_effects_validation_dev <- plot_full_effects_validation(predicted_observed_complete_routine_dev, dataset = "Dev")
 
-t2 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "Linear", 
-                          formula = "formula2")
-
-
-t3 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "Linear", 
-                          formula = "formula3")
-
-
-
-plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
-
-
-plot_linear <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
-
-
-t1 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "BART", 
-                          formula = "formula1")
-
-
-t2 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "BART", 
-                          formula = "formula2")
-
-
-t3 <- effects_calibration(predicted_observed_complete_routine_dev, 
-                          dataset = "Dev", 
-                          model = "BART", 
-                          formula = "formula3")
-
-
-
-plot_predicted_observed_1 <- hte_plot(t1,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_2 <- hte_plot(t2,"hba1c_diff.pred","obs","lci","uci") 
-plot_predicted_observed_3 <- hte_plot(t3,"hba1c_diff.pred","obs","lci","uci") 
-
-
-plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
 
 ###
 # Plot resid
@@ -270,7 +221,8 @@ rate.dev$TOC %>%
   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
 
-cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+plot_effects_validation_dev
+
 
 plot_resid_dev
 
