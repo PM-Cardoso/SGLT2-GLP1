@@ -182,7 +182,7 @@ data_complete_routine_prop_dev <- final.dev %>%
     patid,
     pateddrug,
     posthba1c_final,
-    colnames(bart_comp_routine_no_prop$X)
+    colnames(bart_comp_routine_prop_model$X)[which(colnames(bart_comp_routine_prop_model$X) != "prop_score")]
   ) %>% 
   drop_na() %>%
   cbind(prop_score = bart_comp_routine_prop$p_hat_train)
@@ -225,7 +225,7 @@ data_complete_routine_prop_val <- final.val %>%
     patid,
     pateddrug,
     posthba1c_final,
-    colnames(bart_comp_routine_no_prop$X)
+    colnames(bart_comp_routine_prop_model$X)[which(colnames(bart_comp_routine_prop_model$X) != "prop_score")]
   ) %>% 
   drop_na()
 
@@ -674,9 +674,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  posteriors_incomp_prop_dev <- bartMachine::bart_machine_get_posterior(bart_comp_routine_prop_model, data_incomplete_dev %>%
+  posteriors_incomp_prop_dev <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model, data_incomplete_dev %>%
                                                                                     select(
-                                                                                      colnames(bart_comp_routine_prop_model$X)
+                                                                                      colnames(bart_incomp_prop_model$X)
                                                                                     ))
   
   saveRDS(posteriors_incomp_prop_dev, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev.rds"))
@@ -727,9 +727,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  posteriors_incomp_prop_val <- bartMachine::bart_machine_get_posterior(bart_comp_routine_prop_model, data_incomplete_val %>%
+  posteriors_incomp_prop_val <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model, data_incomplete_val %>%
                                                                           select(
-                                                                            colnames(bart_comp_routine_prop_model$X)
+                                                                            colnames(bart_incomp_prop_model$X)
                                                                           ))
   
   saveRDS(posteriors_incomp_prop_val, paste0(output_path, "/Assessment/posteriors_incomp_prop_val.rds"))
@@ -775,9 +775,345 @@ if (class(try(
 }
 
 
-plot_incomp_prop <- resid_plot(comp_routine_prop_cred_pred_dev,
-                               comp_routine_prop_cred_pred_val, 
+plot_incomp_prop <- resid_plot(incomp_prop_cred_pred_dev,
+                               incomp_prop_cred_pred_val, 
                                "Model fitting: Incomplete data (Propensity score)")
+
+
+
+#############################
+### VARIABLE SELECTION 1: Incomplete model of all data, with propensity score
+#############################
+
+bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+
+bart_incomp_prop_model_var_select_1 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select_1.rds"))
+
+
+# Dev
+data_incomplete_dev_var_select_1 <- final.dev %>%
+  cbind(prop_score = bart_incomp_prop$p_hat_train) %>%
+  select(
+    patid,
+    pateddrug,
+    posthba1c_final,
+    colnames(bart_incomp_prop_model_var_select_1$X)
+  )
+
+
+## Get posteriors
+if (class(try(
+  
+  posteriors_incomp_prop_dev_var_select_1 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  posteriors_incomp_prop_dev_var_select_1 <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model_var_select_1, data_incomplete_dev_var_select_1 %>%
+                                                                          select(
+                                                                            colnames(bart_incomp_prop_model_var_select_1$X)
+                                                                          ))
+  
+  saveRDS(posteriors_incomp_prop_dev_var_select_1, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
+  
+  
+}
+
+### residuals calculation
+if (class(try(
+  
+  incomp_prop_cred_pred_dev_var_select_1 <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_cred_pred_dev_var_select_1 <- calc_resid(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1)
+  
+  saveRDS(incomp_prop_cred_pred_dev_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
+  
+}
+
+
+# Val
+data_incomplete_val_var_select_1 <- final.val
+
+## calculate propensity score
+if (class(try(
+  
+  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_incomplete_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  prop_score_incomplete_prop <- predict(bart_incomp_prop, data_incomplete_val_var_select_1 %>%
+                                          select(
+                                            colnames(bart_incomp_prop$X)
+                                          ))
+  
+  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Assessment/prop_score_incomplete_prop.rds"))
+  
+}
+
+# Add 
+data_incomplete_val_var_select_1 <- data_incomplete_val_var_select_1 %>%
+  cbind(prop_score = prop_score_incomplete_prop) %>%
+  select(
+    patid,
+    pateddrug,
+    posthba1c_final,
+    colnames(bart_incomp_prop_model_var_select_1$X)
+  )
+
+## Get posteriors
+if (class(try(
+  
+  posteriors_incomp_prop_val_var_select_1 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  posteriors_incomp_prop_val_var_select_1 <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model_var_select_1, data_incomplete_val_var_select_1 %>%
+                                                                                       select(
+                                                                                         colnames(bart_incomp_prop_model_var_select_1$X)
+                                                                                       ))
+  
+  saveRDS(posteriors_incomp_prop_val_var_select_1, paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select_1.rds"))
+  
+}
+
+### residuals calculation
+if (class(try(
+  
+  incomp_prop_cred_pred_val_var_select_1 <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_cred_pred_val_var_select_1 <- calc_resid(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1)
+  
+  saveRDS(incomp_prop_cred_pred_val_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
+  
+}
+
+
+# assessment of R2, RSS, RMSE
+if (class(try(
+  
+  assessment_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_prop_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1)
+  
+  assessment_values_val <- calc_assessment(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1)
+  
+  assessment_incomp_prop_var_select_1 <- rbind(
+    cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
+    cbind(t(assessment_values_val[["r2"]]), Dataset = "Validation", statistic = "R2 (bigger is better)"),
+    cbind(t(assessment_values_dev[["RSS"]]), Dataset = "Development", statistic = "RSS (smaller is better)"),
+    cbind(t(assessment_values_val[["RSS"]]), Dataset = "Validation", statistic = "RSS (smaller is better)"),
+    cbind(t(assessment_values_dev[["RMSE"]]), Dataset = "Development", statistic = "RMSE (smaller is better)"),
+    cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
+  )
+  
+  saveRDS(assessment_incomp_prop_var_select_1, paste0(output_path, "/Assessment/assessment_incomp_prop_var_select_1.rds"))
+  
+}
+
+
+plot_incomp_prop_var_select_1 <- resid_plot(incomp_prop_cred_pred_dev_var_select_1,
+                                            incomp_prop_cred_pred_val_var_select_1, 
+                                            "Model fitting: Variable Selection 1, Incomplete data (Propensity score)")
+
+
+
+#############################
+### VARIABLE SELECTION 2: Incomplete model of all data, with propensity score
+#############################
+
+bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+
+bart_incomp_prop_model_var_select <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select.rds"))
+
+# Dev
+data_incomplete_dev_var_select <- final.dev %>%
+  cbind(prop_score = bart_incomp_prop$p_hat_train) %>%
+  select(
+    patid,
+    pateddrug,
+    posthba1c_final,
+    colnames(bart_incomp_prop_model_var_select$X)
+  )
+
+## Get posteriors
+if (class(try(
+  
+  posteriors_incomp_prop_dev_var_select <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  posteriors_incomp_prop_dev_var_select <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model_var_select, data_incomplete_dev_var_select %>%
+                                                                                       select(
+                                                                                         colnames(bart_incomp_prop_model_var_select$X)
+                                                                                       ))
+  
+  saveRDS(posteriors_incomp_prop_dev_var_select, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select.rds"))
+  
+}
+
+### residuals calculation
+if (class(try(
+  
+  incomp_prop_cred_pred_dev_var_select <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_cred_pred_dev_var_select <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select)
+  
+  saveRDS(incomp_prop_cred_pred_dev_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select.rds"))
+  
+}
+
+
+# Val
+data_incomplete_val_var_select <- final.val
+
+## calculate propensity score
+if (class(try(
+  
+  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_incomplete_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  prop_score_incomplete_prop <- predict(bart_incomp_prop, data_incomplete_val_var_select %>%
+                                          select(
+                                            colnames(bart_incomp_prop$X)
+                                          ))
+  
+  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Assessment/prop_score_incomplete_prop.rds"))
+  
+}
+
+# Add 
+data_incomplete_val_var_select <- data_incomplete_val_var_select %>%
+  cbind(prop_score = prop_score_incomplete_prop) %>%
+  select(
+    patid,
+    pateddrug,
+    posthba1c_final,
+    colnames(bart_incomp_prop_model_var_select$X)
+  )
+
+
+## Get posteriors
+if (class(try(
+  
+  posteriors_incomp_prop_val_var_select <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  posteriors_incomp_prop_val_var_select <- bartMachine::bart_machine_get_posterior(bart_incomp_prop_model_var_select, data_incomplete_val_var_select %>%
+                                                                                     select(
+                                                                                       colnames(bart_incomp_prop_model_var_select$X)
+                                                                                     ))
+  
+  saveRDS(posteriors_incomp_prop_val_var_select, paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select.rds"))
+  
+}
+
+### residuals calculation
+if (class(try(
+  
+  incomp_prop_cred_pred_val_var_select <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_cred_pred_val_var_select <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select)
+  
+  saveRDS(incomp_prop_cred_pred_val_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
+  
+}
+
+
+# assessment of R2, RSS, RMSE
+if (class(try(
+  
+  assessment_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_prop_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select)
+  
+  assessment_values_val <- calc_assessment(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select)
+  
+  assessment_incomp_prop_var_select <- rbind(
+    cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
+    cbind(t(assessment_values_val[["r2"]]), Dataset = "Validation", statistic = "R2 (bigger is better)"),
+    cbind(t(assessment_values_dev[["RSS"]]), Dataset = "Development", statistic = "RSS (smaller is better)"),
+    cbind(t(assessment_values_val[["RSS"]]), Dataset = "Validation", statistic = "RSS (smaller is better)"),
+    cbind(t(assessment_values_dev[["RMSE"]]), Dataset = "Development", statistic = "RMSE (smaller is better)"),
+    cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
+  )
+  
+  saveRDS(assessment_incomp_prop_var_select, paste0(output_path, "/Assessment/assessment_incomp_prop_var_select.rds"))
+  
+}
+
+
+plot_incomp_prop_var_select <- resid_plot(incomp_prop_cred_pred_dev_var_select,
+                                            incomp_prop_cred_pred_val_var_select, 
+                                            "Model fitting: Variable Selection 2, Incomplete data (Propensity score)")
+
+
+
+###############################################################################
+###############################################################################
+############### Combining Assessment measures for all models ##################
+###############################################################################
+###############################################################################
+
+
+assessment <- rbind(
+  cbind(assessment_comp_routine_no_prop, Model = "Comp/Routine"),
+  cbind(assessment_comp_routine_prop, Model = "Comp/Routine/Prop"),
+  cbind(assessment_incomp_routine_no_prop, Model = "Incomp/Routine"),
+  cbind(assessment_incomp_no_prop, Model = "Incomp"),
+  cbind(assessment_incomp_no_prop_val_select, Model = "Incomp/Var. Selection (1)"),
+  cbind(assessment_incomp_prop, Model = "Incomp/Prop"),
+  cbind(assessment_incomp_prop_var_select_1, Model = "Incomp/Prop/Var. Selection (1)"),
+  cbind(assessment_incomp_prop_var_select, Model = "Incomp/Prop/Var. Selection (2)")
+) %>%
+  as.data.frame() %>%
+  mutate(`5%` = as.numeric(`5%`),
+         `50%` = as.numeric(`50%`),
+         `95%` = as.numeric(`95%`),
+         Model = factor(Model, levels = c("Incomp/Prop/Var. Selection (2)", "Incomp/Prop/Var. Selection (1)", "Incomp/Prop", "Incomp/Var. Selection (1)", "Incomp", "Incomp/Routine", "Comp/Routine/Prop", "Comp/Routine")))
+
+
+plot_assessment <- assessment %>%
+  ggplot() +
+  theme_bw() +
+  geom_errorbar(aes(y = Model, xmin = `5%`, xmax = `95%`, colour = Model), width = 0.2) +
+  geom_point(aes(x = `50%`, y = Model, shape = Dataset), size = 2, colour = "black") +
+  facet_wrap(~statistic, ncol = 1, scales = "free") +
+  theme(axis.title.x = element_blank(),
+        legend.position = "bottom") +
+  guides(colour = "none")
+
+
+
+pdf(file = paste0(output_path, "/Assessment/model_residuals.pdf"))
+plot_comp_routine_no_prop
+plot_comp_routine_prop
+plot_incomp_routine_no_prop
+plot_incomp_no_prop
+plot_incomp_no_prop_var_select
+plot_incomp_prop
+plot_incomp_prop_var_select_1
+plot_incomp_prop_var_select
+plot_assessment
+dev.off()
+
+
+
+
+
+
 
 
 
