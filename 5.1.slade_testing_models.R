@@ -1,8 +1,8 @@
 ####################
 ## Description:
-##  - In this file we fit a BART model between HbA1c outcome and all the available 
-##      variables.
-##      We also evaluate goodness of fit + treatment effects validation
+##  - In this file we fit a collection of BART models taking a naive approach
+##      utilising routine variables / all variables / propensity scores,
+##      alternating between their arrangement.
 ####################
 
 
