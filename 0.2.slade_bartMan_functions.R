@@ -866,7 +866,7 @@ plotAllTreesPlotFn <- function(treeList,
       # turn into tidygraph trees
       newTree <- NULL
       for(i in 1:length(newDF_Nodes)){
-        newTree[[i]] <- tbl_graph(nodes = newDF_Nodes[[i]], edges = newDF_Edges[[i]])
+        newTree[[i]] <- tidygraph::tbl_graph(nodes = newDF_Nodes[[i]], edges = newDF_Edges[[i]])
       }
       # replace stumps with new stumps
       treeList[stumpIdx] <- newTree
@@ -1182,7 +1182,7 @@ treeBarPlot <- function(treeData,
       # turn into tidygraph trees
       newTree <- NULL
       for(i in 1:length(newDF_Nodes)){
-        newTree[[i]] <- tbl_graph(nodes = newDF_Nodes[[i]], edges = newDF_Edges[[i]])
+        newTree[[i]] <- tidygraph::tbl_graph(nodes = newDF_Nodes[[i]], edges = newDF_Edges[[i]])
       }
       # replace stumps with new stumps
       treeList[stumpIdx] <- newTree
