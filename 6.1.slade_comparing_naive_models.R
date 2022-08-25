@@ -92,6 +92,28 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  comp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_no_prop_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  comp_routine_no_prop_effects_summary_dev <- calc_effect_summary(bart_comp_routine_no_prop, data_complete_routine_dev)
+  
+  saveRDS(comp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/comp_routine_no_prop_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_complete_routine_dev %>%
+  cbind(hba1c_diff = comp_routine_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_comp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
 
 
 # Val
@@ -134,6 +156,28 @@ if (class(try(
   saveRDS(comp_routine_no_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_val.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  comp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_no_prop_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  comp_routine_no_prop_effects_summary_val <- calc_effect_summary(bart_comp_routine_no_prop, data_complete_routine_val)
+  
+  saveRDS(comp_routine_no_prop_effects_summary_val, paste0(output_path, "/Final_model/Assessment/comp_routine_no_prop_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_complete_routine_val %>%
+  cbind(hba1c_diff = comp_routine_no_prop_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_comp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
 
 # assessment of R2, RSS, RMSE
@@ -218,6 +262,28 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  comp_routine_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_prop_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  comp_routine_prop_effects_summary_dev <- calc_effect_summary(bart_comp_routine_prop_model, data_complete_routine_prop_dev)
+  
+  saveRDS(comp_routine_prop_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/comp_routine_prop_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_complete_routine_prop_dev %>%
+  cbind(hba1c_diff = comp_routine_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_comp_routine_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
 
 # Val
 data_complete_routine_prop_val <- final.val %>%
@@ -279,6 +345,28 @@ if (class(try(
   saveRDS(comp_routine_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_val.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  comp_routine_prop_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_prop_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  comp_routine_prop_effects_summary_val <- calc_effect_summary(bart_comp_routine_prop_model, data_complete_routine_prop_val)
+  
+  saveRDS(comp_routine_prop_effects_summary_val, paste0(output_path, "/Final_model/Assessment/comp_routine_prop_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_complete_routine_prop_val %>%
+  cbind(hba1c_diff = comp_routine_prop_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_comp_routine_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
 
 # assessment of R2, RSS, RMSE
@@ -359,6 +447,29 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_routine_no_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_routine_no_prop, data_incomplete_routine_dev)
+  
+  saveRDS(incomp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_routine_dev %>%
+  cbind(hba1c_diff = incomp_routine_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
+
 # Val
 data_incomplete_routine_val <- final.val %>%
   select(
@@ -399,6 +510,27 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_routine_no_prop_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_routine_no_prop_effects_summary_val <- calc_effect_summary(bart_incomp_routine_no_prop, data_incomplete_routine_val)
+  
+  saveRDS(incomp_routine_no_prop_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_routine_no_prop_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_routine_val %>%
+  cbind(hba1c_diff = incomp_routine_no_prop_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
 
 # assessment of R2, RSS, RMSE
@@ -471,6 +603,28 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_no_prop_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_no_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_no_prop, data_incomplete_dev)
+  
+  saveRDS(incomp_no_prop_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_no_prop_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_dev %>%
+  cbind(hba1c_diff = incomp_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
 
 # Val
 data_incomplete_val <- final.val
@@ -504,6 +658,29 @@ if (class(try(
   saveRDS(incomp_no_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  incomp_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_no_prop_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_no_prop_effects_summary_val <- calc_effect_summary(bart_incomp_no_prop, data_incomplete_val)
+  
+  saveRDS(incomp_no_prop_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_no_prop_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_val %>%
+  cbind(hba1c_diff = incomp_no_prop_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
 
 
 # assessment of R2, RSS, RMSE
@@ -583,6 +760,28 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_no_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_no_prop_var_select_effects_summary_dev <- calc_effect_summary(bart_incomp_no_prop_var_select, data_incomplete_dev_var_select)
+  
+  saveRDS(incomp_no_prop_var_select_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_dev_var_select %>%
+  cbind(hba1c_diff = incomp_no_prop_var_select_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_no_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
 
 # Val
 data_incomplete_val_var_select <- final.val %>%
@@ -622,6 +821,30 @@ if (class(try(
   saveRDS(incomp_no_prop_var_select_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  incomp_no_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_no_prop_var_select_effects_summary_val <- calc_effect_summary(bart_incomp_no_prop_var_select, data_incomplete_val_var_select)
+  
+  saveRDS(incomp_no_prop_var_select_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_val_var_select %>%
+  cbind(hba1c_diff = incomp_no_prop_var_select_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_no_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
+
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -697,6 +920,29 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model, data_incomplete_dev)
+  
+  saveRDS(incomp_prop_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_prop_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_dev %>%
+  cbind(hba1c_diff = incomp_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
+
 # Val
 data_incomplete_val <- final.val
 
@@ -749,6 +995,28 @@ if (class(try(
   saveRDS(incomp_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  incomp_prop_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model, data_incomplete_val)
+  
+  saveRDS(incomp_prop_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_prop_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_val %>%
+  cbind(hba1c_diff = incomp_prop_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -831,6 +1099,28 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_prop_var_select_1_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_var_select_1_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model_var_select_1, data_incomplete_dev_var_select_1)
+  
+  saveRDS(incomp_prop_var_select_1_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_dev_var_select_1 %>%
+  cbind(hba1c_diff = incomp_prop_var_select_1_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_var_select_1_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
 
 # Val
 data_incomplete_val_var_select_1 <- final.val
@@ -889,6 +1179,29 @@ if (class(try(
   saveRDS(incomp_prop_cred_pred_val_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
   
 }
+
+# calculate effects
+if (class(try(
+  
+  incomp_prop_var_select_1_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_var_select_1_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model_var_select_1, data_incomplete_val_var_select_1)
+  
+  saveRDS(incomp_prop_var_select_1_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_val_var_select_1 %>%
+  cbind(hba1c_diff = incomp_prop_var_select_1_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_var_select_1_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
 
 
 # assessment of R2, RSS, RMSE
@@ -969,6 +1282,29 @@ if (class(try(
   
 }
 
+# calculate effects
+if (class(try(
+  
+  incomp_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_effects_summary_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_var_select_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model_var_select, data_incomplete_dev_var_select)
+  
+  saveRDS(incomp_prop_var_select_effects_summary_dev, paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_effects_summary_dev.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_dev <- data_incomplete_dev_var_select %>%
+  cbind(hba1c_diff = incomp_prop_var_select_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
+
+
 
 # Val
 data_incomplete_val_var_select <- final.val
@@ -1028,6 +1364,29 @@ if (class(try(
   saveRDS(incomp_prop_cred_pred_val_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
   
 }
+
+
+# calculate effects
+if (class(try(
+  
+  incomp_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_effects_summary_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  incomp_prop_var_select_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model_var_select, data_incomplete_val_var_select)
+  
+  saveRDS(incomp_prop_var_select_effects_summary_val, paste0(output_path, "/Final_model/Assessment/incomp_prop_var_select_effects_summary_val.rds"))
+  
+}
+
+## plot effects validation
+predicted_observed_val <- data_incomplete_val_var_select %>%
+  cbind(hba1c_diff = incomp_prop_var_select_effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+plot_incomp_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
 
 # assessment of R2, RSS, RMSE
@@ -1099,13 +1458,29 @@ plot_assessment <- assessment %>%
 
 pdf(file = paste0(output_path, "/Assessment/model_residuals.pdf"))
 plot_comp_routine_no_prop
+plot_comp_routine_no_prop_effects_validation_dev
+plot_comp_routine_no_prop_effects_validation_val
 plot_comp_routine_prop
+plot_comp_routine_prop_effects_validation_dev
+plot_comp_routine_prop_effects_validation_val
 plot_incomp_routine_no_prop
+plot_incomp_routine_no_prop_effects_validation_dev
+plot_incomp_routine_no_prop_effects_validation_val
 plot_incomp_no_prop
+plot_incomp_no_prop_effects_validation_dev
+plot_incomp_no_prop_effects_validation_val
 plot_incomp_no_prop_var_select
+plot_incomp_no_prop_var_select_effects_validation_dev
+plot_incomp_no_prop_var_select_effects_validation_val
 plot_incomp_prop
+plot_incomp_prop_effects_validation_dev
+plot_incomp_prop_effects_validation_val
 plot_incomp_prop_var_select_1
+plot_incomp_prop_var_select_1_effects_validation_dev
+plot_incomp_prop_var_select_1_effects_validation_val
 plot_incomp_prop_var_select
+plot_incomp_prop_var_select_effects_validation_dev
+plot_incomp_prop_var_select_effects_validation_val
 plot_assessment
 dev.off()
 
