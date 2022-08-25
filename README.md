@@ -28,3 +28,4 @@ Files:
     
 - 6.0: Comparing models.
     - .1: Collection of plots comparing naive BART models in 5.0.
+    - .2: Collection of plots comparing _bcf_ and _bartMachine_ with the same variables. Head-to-head comparisons of treatment effect.
