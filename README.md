@@ -20,3 +20,5 @@ Files:
     - .4: Fitting a BART model with variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.
 - 5.0: _bartMachine_ models using no methodical procedure.
     - .1: Fitting a collection of naive Bart models for HbA1c outcome using routine clinical variables / all variables / propensity scores, alternating between them.
+- 6.0: Comparing models.
+    - .1: Collection of plots comparing naive BART models in 5.0.
