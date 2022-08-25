@@ -391,7 +391,6 @@ resid_plot <- function(pred_dev, pred_val, title) {
     
     ,
     
-    
     cowplot::plot_grid(
       
       pred_dev %>%
@@ -553,7 +552,40 @@ plot_full_effects_validation <- function(data, dataset = NULL) {
   plot_BART <- cowplot::plot_grid(plot_predicted_observed_1, plot_predicted_observed_2, plot_predicted_observed_3, ncol = 3)
   
   
-  plot <- cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+  if (dataset == "Dev") {
+    
+    plot <- cowplot::plot_grid(
+      
+      #title
+      cowplot::ggdraw() +
+        cowplot::draw_label("Effect Validation: Development Dataset")
+      
+      ,
+      
+      cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+      
+      , ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+      
+    )
+    
+  } else if (dataset == "Val") {
+    
+    plot <- cowplot::plot_grid(
+      
+      #title
+      cowplot::ggdraw() +
+        cowplot::draw_label("Effect Validation: Validation Dataset")
+      
+      ,
+      
+      cowplot::plot_grid(plot_linear, plot_BART, ncol = 1, nrow = 2)
+      
+      , ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+      
+    )
+    
+  }
+  
   
   return(plot)
 }
