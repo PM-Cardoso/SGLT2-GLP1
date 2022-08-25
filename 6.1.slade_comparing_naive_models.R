@@ -13,6 +13,7 @@ options(java.parameters = "-Xmx50g")
 
 
 library(tidyverse)
+library(bartMachine)
 
 
 ## path to output folder
@@ -115,6 +116,11 @@ predicted_observed_dev <- data_complete_routine_dev %>%
 plot_comp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(comp_routine_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
+
 
 # Val
 data_complete_routine_val <- final.val %>%
@@ -178,6 +184,33 @@ predicted_observed_val <- data_complete_routine_val %>%
 
 
 plot_comp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(comp_routine_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_comp_routine_no_prop_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Complete data (Routine/No propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 
 # assessment of R2, RSS, RMSE
@@ -285,6 +318,11 @@ predicted_observed_dev <- data_complete_routine_prop_dev %>%
 plot_comp_routine_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(comp_routine_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
+
 # Val
 data_complete_routine_prop_val <- final.val %>%
   select(
@@ -368,6 +406,32 @@ predicted_observed_val <- data_complete_routine_prop_val %>%
 
 plot_comp_routine_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(comp_routine_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_comp_routine_prop_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Complete data (Routine/Propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -469,6 +533,10 @@ predicted_observed_dev <- data_incomplete_routine_dev %>%
 
 plot_incomp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_routine_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
 
 # Val
 data_incomplete_routine_val <- final.val %>%
@@ -531,6 +599,32 @@ predicted_observed_val <- data_incomplete_routine_val %>%
 
 
 plot_incomp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_routine_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_routine_no_prop_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Incomplete data (Routine/No propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 
 # assessment of R2, RSS, RMSE
@@ -625,6 +719,10 @@ predicted_observed_dev <- data_incomplete_dev %>%
 
 plot_incomp_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
 
 # Val
 data_incomplete_val <- final.val
@@ -680,6 +778,32 @@ predicted_observed_val <- data_incomplete_val %>%
 
 
 plot_incomp_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_no_prop_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Incomplete data (No propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 
 
@@ -782,6 +906,10 @@ predicted_observed_dev <- data_incomplete_dev_var_select %>%
 
 plot_incomp_no_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_no_prop_var_select_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
 
 # Val
 data_incomplete_val_var_select <- final.val %>%
@@ -844,6 +972,32 @@ predicted_observed_val <- data_incomplete_val_var_select %>%
 
 plot_incomp_no_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_no_prop_var_select_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_no_prop_var_select_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Variable Selection 1, Incomplete data (No propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 
 # assessment of R2, RSS, RMSE
@@ -942,6 +1096,10 @@ predicted_observed_dev <- data_incomplete_dev %>%
 
 plot_incomp_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
 
 # Val
 data_incomplete_val <- final.val
@@ -1017,6 +1175,34 @@ predicted_observed_val <- data_incomplete_val %>%
 
 
 plot_incomp_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+
+
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_prop_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Incomplete data (Propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
+
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -1121,6 +1307,11 @@ predicted_observed_dev <- data_incomplete_dev_var_select_1 %>%
 
 plot_incomp_prop_var_select_1_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_prop_var_select_1_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+
+
 
 # Val
 data_incomplete_val_var_select_1 <- final.val
@@ -1202,6 +1393,31 @@ predicted_observed_val <- data_incomplete_val_var_select_1 %>%
 
 plot_incomp_prop_var_select_1_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_prop_var_select_1_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_prop_var_select_1_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Variable Selection 1, Incomplete data (Propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
 
 
 # assessment of R2, RSS, RMSE
@@ -1304,6 +1520,9 @@ predicted_observed_dev <- data_incomplete_dev_var_select %>%
 
 plot_incomp_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
 
+## plot histogram of effect
+
+plot_effect_1 <- hist_plot(incomp_prop_var_select_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
 
 
 # Val
@@ -1388,6 +1607,34 @@ predicted_observed_val <- data_incomplete_val_var_select %>%
 
 plot_incomp_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
 
+## plot histogram of effect
+
+plot_effect_2 <- hist_plot(incomp_prop_var_select_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+
+
+plot_incomp_prop_var_select_effects <- cowplot::plot_grid(
+  
+  #title
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      "Model fitting: Variable Selection 2, Incomplete data (Propensity score)")
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    plot_effect_1, 
+    
+    plot_effect_2
+    
+    , ncol = 2, nrow = 1, labels = c("A", "B")
+    
+  ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
+  
+)
+
+
+
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -1458,33 +1705,43 @@ plot_assessment <- assessment %>%
 
 pdf(file = paste0(output_path, "/Assessment/model_residuals.pdf"))
 plot_comp_routine_no_prop
-plot_comp_routine_no_prop_effects_validation_dev
-plot_comp_routine_no_prop_effects_validation_val
 plot_comp_routine_prop
-plot_comp_routine_prop_effects_validation_dev
-plot_comp_routine_prop_effects_validation_val
 plot_incomp_routine_no_prop
-plot_incomp_routine_no_prop_effects_validation_dev
-plot_incomp_routine_no_prop_effects_validation_val
 plot_incomp_no_prop
-plot_incomp_no_prop_effects_validation_dev
-plot_incomp_no_prop_effects_validation_val
 plot_incomp_no_prop_var_select
-plot_incomp_no_prop_var_select_effects_validation_dev
-plot_incomp_no_prop_var_select_effects_validation_val
 plot_incomp_prop
-plot_incomp_prop_effects_validation_dev
-plot_incomp_prop_effects_validation_val
 plot_incomp_prop_var_select_1
-plot_incomp_prop_var_select_1_effects_validation_dev
-plot_incomp_prop_var_select_1_effects_validation_val
 plot_incomp_prop_var_select
-plot_incomp_prop_var_select_effects_validation_dev
-plot_incomp_prop_var_select_effects_validation_val
 plot_assessment
 dev.off()
 
 
+pdf(file = paste0(output_path, "/Assessment/model_effects.pdf"))
+plot_comp_routine_no_prop_effects
+plot_comp_routine_no_prop_effects_validation_dev
+plot_comp_routine_no_prop_effects_validation_val
+plot_comp_routine_prop_effects
+plot_comp_routine_prop_effects_validation_dev
+plot_comp_routine_prop_effects_validation_val
+plot_incomp_routine_no_prop_effects
+plot_incomp_routine_no_prop_effects_validation_dev
+plot_incomp_routine_no_prop_effects_validation_val
+plot_incomp_no_prop_effects
+plot_incomp_no_prop_effects_validation_dev
+plot_incomp_no_prop_effects_validation_val
+plot_incomp_no_prop_var_select_effects
+plot_incomp_no_prop_var_select_effects_validation_dev
+plot_incomp_no_prop_var_select_effects_validation_val
+plot_incomp_prop_effects
+plot_incomp_prop_effects_validation_dev
+plot_incomp_prop_effects_validation_val
+plot_incomp_prop_var_select_1_effects
+plot_incomp_prop_var_select_1_effects_validation_dev
+plot_incomp_prop_var_select_1_effects_validation_val
+plot_incomp_prop_var_select_effects
+plot_incomp_prop_var_select_effects_validation_dev
+plot_incomp_prop_var_select_effects_validation_val
+dev.off()
 
 
 
