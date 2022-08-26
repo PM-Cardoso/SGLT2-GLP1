@@ -457,27 +457,38 @@ resid_plot <- function(pred_dev, pred_val, title) {
 
 ## Calculate treatment effect
 
-calc_effect_summary <- function(bart_model, data) {
+calc_effect <- function(bart_model, data) {
   ##### Input variables
   # bart_model - bart model used for fitting
   # data - data being investigated
   
   
-  
   effect_SGLT2 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
-                                                   select(
-                                                     colnames(bart_model$X)
-                                                   ) %>%
-                                                   mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
+                                                            select(
+                                                              colnames(bart_model$X)
+                                                            ) %>%
+                                                            mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
   
   effect_GLP1 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
-                                                  select(
-                                                    colnames(bart_model$X)
-                                                  ) %>%
-                                                  mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
+                                                           select(
+                                                             colnames(bart_model$X)
+                                                           ) %>%
+                                                           mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
   
   effect <- effect_SGLT2$y_hat_posterior_samples - effect_GLP1$y_hat_posterior_samples %>%
     as.data.frame()
+  
+  return(effect)
+  
+}
+
+
+calc_effect_summary <- function(bart_model, data) {
+  ##### Input variables
+  # bart_model - bart model used for fitting
+  # data - data being investigated
+  
+  effect <- calc_effect(bart_model, data)
   
   effects_summary <- cbind(
     `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
