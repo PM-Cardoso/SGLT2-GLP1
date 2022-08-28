@@ -35,6 +35,8 @@ dir.create(paste0(output_path, "/Final_model"))
 ## make directory for outputs
 dir.create(paste0(output_path, "/Final_model/Assessment"))
 
+## make directory for outputs
+dir.create("Plots")
 
 
 ###############################################################################
@@ -478,7 +480,7 @@ plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
 #### PDF with all the plots
 
 
-pdf(file = "4.1.model1_plots.pdf")
+pdf(file = "Plots/4.1.model1_plots.pdf")
 hist(1-prop_model_final$p_hat_train)
 plot_residuals
 plot_assessment

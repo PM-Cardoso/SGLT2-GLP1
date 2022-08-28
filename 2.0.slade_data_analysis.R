@@ -32,6 +32,9 @@ dir.create(output_path)
 ## make directory for outputs
 dir.create(paste0(output_path,"/Data_Analysis"))
 
+## make directory for outputs
+dir.create("Plots")
+
 ###############################################################################
 ###############################################################################
 ############################### Read Data In ##################################
@@ -324,7 +327,7 @@ plot_drugline_subtype_year <- drugline_subtype_year %>%
 
 
 
-pdf(file = "2.0.analysis.pdf")
+pdf(file = "Plots/2.0.analysis.pdf")
 plot_subtype_year
 plot_subtype_year_facet
 plot_predicted_subtype

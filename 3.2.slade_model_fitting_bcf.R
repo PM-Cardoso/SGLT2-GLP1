@@ -22,6 +22,8 @@ output_path <- "Samples/SGLT2-GLP1"
 ## make directory for outputs
 dir.create(output_path)
 
+## make directory for outputs
+dir.create("Plots")
 
 
 ###############################################################################
@@ -169,7 +171,7 @@ plot_resid_dev <- resid_dev %>%
 
 
 
-pdf(file = "3.2.bcf_effects.pdf")
+pdf(file = "Plots/3.2.bcf_effects.pdf")
 prop.score$fitted.values %>%
   as.data.frame() %>%
   set_names(c("value")) %>%

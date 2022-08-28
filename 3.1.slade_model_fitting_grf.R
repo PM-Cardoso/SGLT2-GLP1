@@ -23,6 +23,8 @@ output_path <- "Samples/SGLT2-GLP1"
 ## make directory for outputs
 dir.create(output_path)
 
+## make directory for outputs
+dir.create("Plots")
 
 
 ###############################################################################
@@ -202,7 +204,7 @@ plot_resid_dev <- ggplot() +
 ############
 
 
-pdf(file = "3.1.grf_effects.pdf")
+pdf(file = "Plots/3.1.grf_effects.pdf")
 prop.score$fitted.values %>%
   as.data.frame() %>%
   set_names(c("value")) %>%

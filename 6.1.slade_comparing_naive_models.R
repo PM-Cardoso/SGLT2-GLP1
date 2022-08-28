@@ -31,6 +31,8 @@ dir.create(output_path)
 ## make directory for outputs
 dir.create(paste0(output_path, "/Assessment"))
 
+## make directory for outputs
+dir.create("Plots")
 
 
 ###############################################################################
@@ -1703,7 +1705,7 @@ plot_assessment <- assessment %>%
 
 
 
-pdf(file = "6.1.model_residuals.pdf")
+pdf(file = "Plots/6.1.model_residuals.pdf")
 plot_comp_routine_no_prop
 plot_comp_routine_prop
 plot_incomp_routine_no_prop
@@ -1716,7 +1718,7 @@ plot_assessment
 dev.off()
 
 
-pdf(file = "6.1.model_effects.pdf")
+pdf(file = "Plots/6.1.model_effects.pdf")
 plot_comp_routine_no_prop_effects
 plot_comp_routine_no_prop_effects_validation_dev
 plot_comp_routine_no_prop_effects_validation_val
