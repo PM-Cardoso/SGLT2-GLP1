@@ -489,5 +489,18 @@ plot_effects_validation_val
 cowplot::plot_grid(plot_effect_1, plot_effect_2, ncol = 2, nrow = 1, labels = c("A", "B"))
 dev.off()
 
+pdf(file = "Plots/4.1.model4_partial_dependence.pdf")
+features <- rep(0, length(bart_model_final$training_data_features)) %>%
+  as.data.frame() %>%
+  t()
+colnames(features) <- bart_model_final$training_data_features
+features <- features %>%
+  as.data.frame() %>%
+  select(!contains("_"))
+for (i in colnames(features)) {
+  pd_plot(bart_model_final, i)
+}
+dev.off()
+
 
 
