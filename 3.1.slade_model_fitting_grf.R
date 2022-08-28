@@ -202,7 +202,7 @@ plot_resid_dev <- ggplot() +
 ############
 
 
-pdf(paste0(output_path, "/grf_effects.pdf"))
+pdf(file = "3.1.grf_effects.pdf")
 prop.score$fitted.values %>%
   as.data.frame() %>%
   set_names(c("value")) %>%

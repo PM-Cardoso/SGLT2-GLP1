@@ -455,7 +455,7 @@ plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
 #### PDF with all the plots
 
 
-pdf(file = paste0(output_path, "/Final_model/John_idea/model2_plots.pdf"))
+pdf(file = "4.2.model2_plots.pdf")
 hist(1-prop_model$p_hat_train)
 plot_residuals
 plot_assessment

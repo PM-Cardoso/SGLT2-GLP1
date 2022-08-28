@@ -1703,7 +1703,7 @@ plot_assessment <- assessment %>%
 
 
 
-pdf(file = paste0(output_path, "/Assessment/model_residuals.pdf"))
+pdf(file = "6.1.model_residuals.pdf")
 plot_comp_routine_no_prop
 plot_comp_routine_prop
 plot_incomp_routine_no_prop
@@ -1716,7 +1716,7 @@ plot_assessment
 dev.off()
 
 
-pdf(file = paste0(output_path, "/Assessment/model_effects.pdf"))
+pdf(file = "6.1.model_effects.pdf")
 plot_comp_routine_no_prop_effects
 plot_comp_routine_no_prop_effects_validation_dev
 plot_comp_routine_no_prop_effects_validation_val

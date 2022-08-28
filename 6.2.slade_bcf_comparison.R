@@ -294,7 +294,7 @@ plot_error_comparison_3 <- cbind(
 
 
 
-pdf(file = paste0(output_path, "/Comparison/comparison_bcf_bart.pdf"))
+pdf(file = "6.2.comparison_bcf_bart.pdf")
 plot_effect_comparison_1
 plot_effect_comparison_2
 plot_error_comparison_2

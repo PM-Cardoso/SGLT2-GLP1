@@ -454,7 +454,7 @@ plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
 #### PDF with all the plots
 
 
-pdf(file = paste0(output_path, "/Final_model/With_grf_no_prop/model4_plots.pdf"))
+pdf(file = "4.4.model4_plots.pdf")
 plot_residuals
 plot_assessment
 plot_effects_validation_dev

@@ -324,7 +324,7 @@ plot_drugline_subtype_year <- drugline_subtype_year %>%
 
 
 
-pdf(file = paste0(output_path, "/Data_Analysis/analysis.pdf"))
+pdf(file = "2.0.analysis.pdf")
 plot_subtype_year
 plot_subtype_year_facet
 plot_predicted_subtype

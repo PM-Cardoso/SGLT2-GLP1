@@ -169,7 +169,7 @@ plot_resid_dev <- resid_dev %>%
 
 
 
-pdf(paste0(output_path, "/bcf_effects.pdf"))
+pdf(file = "3.2.bcf_effects.pdf")
 prop.score$fitted.values %>%
   as.data.frame() %>%
   set_names(c("value")) %>%
