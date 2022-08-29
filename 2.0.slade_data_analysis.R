@@ -317,6 +317,55 @@ plot_drugline_subtype_year <- drugline_subtype_year %>%
         axis.title.x = element_blank())
 
 
+##########################
+###### Association between baseline HbA1c and 6 month HbA1c response (outcome HbA1c – baseline HbA1c)
+##########################
+
+
+hba1c.association <- final.all %>%
+  mutate(hba1c.change = posthba1c_final - prehba1cmmol) %>%
+  select(prehba1cmmol, hba1c.change, drugclass)
+
+plot.hba1c.histogram <- hba1c.association %>%
+  ggplot() +
+    theme_void() +
+    geom_histogram(aes(x = prehba1cmmol))
+
+plot.hba1c.association <- hba1c.association %>%
+  ggplot() +
+    theme_bw() +
+    stat_smooth(aes(x = prehba1cmmol, y = hba1c.change, colour = drugclass), method = "auto") +
+    xlab("Baseline HbA1c (mmol/mol)") + ylab("HbA1c Response (mmol/mol)") +
+    ggtitle("Association between baseline HbA1c and HbA1c response") +
+    scale_colour_manual(values=c("#998ec3","#f1a340")) +
+    theme(legend.title = element_blank(),
+          legend.position = c(0.80, 0.80))
+
+# Add marginal histograms
+
+plot.hba1c.association.marginals <- cowplot::plot_grid(
+  
+  plot.hba1c.association
+  
+  ,
+  
+  cowplot::plot_grid(
+    
+    ggplot() +
+      theme_void()
+    
+    ,
+    
+    plot.hba1c.histogram
+    
+    , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
+    
+  )
+  
+  , ncol = 1, nrow = 2, rel_heights = c(0.85, 0.15)
+  
+)
+
 
 
 
@@ -334,6 +383,7 @@ plot_predicted_subtype
 plot_predicted_subtype_drugline
 plot_initial_hba1c
 plot_drugline_subtype_year
+plot.hba1c.association.marginals
 dev.off()
 
 
