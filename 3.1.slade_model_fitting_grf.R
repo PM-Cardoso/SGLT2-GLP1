@@ -119,6 +119,20 @@ grf_model <- grf::causal_forest(X = dataset_model.matrix %>%
                            W = dataset_model.matrix[1:nrow(data_complete_routine_dev), "drugclass"],
                            W.hat = prop.score$fitted.values)
 
+
+# Calibration of the model
+grf.calibration <- grf::test_calibration(grf_model)
+# Best linear fit using forest predictions (on held-out data)
+# as well as the mean forest prediction as regressors, along
+# with one-sided heteroskedasticity-robust (HC3) SEs:
+#   
+#                                 Estimate Std. Error t value    Pr(>t)
+# mean.forest.prediction          0.73197    1.04672  0.6993    0.2422
+# differential.forest.prediction  1.31753    0.16636  7.9198 1.339e-15 ***
+#   ---
+#   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
 #Dev
 effects.dev <- cbind(mean = grf_model$predictions) %>%
   data.frame() %>%
