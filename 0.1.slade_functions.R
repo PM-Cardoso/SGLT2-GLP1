@@ -512,6 +512,7 @@ calc_effect_summary <- function(bart_model, data) {
 plot_full_effects_validation <- function(data, dataset = NULL) {
   ##### Input variables
   # data - dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # dataset: specific whether we are sampling from Dev-elopment or Val-idation datasets
   
   # Check whether 'dataset' is provided
   if (is.null(dataset)) {stop("'dataset' needs to be specified whether dataset used is Dev or Val")}
