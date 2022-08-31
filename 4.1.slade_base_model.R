@@ -478,9 +478,9 @@ plot_effects_validation_val <- plot_full_effects_validation(predicted_observed_v
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(effects_summary_dev, "", -15, 20)
 
-plot_effect_2 <- hist_plot(effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(effects_summary_val, "", -15, 20)
 
 
 

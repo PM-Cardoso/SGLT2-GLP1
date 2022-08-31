@@ -226,7 +226,7 @@ prop.score$fitted.values %>%
   geom_histogram(aes(x = value)) +
   ggtitle("Propensity scores")
 
-hist_plot(effects.dev,-2.5,2.3,1100, "Dev GRF: treatment effect", -15, 20)
+hist_plot(effects.dev, "Dev GRF: treatment effect", -15, 20)
 
 
 rate.dev$TOC %>%

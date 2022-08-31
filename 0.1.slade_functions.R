@@ -136,7 +136,12 @@ toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 
 ### Plot of treatment effect histogram
 
 # Plots
-hist_plot <- function(data,sx,sy,y, title, xmin, xmax) {
+hist_plot <- function(data, title, xmin, xmax) {
+  ###
+  # data: dataset with column 'mean' corresponding to treatment effect
+  # title: title for the plot
+  # xmin: lower limit of x axis
+  # xmax: upper limit of x axis
   
   #define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))

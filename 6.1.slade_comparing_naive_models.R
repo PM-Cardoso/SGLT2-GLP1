@@ -128,7 +128,7 @@ plot_comp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(comp_routine_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(comp_routine_no_prop_effects_summary_dev, "", -15, 20)
 
 
 
@@ -198,7 +198,7 @@ plot_comp_routine_no_prop_effects_validation_val <- plot_full_effects_validation
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(comp_routine_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(comp_routine_no_prop_effects_summary_val, "", -15, 20)
 
 
 plot_comp_routine_no_prop_effects <- cowplot::plot_grid(
@@ -330,7 +330,7 @@ plot_comp_routine_prop_effects_validation_dev <- plot_full_effects_validation(pr
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(comp_routine_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(comp_routine_prop_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -419,7 +419,7 @@ plot_comp_routine_prop_effects_validation_val <- plot_full_effects_validation(pr
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(comp_routine_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(comp_routine_prop_effects_summary_val, "", -15, 20)
 
 
 plot_comp_routine_prop_effects <- cowplot::plot_grid(
@@ -545,7 +545,7 @@ plot_incomp_routine_no_prop_effects_validation_dev <- plot_full_effects_validati
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_routine_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_routine_no_prop_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -612,7 +612,7 @@ plot_incomp_routine_no_prop_effects_validation_val <- plot_full_effects_validati
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_routine_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_routine_no_prop_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_routine_no_prop_effects <- cowplot::plot_grid(
@@ -731,7 +731,7 @@ plot_incomp_no_prop_effects_validation_dev <- plot_full_effects_validation(predi
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_no_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_no_prop_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -791,7 +791,7 @@ plot_incomp_no_prop_effects_validation_val <- plot_full_effects_validation(predi
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_no_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_no_prop_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_no_prop_effects <- cowplot::plot_grid(
@@ -918,7 +918,7 @@ plot_incomp_no_prop_var_select_effects_validation_dev <- plot_full_effects_valid
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_no_prop_var_select_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_no_prop_var_select_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -985,7 +985,7 @@ plot_incomp_no_prop_var_select_effects_validation_val <- plot_full_effects_valid
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_no_prop_var_select_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_no_prop_var_select_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_no_prop_var_select_effects <- cowplot::plot_grid(
@@ -1108,7 +1108,7 @@ plot_incomp_prop_effects_validation_dev <- plot_full_effects_validation(predicte
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_prop_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_prop_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -1189,7 +1189,7 @@ plot_incomp_prop_effects_validation_val <- plot_full_effects_validation(predicte
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_prop_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_prop_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_prop_effects <- cowplot::plot_grid(
@@ -1319,7 +1319,7 @@ plot_incomp_prop_var_select_1_effects_validation_dev <- plot_full_effects_valida
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_prop_var_select_1_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_prop_var_select_1_effects_summary_dev, "", -15, 20)
 
 
 
@@ -1405,7 +1405,7 @@ plot_incomp_prop_var_select_1_effects_validation_val <- plot_full_effects_valida
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_prop_var_select_1_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_prop_var_select_1_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_prop_var_select_1_effects <- cowplot::plot_grid(
@@ -1532,7 +1532,7 @@ plot_incomp_prop_var_select_effects_validation_dev <- plot_full_effects_validati
 
 ## plot histogram of effect
 
-plot_effect_1 <- hist_plot(incomp_prop_var_select_effects_summary_dev,-2.5,2.3,1100, "", -15, 20)
+plot_effect_1 <- hist_plot(incomp_prop_var_select_effects_summary_dev, "", -15, 20)
 
 
 # Val
@@ -1619,7 +1619,7 @@ plot_incomp_prop_var_select_effects_validation_val <- plot_full_effects_validati
 
 ## plot histogram of effect
 
-plot_effect_2 <- hist_plot(incomp_prop_var_select_effects_summary_val,-2.5,2.3,1100, "", -15, 20)
+plot_effect_2 <- hist_plot(incomp_prop_var_select_effects_summary_val, "", -15, 20)
 
 
 plot_incomp_prop_var_select_effects <- cowplot::plot_grid(
