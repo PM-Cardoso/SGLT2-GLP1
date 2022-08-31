@@ -201,6 +201,7 @@ effects_calibration <- function(data, model = "BART", formula = "formula1", data
   # data: dataset used in fitting, with columns patid/pateddrug/hba1c_diff.pred
   # model: model used to calculate observed treatment effect: BARt or linear regression
   # formula: variables used in the calculation of observed effect
+  # dataset: specific whether we are sampling from Dev-elopment or Val-idation datasets
   
   
   # check whether dataset has "patid" and "pateddrug"
