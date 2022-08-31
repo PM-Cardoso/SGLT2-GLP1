@@ -137,12 +137,7 @@ toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 
 
 # Plots
 hist_plot <- function(data,sx,sy,y, title, xmin, xmax) {
-  #label for hist
-  annotation <- data.frame(
-    x = c(sx,sy),
-    y = c(y),
-    label = c("Favours SGLT2", "Favours GLP1")
-  )
+  
   #define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
   c_low <- quantile(dat$mean,.001)
@@ -170,6 +165,13 @@ hist_plot <- function(data,sx,sy,y, title, xmin, xmax) {
 
 #Function to output HTE by subgroup
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci) {
+  ###
+  # data: dataset used in fitting,
+  # pred: column with predicted values
+  # obs: observed values
+  # obslowerci: lower bound of CI for prediction
+  # obsupperci: upper bound of CI for prediction
+  
   
   #ymin <- min(data$lci); ymax <- max(data$uci);yminr  <- 2*round(ymin/2);  ymaxr <- 2*round(ymax/2)
   ymin  <- -15;  ymax <- 15
