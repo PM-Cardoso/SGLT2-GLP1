@@ -32,4 +32,4 @@ Files:
     - .3: Collection of plots comparing 4.1-4.4 models.
 
 - 7.0: Simulations.
-    - .1: 
+    - .1: Exclusion of GLP1 patients before 2013.
