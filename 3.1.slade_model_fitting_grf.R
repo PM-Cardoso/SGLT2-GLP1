@@ -188,14 +188,73 @@ rate.val <- toc_function(dataset_model.matrix[-c(1:nrow(data_complete_routine_de
 #######
 
 
-predicted_observed_complete_routine_dev <- data_complete_routine_dev %>%
+predicted_observed_complete_routine_dev <- dataset_model.matrix %>%
+  slice(1:nrow(data_complete_routine_dev)) %>%
   cbind(hba1c_diff = effects.dev$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
 
+# split predicted treatment effects into deciles
+predicted_observed_complete_routine <- predicted_observed_complete_routine_dev %>%
+  plyr::ddply("hba1c_diff.q", dplyr::summarise,
+              N = length(hba1c_diff),
+              hba1c_diff.pred = mean(hba1c_diff))
 
-plot_effects_validation_dev <- plot_full_effects_validation(predicted_observed_complete_routine_dev, dataset = "Dev")
+mnumber = c(1:10)
+models  <- as.list(1:10)
+
+hba1c_diff.obs.unadj <- vector()
+
+prop.dataset <- cbind(prop.score = prop.score$fitted.values,
+                      hba1c_diff.q = predicted_observed_complete_routine_dev$hba1c_diff.q) %>%
+  as.data.frame()
+
+for (i in mnumber) {
+  # fit decile model
+  models[[i]] <- grf::causal_forest(X = predicted_observed_complete_routine_dev %>%
+                                      filter(hba1c_diff.q == i) %>%
+                                      select(-c("posthba1c_final",
+                                                "drugclass", 
+                                                "hba1c_diff",
+                                                "bestdrug",
+                                                "hba1c_diff.q")) %>%
+                                      as.matrix(),
+                                    Y = predicted_observed_complete_routine_dev %>%
+                                      filter(hba1c_diff.q == i) %>%
+                                      select("posthba1c_final") %>%
+                                      unlist(),
+                                    W = predicted_observed_complete_routine_dev %>%
+                                      filter(hba1c_diff.q == i) %>%
+                                      select("drugclass") %>%
+                                      unlist(),
+                                    W.hat = prop.dataset %>%
+                                      filter(hba1c_diff.q == i) %>%
+                                      select("prop.score") %>%
+                                      unlist()
+                                    )
+  hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(models[[i]]$predictions))
+  
+}
+
+#Final data.frame  
+t <- data.frame(predicted_observed_complete_routine,
+                cbind(hba1c_diff.obs.unadj)) %>% 
+  dplyr::mutate(obs=hba1c_diff.obs.unadj)
+
+
+ymin  <- -15;  ymax <- 15
+
+plot_effects_validation <- ggplot() +
+  geom_point(aes(x=t$hba1c_diff.pred,y=t$obs), alpha=1) + theme_bw() +
+  ylab("Q: Predicted HbA1c difference (mmol/mol)") + xlab("Predicted HbA1c difference (mmol/mol)") +
+  scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
+  scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
+  # scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
+  # scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
+  geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
+  geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+
 
 
 ###
@@ -237,7 +296,7 @@ rate.dev$TOC %>%
   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
 
-plot_effects_validation_dev
+plot_effects_validation
 
 
 plot_resid_dev

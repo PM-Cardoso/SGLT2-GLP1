@@ -436,18 +436,13 @@ predicted_observed_dev <- data_dev %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
-
-plot_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
-
-
 predicted_observed_val <- data_val %>%
   cbind(hba1c_diff = effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
 
 
 
@@ -467,8 +462,7 @@ plot_effect_2 <- hist_plot(effects_summary_val, "", -15, 20)
 pdf(file = "Plots/4.4.model4_plots.pdf")
 plot_residuals
 plot_assessment
-plot_effects_validation_dev
-plot_effects_validation_val
+plot_effects_validation
 cowplot::plot_grid(plot_effect_1, plot_effect_2, ncol = 2, nrow = 1, labels = c("A", "B"))
 dev.off()
 

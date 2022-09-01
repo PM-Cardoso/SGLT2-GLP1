@@ -116,16 +116,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_complete_routine_dev %>%
-  cbind(hba1c_diff = comp_routine_no_prop_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_comp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(comp_routine_no_prop_effects_summary_dev, "", -15, 20)
@@ -186,14 +176,20 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_complete_routine_dev %>%
+  cbind(hba1c_diff = comp_routine_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+## plot effects validation for validation
 predicted_observed_val <- data_complete_routine_val %>%
   cbind(hba1c_diff = comp_routine_no_prop_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_comp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_comp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_no_prop)
 
 
 ## plot histogram of effect
@@ -318,16 +314,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_complete_routine_prop_dev %>%
-  cbind(hba1c_diff = comp_routine_prop_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_comp_routine_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(comp_routine_prop_effects_summary_dev, "", -15, 20)
@@ -407,14 +393,20 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_complete_routine_prop_dev %>%
+  cbind(hba1c_diff = comp_routine_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+## plot effects validation for validation
 predicted_observed_val <- data_complete_routine_prop_val %>%
   cbind(hba1c_diff = comp_routine_prop_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_comp_routine_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_comp_routine_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_prop_model)
 
 
 ## plot histogram of effect
@@ -534,15 +526,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_routine_dev %>%
-  cbind(hba1c_diff = incomp_routine_no_prop_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_routine_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_routine_no_prop_effects_summary_dev, "", -15, 20)
@@ -601,14 +584,21 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_routine_dev %>%
+  cbind(hba1c_diff = incomp_routine_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_routine_val %>%
   cbind(hba1c_diff = incomp_routine_no_prop_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_routine_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_routine_no_prop)
 
 ## plot histogram of effect
 
@@ -720,15 +710,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_dev %>%
-  cbind(hba1c_diff = incomp_no_prop_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_no_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_no_prop_effects_summary_dev, "", -15, 20)
@@ -780,14 +761,21 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_dev %>%
+  cbind(hba1c_diff = incomp_no_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_val %>%
   cbind(hba1c_diff = incomp_no_prop_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_no_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop)
 
 ## plot histogram of effect
 
@@ -907,15 +895,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_dev_var_select %>%
-  cbind(hba1c_diff = incomp_no_prop_var_select_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_no_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_no_prop_var_select_effects_summary_dev, "", -15, 20)
@@ -973,14 +952,20 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_dev_var_select %>%
+  cbind(hba1c_diff = incomp_no_prop_var_select_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_val_var_select %>%
   cbind(hba1c_diff = incomp_no_prop_var_select_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_no_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_no_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop_var_select)
 
 
 ## plot histogram of effect
@@ -1097,15 +1082,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_dev %>%
-  cbind(hba1c_diff = incomp_prop_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_prop_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_prop_effects_summary_dev, "", -15, 20)
@@ -1177,14 +1153,21 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_dev %>%
+  cbind(hba1c_diff = incomp_prop_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_val %>%
   cbind(hba1c_diff = incomp_prop_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model)
 
 
 ## plot histogram of effect
@@ -1308,15 +1291,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_dev_var_select_1 %>%
-  cbind(hba1c_diff = incomp_prop_var_select_1_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_prop_var_select_1_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_prop_var_select_1_effects_summary_dev, "", -15, 20)
@@ -1394,14 +1368,21 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_dev_var_select_1 %>%
+  cbind(hba1c_diff = incomp_prop_var_select_1_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_val_var_select_1 %>%
   cbind(hba1c_diff = incomp_prop_var_select_1_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_var_select_1_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_prop_var_select_1_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select_1)
 
 ## plot histogram of effect
 
@@ -1521,15 +1502,6 @@ if (class(try(
   
 }
 
-## plot effects validation
-predicted_observed_dev <- data_incomplete_dev_var_select %>%
-  cbind(hba1c_diff = incomp_prop_var_select_effects_summary_dev$mean) %>%
-  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
-         hba1c_diff.q = ntile(hba1c_diff, 10))
-
-
-plot_incomp_prop_var_select_effects_validation_dev <- plot_full_effects_validation(predicted_observed_dev, dataset = "Dev")
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_prop_var_select_effects_summary_dev, "", -15, 20)
@@ -1608,14 +1580,21 @@ if (class(try(
   
 }
 
-## plot effects validation
+## plot effects validation for development
+predicted_observed_dev <- data_incomplete_dev_var_select %>%
+  cbind(hba1c_diff = incomp_prop_var_select_effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+## plot effects validation for validation
 predicted_observed_val <- data_incomplete_val_var_select %>%
   cbind(hba1c_diff = incomp_prop_var_select_effects_summary_val$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_var_select_effects_validation_val <- plot_full_effects_validation(predicted_observed_val, dataset = "Val")
+plot_incomp_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select)
 
 ## plot histogram of effect
 
@@ -1728,29 +1707,21 @@ dev.off()
 
 pdf(file = "Plots/6.1.model_effects.pdf")
 plot_comp_routine_no_prop_effects
-plot_comp_routine_no_prop_effects_validation_dev
-plot_comp_routine_no_prop_effects_validation_val
+plot_comp_routine_no_prop_effects_validation
 plot_comp_routine_prop_effects
-plot_comp_routine_prop_effects_validation_dev
-plot_comp_routine_prop_effects_validation_val
+plot_comp_routine_prop_effects_validation
 plot_incomp_routine_no_prop_effects
-plot_incomp_routine_no_prop_effects_validation_dev
-plot_incomp_routine_no_prop_effects_validation_val
+plot_incomp_routine_no_prop_effects_validation
 plot_incomp_no_prop_effects
-plot_incomp_no_prop_effects_validation_dev
-plot_incomp_no_prop_effects_validation_val
+plot_incomp_no_prop_effects_validation
 plot_incomp_no_prop_var_select_effects
-plot_incomp_no_prop_var_select_effects_validation_dev
-plot_incomp_no_prop_var_select_effects_validation_val
+plot_incomp_no_prop_var_select_effects_validation
 plot_incomp_prop_effects
-plot_incomp_prop_effects_validation_dev
-plot_incomp_prop_effects_validation_val
+plot_incomp_prop_effects_validation
 plot_incomp_prop_var_select_1_effects
-plot_incomp_prop_var_select_1_effects_validation_dev
-plot_incomp_prop_var_select_1_effects_validation_val
+plot_incomp_prop_var_select_1_effects_validation
 plot_incomp_prop_var_select_effects
-plot_incomp_prop_var_select_effects_validation_dev
-plot_incomp_prop_var_select_effects_validation_val
+plot_incomp_prop_var_select_effects_validation
 dev.off()
 
 
