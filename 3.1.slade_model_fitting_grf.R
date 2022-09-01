@@ -245,7 +245,7 @@ t <- data.frame(predicted_observed_complete_routine,
 
 ymin  <- -15;  ymax <- 15
 
-plot_effects_validation_dev <- ggplot() +
+plot_effects_validation <- ggplot() +
   geom_point(aes(x=t$hba1c_diff.pred,y=t$obs), alpha=1) + theme_bw() +
   ylab("Q: Predicted HbA1c difference (mmol/mol)") + xlab("Predicted HbA1c difference (mmol/mol)") +
   scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
