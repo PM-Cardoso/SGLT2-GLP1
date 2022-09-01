@@ -610,9 +610,83 @@ plot_full_effects_validation <- function(data, dataset = NULL) {
   return(plot)
 }
 
+### Instability assessment
 
+instability_modelling <- function(bart_model, m, n) {
+  ##### Input variables
+  # bart_model: bart_model being investigated for instability
+  # m: number of subsets from the dataset
+  # n: number of rows included in each subset of the dataset
+  
+  # set a list of subsets of length m
+  subsets_rows <- as.list(1:m)
+  
+  
+  for (i in 1:m) {
+    # total number of rows
+    n_ind <- nrow(bart_model$X)
+    # sample n rows from original dataset
+    rows_ind <- sample(1:n_ind, n)
+    # save subset rows
+    subsets_rows[[i]] <- rows_ind
+  }
+  
+  # set a list of bartMachine models for subsets
+  subsets_models <- as.list(1:m)
+  
+  
+  for (i in 1:m) {
+    bart_sub_model <- bartMachine::bartMachine(X = bart_model$X[subsets_rows[[i]],],
+                                               y = bart_model$y[subsets_rows[[i]]],
+                                               use_missing_data = bart_model$use_missing_data,
+                                               impute_missingness_with_rf_impute = bart_model$impute_missingness_with_rf_impute,
+                                               impute_missingness_with_x_j_bar_for_lm = bart_model$impute_missingness_with_x_j_bar_for_lm,
+                                               num_trees = bart_model$use_missing_data,
+                                               num_burn_in = bart_model$num_burn_in,
+                                               num_iterations_after_burn_in = bart_model$num_iterations_after_burn_in,
+                                               serialize = TRUE
+    )
+    subsets_model[[i]] <- bart_sub_model
+  }
+  
+  subset_modelling <- list(
+    original = bart_model,
+    m = m,
+    n = n,
+    rows = subsets_rows,
+    models = subsets_models
+  )
+  
+  return(subset_modelling)
+}
 
-
-
+instability_predictor_vs_observed_plot <- function(bart_model_subset) {
+  ##### Input variables
+  # bart_model_subset: list of rows and models used in the instability assessment
+  
+  p <- ggplot() +
+    theme_bw() +
+    stat_smooth(aes(x = bart_model_subset[["original"]]$y, 
+                    y = bart_model_subset[["original"]]$y_hat_train),
+                method = "lm", colour = "blue")
+  
+  for (i in 1:bart_model_subset[["m"]]) {
+    p <- p + stat_smooth(aes(x = bart_model_subset[["models"]][[i]]$y, 
+                             y = bart_model_subset[["models"]][[i]]$y_hat_train),
+                         method = "lm", colour = "blue", alpha = 0.3)
+  }
+  
+  p <- p + geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+    xlim(min(bart_model_subset[["original"]]$y,
+             bart_model_subset[["original"]]$y_hat_train), 
+         max(bart_model_subset[["original"]]$y,
+             bart_model_subset[["original"]]$y_hat_train)) +
+    ylim(min(bart_model_subset[["original"]]$y,
+             bart_model_subset[["original"]]$y_hat_train), 
+         max(bart_model_subset[["original"]]$y,
+             bart_model_subset[["original"]]$y_hat_train)) +
+    xlab("Observed HbA1c (mmol/mol)") +
+    ylab("Predicted HbA1c (mmol/mol)")
+}
 
 
