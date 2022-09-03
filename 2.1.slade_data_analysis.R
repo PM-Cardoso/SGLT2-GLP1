@@ -376,7 +376,7 @@ plot.hba1c.association.marginals <- cowplot::plot_grid(
 
 
 
-pdf(file = "Plots/2.0.analysis.pdf")
+pdf(file = "Plots/2.1.analysis.pdf")
 plot_subtype_year
 plot_subtype_year_facet
 plot_predicted_subtype

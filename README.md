@@ -11,7 +11,9 @@ Files:
     
 - 1.0: Detailed explanation of steps taken in the selection of patients for our cohorts.
 
-- 2.0: Collection of plots demonstrating specific details/quirks of the dataset.
+- 2.0: Descriptive analysis of data
+    - .1: Collection of plots demonstrating specific details/quirks of the dataset.
+    - .2: Table description of Development and Validation data
 
 - 3.0: R packages to model causal treatment effect.
     - .1: Fitting of a causal model using _grf_ R package. This includes an evaluation of model fit.
