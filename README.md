@@ -32,6 +32,7 @@ Files:
     - .1: Collection of plots comparing naive BART models in 5.0.
     - .2: Collection of plots comparing _bcf_ and _bartMachine_ with the same variables. Head-to-head comparisons of treatment effect for 3.2. vs 5.1. model 1 (Complete/Routine)
     - .3: Collection of plots comparing 4.1-4.4 models.
+    - .4: Differential treatment effect
 
-- 7.0: Simulations.
+- 7.0: Sensitivity analysis.
     - .1: Exclusion of GLP1 patients before 2013.
