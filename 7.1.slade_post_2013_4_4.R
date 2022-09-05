@@ -132,12 +132,13 @@ if (class(try(
 
 # Variables selected:
 #
-# [1] "prehba1cmmol"       "yrdrugstart"        "hba1cmonth"
-# [4] "egfr_ckdepi"        "drugclass_GLP1"     "prealt"
-# [7] "drugclass_SGLT2"    "score"              "drugline_2"
-# [10] "ncurrtx_2"          "ncurrtx_3"          "malesex_1"
-# [13] "drugline_5"         "Category_Ex-smoker" "drugline_3"
-# [16] "drugline_4"
+# [1] "prehba1cmmol"       "prealt"             "drugclass_SGLT2"
+# [4] "hba1cmonth"         "yrdrugstart"        "egfr_ckdepi"
+# [7] "drugclass_GLP1"     "score"              "drugline_2"
+# [10] "ncurrtx_3"          "drugline_3"         "ncurrtx_2"
+# [13] "drugline_4"         "Category_Ex-smoker" "drugline_5"
+# [16] "ncurrtx_1"
+# male_sex not included this time
 
 
 if (class(try(
@@ -159,11 +160,11 @@ if (class(try(
 
 # Variables selected:
 #
-# [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
-# [4] "drugline_2"         "drugline_3"         "drugline_4"
-# [7] "drugline_5"         "egfr_ckdepi"        "hba1cmonth"
-# [10] "ncurrtx_2"          "ncurrtx_3"          "prealt"
-# [13] "prehba1cmmol"       "score"              "yrdrugstart"
+# [1] "drugclass_GLP1"  "drugclass_SGLT2" "drugline_2"      "drugline_3"
+# [5] "drugline_4"      "drugline_5"      "egfr_ckdepi"     "hba1cmonth"
+# [9] "ncurrtx_1"       "ncurrtx_2"       "ncurrtx_3"       "prealt"
+# [13] "prebil"          "prehba1cmmol"    "score"           "yrdrugstart"
+# Category  not included, prebil extra
 
 
 
@@ -181,6 +182,94 @@ if (class(try(
 #   select(-drugclassSGLT2)
 # 
 # 
+# 
+# ## Fit a propensity model with all the variables
+# if (class(try(
+# 
+#   prop_model <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model.rds"))
+# 
+#   , silent = TRUE)) == "try-error") {
+# 
+#   # GLP1 is considered target so all the probabilities should be 1-prob
+#   prop_model <- bartMachine::bartMachine(X = dataset.dev %>%
+#                                            select(-patid,
+#                                                   -pateddrug,
+#                                                   -bothdrugs,
+#                                                   -posthba1c_final,
+#                                                   -drugclass,
+#                                                   -yrdrugstart,
+#                                                   -sglt2subtype,
+#                                                   -glp1subtype),
+#                                          y = dataset.dev[,"drugclass"],
+#                                          use_missing_data = TRUE,
+#                                          impute_missingness_with_rf_impute = FALSE,
+#                                          impute_missingness_with_x_j_bar_for_lm = TRUE,
+#                                          num_trees = 200,
+#                                          num_burn_in = 3000,
+#                                          num_iterations_after_burn_in = 1000,
+#                                          serialize = TRUE)
+# 
+#   saveRDS(prop_model, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model.rds"))
+# }
+# 
+# # Perform variables selection of important variables
+# 
+# if (class(try(
+# 
+#   prop_var_selection <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/prop_var_selection.rds"))
+# 
+#   , silent = TRUE)) == "try-error") {
+# 
+#   prop_var_selection <- bartMachine::var_selection_by_permute(bart_machine = prop_model,
+#                                                               num_reps_for_avg = 100,
+#                                                               num_permute_samples = 1000,
+#                                                               num_trees_for_permute = 50)
+# 
+#   saveRDS(prop_var_selection, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_var_selection.rds"))
+# 
+# 
+# }
+# # Variables selected:
+# #
+# # [1] "prebmi"              "t2dmduration"        "prehba1cmmol"
+# # [4] "preweight"           "drugline_2"          "drugline_5"
+# # [7] "ncurrtx_3"           "drugline_4"          "drugline_3"
+# # [10] "Category_Non-smoker"
+# 
+# 
+# 
+# # Fit final propensity model using selected variables
+# 
+# if (class(try(
+# 
+#   prop_model_final <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model_final.rds"))
+# 
+#   , silent = TRUE)) == "try-error") {
+# 
+#   prop_model_final <- bartMachine::bartMachine(X = dataset.dev %>%
+#                                                  select(prebmi,
+#                                                         t2dmduration,
+#                                                         # prealb,
+#                                                         # egfr_ckdepi,
+#                                                         drugline,
+#                                                         prehba1cmmol,
+#                                                         ncurrtx,
+#                                                         # score,
+#                                                         # Category
+#                                                         ),
+#                                                y = dataset.dev[,"drugclass"],
+#                                                use_missing_data = TRUE,
+#                                                impute_missingness_with_rf_impute = FALSE,
+#                                                impute_missingness_with_x_j_bar_for_lm = TRUE,
+#                                                num_trees = 200,
+#                                                num_burn_in = 3000,
+#                                                num_iterations_after_burn_in = 1000,
+#                                                serialize = TRUE)
+#   saveRDS(prop_model_final, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model_final.rds"))
+# 
+# }
+# 
+# 
 # grf_model <- grf::causal_forest(X = dataset_model.matrix %>%
 #                                   select(-posthba1c_final,
 #                                          -drugclass,
@@ -196,24 +285,22 @@ if (class(try(
 # 
 # colnames(grf_model$X.orig)[which(grf_var_selection > 0.01)]
 # 
-# # egfr_ckdepi <- 0.26148021
-# # prealt <- 0.11910838
-# # score <- 0.10012094
-# # agetx <- 0.09241861
-# # malesex1 <- 0.08211489
-# # prehba1cmmol <- 0.05997166
-# # prehdl <- 0.03887131
-# # prebmi <- 0.03366624
-# # prebil <- 0.03195610
-# # preplatelets <- 0.03017930
-# # t2dmduration <- 0.02777302
-# # hba1cmonth <- 0.02730930
-# # prealb <- 0.02330113
-# # presys <- 0.02304876
-# # preast <- 0.01249305
-# # --- threshold at 0.01
-# # drugline3 <- 0.004646597
-# 
+# # malesex1 <- 0.20329320
+# # egfr_ckdepi <- 0.17543374
+# # score <- 0.08494679
+# # agetx <- 0.07947302
+# # prealt <- 0.07819542
+# # prehba1cmmol <- 0.05829137
+# # prehdl <- 0.04667077
+# # preplatelets <- 0.04575637
+# # prebmi <- 0.03981382
+# # hba1cmonth <- 0.02812800
+# # t2dmduration <- 0.02589190
+# # presys <- 0.02513101
+# # prebil <- 0.02227799
+# # yrdrugstart <- 0.01916421
+# # prealb <- 0.01903258
+# # preast <- 0.01068304
 # 
 # options(na.action = current.na.action)
 
@@ -235,8 +322,9 @@ if (class(try(
                                                         prealt,
                                                         prehba1cmmol,
                                                         score,
+                                                        prebil,
                                                         # below is vars from BART variable selection
-                                                        Category,
+                                                        Category, # should be removed, not important for this model
                                                         drugline,
                                                         ncurrtx,
                                                         yrdrugstart,
@@ -245,7 +333,6 @@ if (class(try(
                                                         malesex,
                                                         prehdl,
                                                         prebmi,
-                                                        prebil,
                                                         preplatelets,
                                                         t2dmduration,
                                                         prealb,
