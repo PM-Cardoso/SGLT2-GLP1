@@ -593,25 +593,46 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
   # variable: variable being investigated
   # rby: number of ntiles
   
-  # only works for numeric
-  if (!is.numeric(dataset[, variable])) {stop("function only developed for continuous variables")}
   
-  # ntile values of variable
-  range <- quantile(dataset[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
-  
-  # new dataset
-  new.dataset <- dataset
-  
-  # create a long dataset with all possible combinations of range and dataset
-  for (i in 1:length(range)) {
-    if (i == 1) {
-      new.dataset[,variable] <- range[i]
-    } else {
-      interim.dataset <- dataset
-      interim.dataset[,variable] <- range[i]
-      new.dataset <- rbind(new.dataset, interim.dataset)
+  if (is.numeric(dataset[, variable])) {
+    
+    # ntile values of variable
+    range <- quantile(dataset[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
+    
+    # new dataset
+    new.dataset <- dataset
+    
+    # create a long dataset with all possible combinations of range and dataset
+    for (i in 1:length(range)) {
+      if (i == 1) {
+        new.dataset[,variable] <- range[i]
+      } else {
+        interim.dataset <- dataset
+        interim.dataset[,variable] <- range[i]
+        new.dataset <- rbind(new.dataset, interim.dataset)
+      }
     }
+    
+  } else {
+    
+    range <- levels(dataset[,variable])
+    
+    # new dataset
+    new.dataset <- dataset
+    
+    # create a long dataset with all possible combinations of range and dataset
+    for (i in 1:length(range)) {
+      if (i == 1) {
+        new.dataset[,variable] <- range[i]
+      } else {
+        interim.dataset <- dataset
+        interim.dataset[,variable] <- range[i]
+        new.dataset <- rbind(new.dataset, interim.dataset)
+      }
+    }
+    new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
   }
+  
   
   effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
     mutate(ntile = rep(1:length(range), each = nrow(dataset)),
@@ -629,26 +650,53 @@ plot_diff_treatment_effect <- function(effects, dataset, variable, xtitle) {
   # variable: variable being investigated
   # xtitle: title of x axis
   
-  plot_hist <- ggplot() +
-    theme_void() +
-    geom_histogram(aes(x = dataset[, variable]))
+  
+  if (is.numeric(dataset[, variable])) {
+    
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_histogram(aes(x = dataset[, variable]))
+    
+    
+    plot_diff <- effects %>%
+      group_by(ntile, ntile.value) %>%
+      mutate(`5%`= mean(`5%`),
+             `50%` = mean(`50%`),
+             `95%` = mean(`95%`),
+             mean = mean(mean)) %>%
+      ungroup() %>%
+      unique() %>%
+      ggplot() +
+      geom_line(aes(x = ntile.value, y = mean), col = "red") +
+      geom_ribbon(aes(ymin = `5%`, ymax = `95%`, x = ntile.value), alpha = 0.1) +
+      xlab(xtitle) + ylab("Treatment Effect")
+  } else {
+    
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_bar(aes(x = dataset[, variable]))
+    
+    
+    
+    plot_diff <- effects %>%
+      group_by(ntile, ntile.value) %>%
+      mutate(`5%`= mean(`5%`),
+             `50%` = mean(`50%`),
+             `95%` = mean(`95%`),
+             mean = mean(mean)) %>%
+      ungroup() %>%
+      unique() %>%
+      mutate(ntile = as.double(ntile)) %>%
+      ggplot() +
+      geom_line(aes(x = ntile, y = mean), col = "red") +
+      geom_ribbon(aes(ymin = `5%`, ymax = `95%`, x = ntile), alpha = 0.1) +
+      xlab(xtitle) + ylab("Treatment Effect") +
+      scale_x_continuous(labels = levels(dataset[, variable]), breaks = 1:length(levels(dataset[,variable])))
+    
+  }
   
   
-  plot_diff <- effects %>%
-    group_by(ntile, ntile.value) %>%
-    mutate(`5%`= mean(`5%`),
-           `50%` = mean(`50%`),
-           `95%` = mean(`95%`),
-           mean = mean(mean)) %>%
-    ungroup() %>%
-    unique() %>%
-    ggplot() +
-    geom_line(aes(x = ntile.value, y = mean), col = "red") +
-    geom_ribbon(aes(ymin = `5%`, ymax = `95%`, x = ntile.value), alpha = 0.1) +
-    xlab(xtitle) + ylab("Treatment Effect")
-  
-  
-  plot.egfr.diff.marg <- cowplot::plot_grid(
+  plot.diff.marg <- cowplot::plot_grid(
     
     plot_diff
     
@@ -671,8 +719,7 @@ plot_diff_treatment_effect <- function(effects, dataset, variable, xtitle) {
     
   )
   
-  
-  
+  return(plot.diff.marg)
   
 }
 
