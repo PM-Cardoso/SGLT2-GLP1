@@ -54,7 +54,7 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
 ###############################################################################
 ###############################################################################
 
-source("11.slade_functions.R")
+source("0.1.slade_functions.R")
 
 #############################
 ### Treatment effect for different features
@@ -310,6 +310,63 @@ if (class(try(
 plot.ast.diff.marg <- plot_diff_treatment_effect(effects_summary_dev_ast, dataset.dev, "preast", "AST")
 
 
+## drugline
+
+# calculate differential effects
+if (class(try(
+  
+  effects_summary_dev_drugline <- readRDS(paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_drugline.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  effects_summary_dev_drugline <- calc_diff_treatment_effect(bart_model_final, dataset.dev, "drugline")
+  
+  saveRDS(effects_summary_dev_drugline, paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_drugline.rds"))
+  
+}
+
+# plot treatment effect + histogram marginal
+plot.drugline.diff.marg <- plot_diff_treatment_effect(effects_summary_dev_drugline, dataset.dev, "drugline", "Drugline")
+
+
+## Category Smoker
+
+# calculate differential effects
+if (class(try(
+  
+  effects_summary_dev_category <- readRDS(paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_category.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  effects_summary_dev_category <- calc_diff_treatment_effect(bart_model_final, dataset.dev, "Category")
+  
+  saveRDS(effects_summary_dev_category, paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_category.rds"))
+  
+}
+
+# plot treatment effect + histogram marginal
+plot.category.diff.marg <- plot_diff_treatment_effect(effects_summary_dev_category, dataset.dev, "Category", "Smoking")
+
+
+## ncurrtx
+
+# calculate differential effects
+if (class(try(
+  
+  effects_summary_dev_ncurrtx <- readRDS(paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_ncurrtx.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  effects_summary_dev_ncurrtx <- calc_diff_treatment_effect(bart_model_final, dataset.dev, "ncurrtx")
+  
+  saveRDS(effects_summary_dev_ncurrtx, paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev_ncurrtx.rds"))
+  
+}
+
+# plot treatment effect + histogram marginal
+plot.ncurrtx.diff.marg <- plot_diff_treatment_effect(effects_summary_dev_ncurrtx, dataset.dev, "ncurrtx", "ncurrtx")
+
+
 
 
 #### PDF with all the plots
@@ -329,6 +386,9 @@ plot.score.diff.marg
 plot.hba1c.diff.marg
 plot.alt.diff.marg
 plot.egfr.diff.marg
+plot.drugline.diff.marg
+plot.category.diff.marg
+plot.ncurrtx.diff.marg
 dev.off()
 
 
