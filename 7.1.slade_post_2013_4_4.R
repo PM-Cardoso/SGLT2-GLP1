@@ -478,9 +478,6 @@ plot_assessment <- assessment %>%
   guides(colour = "none")
 
 
-
-
-
 plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 4 (Post 2012)")
 
 
@@ -534,14 +531,72 @@ predicted_observed_val <- data_val %>%
 plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
 
 
-
-
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(effects_summary_dev, "", -15, 20)
 
 plot_effect_2 <- hist_plot(effects_summary_val, "", -15, 20)
 
+
+effects_summary_dev_male <- effects_summary_dev %>%
+  cbind(malesex = data_dev$malesex) %>%
+  filter(malesex == 1)
+
+effects_summary_dev_female <- effects_summary_dev %>%
+  cbind(malesex = data_dev$malesex) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
+
+
+effects_summary_val_male <- effects_summary_val %>%
+  cbind(malesex = data_val$malesex) %>%
+  filter(malesex == 1)
+
+effects_summary_val_female <- effects_summary_val %>%
+  cbind(malesex = data_val$malesex) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
+##############
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_dev.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+
+
+if (class(try(
+  
+  ATE_validation_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_val.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
 
 
@@ -553,6 +608,27 @@ plot_residuals
 plot_assessment
 plot_effects_validation
 cowplot::plot_grid(plot_effect_1, plot_effect_2, ncol = 2, nrow = 1, labels = c("A", "B"))
+
+cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
+)
+cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 dev.off()
 
 pdf(file = "Plots/7.1.model4_partial_dependence.pdf")
@@ -567,3 +643,4 @@ for (i in colnames(features)) {
   pd_plot(bart_model_final, i)
 }
 dev.off()
+

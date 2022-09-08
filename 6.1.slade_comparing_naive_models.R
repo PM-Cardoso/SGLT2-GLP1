@@ -121,6 +121,29 @@ if (class(try(
 plot_effect_1 <- hist_plot(comp_routine_no_prop_effects_summary_dev, "", -15, 20)
 
 
+effects_summary_dev_male <- comp_routine_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_complete_routine_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+          ) %>%
+  filter(malesex == 1)
+
+effects_summary_dev_female <- comp_routine_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_complete_routine_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
+
 
 # Val
 data_complete_routine_val <- final.val %>%
@@ -197,6 +220,32 @@ plot_comp_routine_no_prop_effects_validation <- plot_full_effects_validation(pre
 plot_effect_2 <- hist_plot(comp_routine_no_prop_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- comp_routine_no_prop_effects_summary_val %>%
+  cbind(malesex = data_complete_routine_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- comp_routine_no_prop_effects_summary_val %>%
+  cbind(malesex = data_complete_routine_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
 plot_comp_routine_no_prop_effects <- cowplot::plot_grid(
   
   #title
@@ -216,6 +265,18 @@ plot_comp_routine_no_prop_effects <- cowplot::plot_grid(
     
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
+)
+
+
+plot_comp_routine_no_prop_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 
 
@@ -247,6 +308,52 @@ if (class(try(
 plot_comp_routine_no_prop <- resid_plot(comp_routine_no_prop_cred_pred_dev,
                                         comp_routine_no_prop_cred_pred_val, 
                                         "Model fitting: Complete data (Routine/No propensity score)")
+
+
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_no_prop.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_comp_routine_no_prop <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
 
 
 
@@ -317,6 +424,32 @@ if (class(try(
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(comp_routine_prop_effects_summary_dev, "", -15, 20)
+
+
+effects_summary_dev_male <- comp_routine_prop_effects_summary_dev %>%
+  cbind(malesex = data_complete_routine_prop_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- comp_routine_prop_effects_summary_dev %>%
+  cbind(malesex = data_complete_routine_prop_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
+
 
 
 # Val
@@ -414,6 +547,31 @@ plot_comp_routine_prop_effects_validation <- plot_full_effects_validation(predic
 plot_effect_2 <- hist_plot(comp_routine_prop_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- comp_routine_prop_effects_summary_val %>%
+  cbind(malesex = data_complete_routine_prop_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- comp_routine_prop_effects_summary_val %>%
+  cbind(malesex = data_complete_routine_prop_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
 plot_comp_routine_prop_effects <- cowplot::plot_grid(
   
   #title
@@ -434,6 +592,20 @@ plot_comp_routine_prop_effects <- cowplot::plot_grid(
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
 )
+
+
+plot_comp_routine_prop_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
+)
+
+
 
 # assessment of R2, RSS, RMSE
 if (class(try(
@@ -463,6 +635,52 @@ if (class(try(
 plot_comp_routine_prop <- resid_plot(comp_routine_prop_cred_pred_dev,
                                      comp_routine_prop_cred_pred_val, 
                                      "Model fitting: Complete data (Routine/Propensity score)")
+
+
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_comp_routine_prop <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_prop.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_comp_routine_prop <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_prop.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_comp_routine_prop <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #############################
@@ -529,6 +747,31 @@ if (class(try(
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_routine_no_prop_effects_summary_dev, "", -15, 20)
+
+
+effects_summary_dev_male <- incomp_routine_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_routine_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_routine_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_routine_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
 
 
 # Val
@@ -605,6 +848,31 @@ plot_incomp_routine_no_prop_effects_validation <- plot_full_effects_validation(p
 plot_effect_2 <- hist_plot(incomp_routine_no_prop_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- incomp_routine_no_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_routine_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_routine_no_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_routine_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
 plot_incomp_routine_no_prop_effects <- cowplot::plot_grid(
   
   #title
@@ -624,6 +892,17 @@ plot_incomp_routine_no_prop_effects <- cowplot::plot_grid(
     
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
+)
+
+plot_incomp_routine_no_prop_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 
 
@@ -656,6 +935,50 @@ plot_incomp_routine_no_prop <- resid_plot(incomp_routine_no_prop_cred_pred_dev,
                                           incomp_routine_no_prop_cred_pred_val, 
                                           "Model fitting: Incomplete data (Routine/No propensity score)")
 
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_routine_no_prop <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #############################
@@ -714,6 +1037,30 @@ if (class(try(
 
 plot_effect_1 <- hist_plot(incomp_no_prop_effects_summary_dev, "", -15, 20)
 
+
+effects_summary_dev_male <- incomp_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_no_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
 
 # Val
 data_incomplete_val <- final.val
@@ -782,6 +1129,32 @@ plot_incomp_no_prop_effects_validation <- plot_full_effects_validation(predicted
 plot_effect_2 <- hist_plot(incomp_no_prop_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- incomp_no_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_no_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
+
 plot_incomp_no_prop_effects <- cowplot::plot_grid(
   
   #title
@@ -803,6 +1176,17 @@ plot_incomp_no_prop_effects <- cowplot::plot_grid(
   
 )
 
+
+plot_incomp_no_prop_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
+)
 
 
 # assessment of R2, RSS, RMSE
@@ -834,6 +1218,51 @@ plot_incomp_no_prop <- resid_plot(incomp_no_prop_cred_pred_dev,
                                   incomp_no_prop_cred_pred_val, 
                                   "Model fitting: Incomplete data (No propensity score)")
 
+
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_no_prop <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_no_prop <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #############################
@@ -899,6 +1328,30 @@ if (class(try(
 
 plot_effect_1 <- hist_plot(incomp_no_prop_var_select_effects_summary_dev, "", -15, 20)
 
+
+effects_summary_dev_male <- incomp_no_prop_var_select_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_no_prop_var_select_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
 
 # Val
 data_incomplete_val_var_select <- final.val %>%
@@ -973,6 +1426,31 @@ plot_incomp_no_prop_var_select_effects_validation <- plot_full_effects_validatio
 plot_effect_2 <- hist_plot(incomp_no_prop_var_select_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- incomp_no_prop_var_select_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_no_prop_var_select_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
 plot_incomp_no_prop_var_select_effects <- cowplot::plot_grid(
   
   #title
@@ -993,6 +1471,18 @@ plot_incomp_no_prop_var_select_effects <- cowplot::plot_grid(
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
 )
+
+plot_incomp_no_prop_var_select_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
+)
+
 
 
 # assessment of R2, RSS, RMSE
@@ -1024,6 +1514,50 @@ plot_incomp_no_prop_var_select <- resid_plot(incomp_no_prop_var_select_cred_pred
                                              incomp_no_prop_var_select_cred_pred_val, 
                                              "Model fitting: Variable Selection 1, Incomplete data (No propensity score)")
 
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_no_prop_var_select <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #############################
@@ -1085,6 +1619,31 @@ if (class(try(
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_prop_effects_summary_dev, "", -15, 20)
+
+
+effects_summary_dev_male <- incomp_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_prop_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
 
 
 # Val
@@ -1175,6 +1734,31 @@ plot_incomp_prop_effects_validation <- plot_full_effects_validation(predicted_ob
 plot_effect_2 <- hist_plot(incomp_prop_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- incomp_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_prop_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
 plot_incomp_prop_effects <- cowplot::plot_grid(
   
   #title
@@ -1194,6 +1778,17 @@ plot_incomp_prop_effects <- cowplot::plot_grid(
     
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
+)
+
+plot_incomp_prop_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 
 
@@ -1225,6 +1820,51 @@ if (class(try(
 plot_incomp_prop <- resid_plot(incomp_prop_cred_pred_dev,
                                incomp_prop_cred_pred_val, 
                                "Model fitting: Incomplete data (Propensity score)")
+
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_prop <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_prop <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_prop <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 
@@ -1295,6 +1935,30 @@ if (class(try(
 
 plot_effect_1 <- hist_plot(incomp_prop_var_select_1_effects_summary_dev, "", -15, 20)
 
+
+effects_summary_dev_male <- incomp_prop_var_select_1_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select_1 %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_prop_var_select_1_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select_1 %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
 
 
 # Val
@@ -1389,6 +2053,31 @@ plot_incomp_prop_var_select_1_effects_validation <- plot_full_effects_validation
 plot_effect_2 <- hist_plot(incomp_prop_var_select_1_effects_summary_val, "", -15, 20)
 
 
+effects_summary_val_male <- incomp_prop_var_select_1_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select_1 %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_prop_var_select_1_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select_1 %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
 plot_incomp_prop_var_select_1_effects <- cowplot::plot_grid(
   
   #title
@@ -1409,6 +2098,19 @@ plot_incomp_prop_var_select_1_effects <- cowplot::plot_grid(
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
 )
+
+
+plot_incomp_prop_var_select_1_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
+)
+
 
 
 # assessment of R2, RSS, RMSE
@@ -1440,6 +2142,50 @@ plot_incomp_prop_var_select_1 <- resid_plot(incomp_prop_cred_pred_dev_var_select
                                             incomp_prop_cred_pred_val_var_select_1, 
                                             "Model fitting: Variable Selection 1, Incomplete data (Propensity score)")
 
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_prop_var_select_1 <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #############################
@@ -1505,6 +2251,32 @@ if (class(try(
 ## plot histogram of effect
 
 plot_effect_1 <- hist_plot(incomp_prop_var_select_effects_summary_dev, "", -15, 20)
+
+
+effects_summary_dev_male <- incomp_prop_var_select_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_dev_female <- incomp_prop_var_select_effects_summary_dev %>%
+  cbind(malesex = data_incomplete_dev_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.dev %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+
+plot_effect_1_male <- hist_plot(effects_summary_dev_male, "Male", -15, 20)
+
+plot_effect_1_female <- hist_plot(effects_summary_dev_female, "Female", -15, 20)
+
 
 
 # Val
@@ -1601,6 +2373,33 @@ plot_incomp_prop_var_select_effects_validation <- plot_full_effects_validation(p
 plot_effect_2 <- hist_plot(incomp_prop_var_select_effects_summary_val, "", -15, 20)
 
 
+
+effects_summary_val_male <- incomp_prop_var_select_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 1)
+
+
+effects_summary_val_female <- incomp_prop_var_select_effects_summary_val %>%
+  cbind(malesex = data_incomplete_val_var_select %>%
+          select(patid, pateddrug) %>%
+          left_join(final.val %>%
+                      select(patid, pateddrug, malesex), by = c("patid", "pateddrug")) %>%
+          select(malesex)
+  ) %>%
+  filter(malesex == 0)
+
+plot_effect_2_male <- hist_plot(effects_summary_val_male, "Male", -15, 20)
+
+plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
+
+
+
+
 plot_incomp_prop_var_select_effects <- cowplot::plot_grid(
   
   #title
@@ -1620,6 +2419,18 @@ plot_incomp_prop_var_select_effects <- cowplot::plot_grid(
     
   ), ncol = 1, nrow = 2, rel_heights = c(0.1,1)
   
+)
+
+
+plot_incomp_prop_var_select_effects_genders <- cowplot::plot_grid(
+  
+  cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
+  
+  ,
+  
+  cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
+  
+  , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 
 
@@ -1654,6 +2465,51 @@ plot_incomp_prop_var_select <- resid_plot(incomp_prop_cred_pred_dev_var_select,
                                             incomp_prop_cred_pred_val_var_select, 
                                             "Model fitting: Variable Selection 2, Incomplete data (Propensity score)")
 
+
+
+#########
+
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+if (class(try(
+  
+  ATE_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -20, 20)
+
+
+
+plot_ATE_incomp_prop_var_select <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 ###############################################################################
@@ -1707,21 +2563,37 @@ dev.off()
 
 pdf(file = "Plots/6.1.model_effects.pdf")
 plot_comp_routine_no_prop_effects
+plot_comp_routine_no_prop_effects_genders
 plot_comp_routine_no_prop_effects_validation
+plot_ATE_comp_routine_no_prop
 plot_comp_routine_prop_effects
+plot_comp_routine_prop_effects_genders
 plot_comp_routine_prop_effects_validation
+plot_ATE_comp_routine_prop
 plot_incomp_routine_no_prop_effects
+plot_incomp_routine_no_prop_effects_genders
 plot_incomp_routine_no_prop_effects_validation
+plot_ATE_incomp_routine_no_prop
 plot_incomp_no_prop_effects
+plot_incomp_no_prop_effects_genders
 plot_incomp_no_prop_effects_validation
+plot_ATE_incomp_no_prop
 plot_incomp_no_prop_var_select_effects
+plot_incomp_no_prop_var_select_effects_genders
 plot_incomp_no_prop_var_select_effects_validation
+plot_ATE_incomp_no_prop_var_select
 plot_incomp_prop_effects
+plot_incomp_prop_effects_genders
 plot_incomp_prop_effects_validation
+plot_ATE_incomp_prop
 plot_incomp_prop_var_select_1_effects
+plot_incomp_prop_var_select_1_effects_genders
 plot_incomp_prop_var_select_1_effects_validation
+plot_ATE_incomp_prop_var_select_1
 plot_incomp_prop_var_select_effects
+plot_incomp_prop_var_select_effects_genders
 plot_incomp_prop_var_select_effects_validation
+plot_ATE_incomp_prop_var_select
 dev.off()
 
 
