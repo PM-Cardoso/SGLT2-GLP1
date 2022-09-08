@@ -541,13 +541,16 @@ final.all <- final.all %>% select(
   # flt2dmduration, flprehba1cmmol, fliniresp_final, flposthba1c_final, 
   # flstoptime, flstop, # fldate, fldrugstopdate, flresid, # removing derivatives of first-line vars
   ################ Post Therapy side-effects
-  # postsys6m, postsys12m, postweight6m, postweight12m, postdrug.first.stroke,
+  # postsys6m, postsys12m, 
+  # postweight6m, postweight12m, # use these for weight, 12 or 6 months if not enough
+  # postdrug.first.stroke,
   # postdrug.first.tia, postdrug.first.revasc, postdrug.first.pad, postdrug.first.neuropathy,
   # postdrug.first.nephropathy, postdrug.first.retinopathy, postdrug.first.ihd,
   # postdrug.first.hypertension, postdrug.first.heartfailure, postdrug.first.ckd5,
   # postdrug.first.af, postdrug.first.angina, postdrug.first.cld, postdrug.first.mi,
   ################ Discontinuation
-  # stopdrugdate, stopdrug3m_6mFU, stopdrug3m_3mFU, stopdrug6m_6mFU, stopdrug6m_3mFU, stopdrug12m_6mFU, stopdrug12m_3mFU,
+  # stopdrugdate, stopdrug3m_6mFU, stopdrug3m_3mFU, stopdrug6m_6mFU, stopdrug6m_3mFU, stopdrug12m_6mFU, 
+  # stopdrug12m_3mFU, # use this one for discountinuation
   ################ Adherence
   # adherence_t, fladherence_t, flnonadh, nonadh,
   ################ Time difference
