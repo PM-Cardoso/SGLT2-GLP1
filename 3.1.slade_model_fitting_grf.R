@@ -9,7 +9,12 @@
 .libPaths(.libPaths()[c(2,1,3)])
 
 
+
+## increase memery usage to 50gb of RAM
+options(java.parameters = "-Xmx50g")
+
 library(tidyverse)
+library(bartMachine)
 
 
 ## path to output folder
@@ -195,65 +200,10 @@ predicted_observed_complete_routine_dev <- dataset_model.matrix %>%
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
 
-# split predicted treatment effects into deciles
-predicted_observed_complete_routine <- predicted_observed_complete_routine_dev %>%
-  plyr::ddply("hba1c_diff.q", dplyr::summarise,
-              N = length(hba1c_diff),
-              hba1c_diff.pred = mean(hba1c_diff))
-
-mnumber = c(1:10)
-models  <- as.list(1:10)
-
-hba1c_diff.obs.unadj <- vector()
-
-prop.dataset <- cbind(prop.score = prop.score$fitted.values,
-                      hba1c_diff.q = predicted_observed_complete_routine_dev$hba1c_diff.q) %>%
-  as.data.frame()
-
-for (i in mnumber) {
-  # fit decile model
-  models[[i]] <- grf::causal_forest(X = predicted_observed_complete_routine_dev %>%
-                                      filter(hba1c_diff.q == i) %>%
-                                      select(-c("posthba1c_final",
-                                                "drugclass", 
-                                                "hba1c_diff",
-                                                "bestdrug",
-                                                "hba1c_diff.q")) %>%
-                                      as.matrix(),
-                                    Y = predicted_observed_complete_routine_dev %>%
-                                      filter(hba1c_diff.q == i) %>%
-                                      select("posthba1c_final") %>%
-                                      unlist(),
-                                    W = predicted_observed_complete_routine_dev %>%
-                                      filter(hba1c_diff.q == i) %>%
-                                      select("drugclass") %>%
-                                      unlist(),
-                                    W.hat = prop.dataset %>%
-                                      filter(hba1c_diff.q == i) %>%
-                                      select("prop.score") %>%
-                                      unlist()
-                                    )
-  hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(models[[i]]$predictions))
-  
-}
-
-#Final data.frame  
-t <- data.frame(predicted_observed_complete_routine,
-                cbind(hba1c_diff.obs.unadj)) %>% 
-  dplyr::mutate(obs=hba1c_diff.obs.unadj)
-
-
-ymin  <- -15;  ymax <- 15
-
-plot_effects_validation <- ggplot() +
-  geom_point(aes(x=t$hba1c_diff.pred,y=t$obs), alpha=1) + theme_bw() +
-  ylab("Q: Predicted HbA1c difference (mmol/mol)") + xlab("Predicted HbA1c difference (mmol/mol)") +
-  scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-  scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-  # scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-  # scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-  geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
-  geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
+                                            cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+    
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10)
 
 
 
@@ -296,7 +246,7 @@ rate.dev$TOC %>%
   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
 
-plot_effects_validation
+plot_ATE_dev
 
 
 plot_resid_dev

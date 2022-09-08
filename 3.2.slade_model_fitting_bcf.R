@@ -9,7 +9,11 @@
 .libPaths(.libPaths()[c(2,1,3)])
 
 
+## increase memery usage to 50gb of RAM
+options(java.parameters = "-Xmx50g")
+
 library(tidyverse)
+library(bartMachine)
 
 ## path to output folder
 output_path <- "Samples"
@@ -137,70 +141,12 @@ predicted_observed_complete_routine_dev <- dataset_full_bcf[1:nrow(data_complete
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
 
-# split predicted treatment effects into deciles
-predicted_observed_complete_routine <- predicted_observed_complete_routine_dev %>%
-  plyr::ddply("hba1c_diff.q", dplyr::summarise,
-              N = length(hba1c_diff),
-              hba1c_diff.pred = mean(hba1c_diff))
+ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
+                                            cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
 
-mnumber = c(1:10)
-models  <- as.list(1:10)
-
-hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
-
-prop.dataset <- cbind(prop.score = prop.score$fitted.values,
-                      hba1c_diff.q = predicted_observed_complete_routine_dev$hba1c_diff.q) %>%
-  as.data.frame()
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
 
 
-for (i in mnumber) {
-  # fit decile model
-  models[[i]] <- bcf::bcf(y = predicted_observed_complete_routine_dev %>%
-                            filter(hba1c_diff.q == i) %>%
-                            select("posthba1c_final") %>%
-                            unlist(),
-                          z = predicted_observed_complete_routine_dev %>%
-                            filter(hba1c_diff.q == i) %>%
-                            select("drugclass") %>%
-                           unlist(),
-                          x_control = predicted_observed_complete_routine_dev %>%
-                           filter(hba1c_diff.q == i) %>%
-                           select(-c("posthba1c_final",
-                                     "drugclass", 
-                                     "hba1c_diff",
-                                     "bestdrug",
-                                     "hba1c_diff.q")) %>%
-                           as.matrix(),
-                          pihat = prop.dataset %>%
-                           filter(hba1c_diff.q == i) %>%
-                           select("prop.score") %>%
-                           unlist(),
-                          nburn = 1000,
-                          nsim = 1000)
-  
-  effects_dev <- models[[i]]$tau
-  
-  effects_summary_dev <- cbind(
-    `5%` = apply(effects_dev, MARGIN = 2, function(x) quantile(c(x), probs = c(0.05))),
-    `50%` = apply(effects_dev, MARGIN = 2, function(x) quantile(c(x), probs = c(0.50))),
-    `95%` = apply(effects_dev, MARGIN = 2, function(x) quantile(c(x), probs = c(0.95))),
-    mean = apply(effects_dev, MARGIN = 2, function(x) mean(c(x)))
-  ) %>%
-    as.data.frame()
-  
-  hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(effects_summary_dev$mean))
-  lower.unadj <- append(lower.unadj,mean(effects_summary_dev$`5%`))
-  upper.unadj <- append(upper.unadj,mean(effects_summary_dev$`95%`))
-  
-}
-
-#Final data.frame  
-t <- data.frame(predicted_observed_complete_routine,
-                cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>% 
-  dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-
-
-plot_predicted_observed <- hte_plot(t, "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 # Plot
@@ -213,7 +159,7 @@ plot_effects_validation <- cowplot::plot_grid(
   ,
   
   #effects plot
-  plot_predicted_observed
+  plot_ATE_dev
   
   , ncol = 1, nrow = 2, rel_heights = c(0.1, 1)
 )
