@@ -1,7 +1,7 @@
 # SGLT2-GLP1
 Collection of functions and scripts to investigate how clinical features can be used for prediction.
 
-## Final structure for analysis:
+## Final structure for analysis: (Model 4.4)
 
 1. Variable selection: this will be the union of variables selected from two methods:
     - Variables identified as strong predictors of the outcome variable (HbA1c outcome) - function _bartMachine::var_selection_by_permute_
