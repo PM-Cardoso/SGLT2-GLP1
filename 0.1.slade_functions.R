@@ -4,157 +4,21 @@
 ####################
 
 
-### Calculate TOC (forked from github/grf-labs/grf)
-
-boot_grf <- function(data, statistic, R, clusters, half.sample = TRUE, ...) {
-  samples.by.cluster <- split(seq_along(clusters), clusters)
-  n <- length(samples.by.cluster) # number of clusters
-  if (n <= 1 || (half.sample && floor(n / 2) <= 1)) {
-    stop("Cannot bootstrap sample with only one effective unit.")
-  }
-  if (half.sample) {
-    n.bs <- floor(n / 2)
-    index.list <- replicate(R, unlist(samples.by.cluster[sample.int(n, n.bs, replace = FALSE)], use.names = FALSE), simplify = FALSE)
-  } else {
-    index.list <- replicate(R, unlist(samples.by.cluster[sample.int(n, replace = TRUE)], use.names = FALSE), simplify = FALSE)
-  }
-  
-  t0 <- statistic(data, seq_len(NROW(data)), ...)
-  t0 <- matrix(unlist(t0), ncol = length(t0))
-  
-  res <- lapply(seq_len(R), function(i) statistic(data, index.list[[i]], ...))
-  t <- matrix(, R, length(t0))
-  for (r in seq_len(R)) {
-    t[r, ] <- unlist(res[[r]])
-  }
-  
-  list(t0 = t0, t = t)
-}
-
-estimate_rate <- function(data, indices, q, wtd.mean) {
-  prio <- data[indices, 3]
-  sort.idx <- order(prio, decreasing = TRUE)
-  sample.weights <- data[indices, 2][sort.idx]
-  
-  num.ties <- tabulate(prio) # count by rank in increasing order
-  num.ties <- num.ties[num.ties != 0] # ignore potential ranks not present in BS sample
-  # if continuous scoring then no need for ~slower aggregation
-  if (all(num.ties == 1)) {
-    DR.scores.sorted <- (data[indices, 1] / data[indices, 2])[sort.idx]
-  } else {
-    grp.sum <- rowsum(data[indices, 1:2][sort.idx, ], prio[sort.idx], reorder = FALSE)
-    DR.avg <- grp.sum[, 1] / grp.sum[, 2]
-    DR.scores.sorted <- rep.int(DR.avg, rev(num.ties))
-  }
-  sample.weights.cumsum <- cumsum(sample.weights)
-  sample.weights.sum <- sample.weights.cumsum[length(sample.weights)]
-  ATE <- sum(DR.scores.sorted * sample.weights) / sample.weights.sum
-  TOC <- cumsum(DR.scores.sorted * sample.weights) / sample.weights.cumsum - ATE
-  RATE <- wtd.mean(TOC, sample.weights)
-  
-  nw <- q * sample.weights.sum
-  idx <- findInterval(nw + 1e-15, sample.weights.cumsum) # epsilon tol. since finite precision may cause not equal
-  denominator.adj <- nw - sample.weights.cumsum[pmax(idx, 1)] # \sum weight remainder, zero when no fractional obs. needed
-  numerator.adj <- denominator.adj * DR.scores.sorted[pmin(idx + 1, max(idx))]
-  idx[idx == 0] <- 1
-  uniq.idx <- unique(idx)
-  grid.id <- rep.int(seq_along(uniq.idx), c(uniq.idx[1], diff(uniq.idx)))
-  DR.scores.grid <- rowsum(cbind(DR.scores.sorted * sample.weights, sample.weights), grid.id, reorder = FALSE)
-  TOC.grid <- (cumsum(DR.scores.grid[, 1])[grid.id[idx]] + numerator.adj) /
-    (cumsum(DR.scores.grid[, 2])[grid.id[idx]] + denominator.adj) - ATE
-  
-  c(RATE, TOC.grid, use.names = FALSE)
-}
-
-## Function for TOC
-toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 0.1), target = c("AUTOC", "QINI")) {
-  subset.clusters <- 1:nrow(data)
-  subset.weights <- rep(1, nrow(data))/ sum( rep(1, nrow(data)))
-  priorities <- as.data.frame(tau, fix.empty.names = FALSE)
-  empty.names <- colnames(priorities) == ""
-  colnames(priorities)[empty.names] <- c("priority1", "priority2")[1:ncol(priorities)][empty.names]
-  priorities[,] <- lapply(priorities, function(x) as.integer(as.factor(x)))
-  
-  W.orig <- model.matrix(~drugclass, data) %>% as.data.frame() %>%select(starts_with("drugclass")) %>% unlist()
-  Y.orig <- data[,"posthba1c_final"]
-  
-  debiasing.weights <- (W.orig - W.hat) / (W.hat * (1 - W.hat))
-  Y.residual <- Y.orig - (Y.hat + tau * (W.orig - W.hat))
-  
-  DR.scores <- tau + debiasing.weights * Y.residual
-  
-  if (target == "AUTOC") {
-    wtd.mean <- function(x, w) sum(x * w) / sum(w)
-  } else if (target == "QINI") {
-    wtd.mean <- function(x, w) sum(cumsum(w) / sum(w) * w * x) / sum(w)
-  }
-  
-  
-  boot.output <- boot_grf(
-    data = data.frame(DR.scores * subset.weights, subset.weights, priorities),
-    # In case of two priorities do a paired bootstrap estimating both prios on same sample.
-    statistic = function(data, indices, q, wtd.mean)
-      lapply(c(4, 3)[1:ncol(priorities)], function(j) estimate_rate(data[, -j], indices, q, wtd.mean)),
-    R = R,
-    clusters = subset.clusters,
-    half.sample = TRUE,
-    q = q,
-    wtd.mean = wtd.mean
-  )
-  
-  dim(boot.output[["t"]]) <- c(R, dim(boot.output[["t0"]]))
-  point.estimate <- boot.output[["t0"]]
-  std.errors <- apply(boot.output[["t"]], c(2, 3), sd)
-  if (ncol(priorities) > 1) {
-    point.estimate <- cbind(point.estimate, point.estimate[, 1] - point.estimate[, 2])
-    std.errors <- cbind(std.errors, apply(boot.output[["t"]][,, 1] - boot.output[["t"]][,, 2], 2, sd))
-  }
-  point.estimate[abs(point.estimate) < 1e-15] <- 0
-  std.errors[abs(std.errors) < 1e-15] <- 0
-  
-  if (R < 2) {
-    std.errors[] <- 0
-  }
-  priority <- c(colnames(priorities), paste(colnames(priorities), collapse = " - "))[1:length(point.estimate[1, ])]
-  
-  output <- list()
-  class(output) <- "rank_average_treatment_effect"
-  output[["estimate"]] <- point.estimate[1, ]
-  output[["std.err"]] <- std.errors[1, ]
-  output[["target"]] <- paste(priority, "|", target)
-  output[["TOC"]] <- data.frame(estimate = c(point.estimate[-1, ]),
-                                std.err = c(std.errors[-1, ]),
-                                q = q,
-                                priority = priority[rep(1:length(priority), each = length(q))],
-                                stringsAsFactors = FALSE)
-  
-  return(output)
-  
-}
-
-
-### Plot of treatment effect histogram
+### Plot of treatment effect histogram, 
+###   separate colours for each favoured therapy
 
 # Plots
 hist_plot <- function(data, title, xmin, xmax) {
-  ###
+  ### Input variables
   # data: dataset with column 'mean' corresponding to treatment effect
   # title: title for the plot
   # xmin: lower limit of x axis
   # xmax: upper limit of x axis
   
-  #define data
+  # define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
-  c_low <- quantile(dat$mean,.001)
-  c_upp <- quantile(dat$mean,.999)
-  c_lowr  <- 2*round(c_low/2)
-  c_uppr <- 2*round(c_upp/2)
-  c_low <- min(dat$mean,.001)
-  c_upp <- quantile(dat$mean,.999)
-  c_lowr  <- 2*round(c_low/2)
-  c_uppr <- 2*round(c_upp/2)
   
-  #plot
+  # plot
   ggplot(data=dat, aes(x=mean,fill=above)) +
     geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(xmin,xmax,by=1)) +
     geom_vline(aes(xintercept=0), linetype="dashed")+
@@ -170,7 +34,7 @@ hist_plot <- function(data, title, xmin, xmax) {
 
 #Function to output HTE by subgroup
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
-  ###
+  ### Input variables
   # data: dataset used in fitting,
   # pred: column with predicted values
   # obs: observed values
@@ -178,6 +42,7 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
   # obsupperci: upper bound of CI for prediction
   # dataset.type: type of dataset to choose axis: "Development" or "Validation"
   
+  # change x-axis title depending on the type of 
   if (dataset.type == "Development") {
     x.axis.title = "In-sample prediction from full model"
   } else if (dataset.type == "Validation") {
@@ -186,17 +51,16 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
     stop("'dataset.type' must be 'Development' or 'Validation'")
   }
   
-  #ymin <- min(data$lci); ymax <- max(data$uci);yminr  <- 2*round(ymin/2);  ymaxr <- 2*round(ymax/2)
+  # set the axis of the plot
   ymin  <- -20;  ymax <- 20
   
+  # plot
   ggplot(data=data,aes_string(x=pred,y=obs)) +
     geom_point(alpha=1) + theme_bw() +
     geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
     ylab("In-sample prediction from sub model") + xlab(x.axis.title) + ggtitle("Predicted HbA1c differences") +
     scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
     scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    # scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-    # scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
     geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
     geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
 }
@@ -204,10 +68,10 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
 
 
 
-### Treatment effect calibration for predicted vs observed treatment effect
+### Stability of Treatment effect prediction, sub models fitted to deciles of prediction.
 
 effects_calibration <- function(data, bart_model) {
-  ###
+  ### Input variables
   # data: dataset used in fitting, with columns patid/pateddrug/hba1c_diff.pred
   # bart_model: BART model to be used in the validation
   
@@ -216,19 +80,23 @@ effects_calibration <- function(data, bart_model) {
   if ("pateddrug" %in% colnames(data)) {} else {stop("'pateddrug' needs to be included in the dataset")}
   if (class(bart_model) != "bartMachine") {stop("'bart_model' needs to be a bartMachine object")}
   
-  # split predicted treatment effects into deciles
-  predicted_observed_complete_routine <- data %>%
+  # split predicted treatment effects into deciles and summarise
+  predicted_treatment_effect <- data %>%
     plyr::ddply("hba1c_diff.q", dplyr::summarise,
           N = length(hba1c_diff),
           hba1c_diff.pred = mean(hba1c_diff))
   
-  mnumber = c(1:10)
-  models  <- as.list(1:10)
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
   
-  hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
   
+  # iterate through deciles
   for (i in mnumber) {
-    # fit decile model
+    # fit decile sub-model
     models[[i]] <- bartMachine::bartMachine(X = data %>%
                                               filter(hba1c_diff.q == i) %>%
                                               select(colnames(bart_model$X)),
@@ -237,25 +105,27 @@ effects_calibration <- function(data, bart_model) {
                                               select("posthba1c_final") %>%
                                               unlist(),
                                             use_missing_data = bart_model$use_missing_data,
-                                            impute_missingness_with_rf_impute = bart_model$impute_missingness_with_rf_impute,
-                                            impute_missingness_with_x_j_bar_for_lm = bart_model$impute_missingness_with_x_j_bar_for_lm,
                                             num_trees = 50,
                                             num_burn_in = 2000,
                                             num_iterations_after_burn_in = 1000)
     
+    # get posteriors for sub-model SGLT2
     effect_dev_SGLT2 <- bartMachine::bart_machine_get_posterior(models[[i]], data %>%
                                                                   filter(hba1c_diff.q == i) %>%
                                                                   select(colnames(bart_model$X)) %>%
                                                                   mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
     
+    # get posteriors for sub-model GLP1
     effect_dev_GLP1 <- bartMachine::bart_machine_get_posterior(models[[i]], data %>%
                                                                  filter(hba1c_diff.q == i) %>%
                                                                  select(colnames(bart_model$X)) %>%
                                                                  mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
     
+    # calculate treatment effect SGLT2-GLP1
     effect_dev <- effect_dev_SGLT2$y_hat_posterior_samples - effect_dev_GLP1$y_hat_posterior_samples %>%
       as.data.frame()
     
+    # summarise treatment effects into a single variable + interval
     effects_summary_dev <- cbind(
       `5%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
       `50%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
@@ -264,17 +134,17 @@ effects_calibration <- function(data, bart_model) {
     ) %>%
       as.data.frame()
     
-    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,mean(effects_summary_dev$mean))
-    lower.unadj <- append(lower.unadj,quantile(effects_summary_dev$mean, probs = c(0.05)))
-    upper.unadj <- append(upper.unadj,quantile(effects_summary_dev$mean, probs = c(0.95)))
-    
+    # pull all values together
+    hba1c_diff.obs <- append(hba1c_diff.obs,mean(effects_summary_dev$mean))
+    lower.obs <- append(lower.obs,quantile(effects_summary_dev$mean, probs = c(0.05)))
+    upper.obs <- append(upper.obs,quantile(effects_summary_dev$mean, probs = c(0.95)))
     
   }
   
-  #Final data.frame  
-  t <- data.frame(predicted_observed_complete_routine,
-                   cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>% 
-    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+  # returned data.frame with results
+  t <- data.frame(predicted_treatment_effect,
+                   cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>% 
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
   
   return(t)
 }
@@ -282,21 +152,24 @@ effects_calibration <- function(data, bart_model) {
 ## Calculate residuals
 
 calc_resid <- function(data, posteriors) {
-  ##### Imput variables
+  ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
   
+  # calculate standard deviation of residuals
   resid.SD <- apply(posteriors$y_hat_posterior_samples, MARGIN = 2, function(x) (data$posthba1c_final - x)^2) %>%
     colSums() %>%
     as.data.frame() %>%
     set_names(c("SD")) %>%
     mutate(SD = sqrt(SD/(nrow(data)-2)))
   
+  # calculate standardised residuals
   resid <- posteriors$y_hat_posterior_samples
   for (i in 1:nrow(data)) {
     resid[i,] <- (data$posthba1c_final[i] - resid[i,])/resid.SD[,1]
   }
   
+  # return data.frame with residuals information for each data entry
   cred_pred <- cbind(lower_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) min(x)),
                      upper_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) max(x)),
                      mean = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) mean(x)),
@@ -318,22 +191,26 @@ calc_resid <- function(data, posteriors) {
 rsq <- function (x, y) cor(x, y) ^ 2
 
 calc_assessment <- function(data, posteriors) {
-  ##### Imput variables
+  ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
   
+  # Calculate R2
   r2 <- posteriors$y_hat_posterior_samples %>%
     apply(MARGIN = 2, function(x) rsq(data[,"posthba1c_final"], x)) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
+  # Calculate RSS: residual sum of squares
   RSS <- posteriors$y_hat_posterior_samples %>%
     apply(MARGIN = 2, function(x) sum((data[,"posthba1c_final"] - x)^2)) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
+  # Calculate RMSE: root mean square error
   RMSE <- posteriors$y_hat_posterior_samples %>%
     apply(MARGIN = 2, function(x) sqrt(sum((data[,"posthba1c_final"] - x)^2)/nrow(data))) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
+  # return data.frame with all assessments
   assessment_values <- list(r2 = r2, RSS = RSS, RMSE = RMSE)
   
   return(assessment_values)
@@ -347,9 +224,10 @@ resid_plot <- function(pred_dev, pred_val, title) {
   # pred_val - predicted/observed values for validation dataset
   # title - plot title
   
+  # Full grid plot
   cowplot::plot_grid(
     
-    #title
+    # title
     cowplot::ggdraw() +
       cowplot::draw_label(title)
     
@@ -357,6 +235,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
     
     cowplot::plot_grid(
       
+      # Plot of predicted vs observed for development dataset
       pred_dev %>%
         ggplot() +
         theme_bw() +
@@ -370,6 +249,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
       
       ,
       
+      # Plot of predicted vs observed for validation dataset
       pred_val %>%
         ggplot() +
         theme_bw() +
@@ -383,6 +263,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
       
       ,
       
+      # Plot of standardised residuals for development dataset
       pred_dev %>%
         ggplot() +
         theme_bw() +
@@ -397,6 +278,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
       
       ,
       
+      # Plot of standardised residuals for validation dataset
       pred_val %>%
         ggplot() +
         theme_bw() +
@@ -426,19 +308,21 @@ calc_effect <- function(bart_model, data) {
   # bart_model - bart model used for fitting
   # data - data being investigated
   
-  
+  # get posteriors for SGLT2
   effect_SGLT2 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
                                                             select(
                                                               colnames(bart_model$X)
                                                             ) %>%
                                                             mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
   
+  # get posteriors for GLP1
   effect_GLP1 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
                                                            select(
                                                              colnames(bart_model$X)
                                                            ) %>%
                                                            mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
   
+  # calculate treatment effect for entry
   effect <- effect_SGLT2$y_hat_posterior_samples - effect_GLP1$y_hat_posterior_samples %>%
     as.data.frame()
   
@@ -446,14 +330,17 @@ calc_effect <- function(bart_model, data) {
   
 }
 
+## Summarise calculated treatment effect
 
 calc_effect_summary <- function(bart_model, data) {
   ##### Input variables
   # bart_model - bart model used for fitting
   # data - data being investigated
   
+  # Calculate treatment effects for entries
   effect <- calc_effect(bart_model, data)
   
+  # Summarise treatment effect for each entry
   effects_summary <- cbind(
     `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
     `50%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
@@ -462,8 +349,11 @@ calc_effect_summary <- function(bart_model, data) {
   ) %>%
     as.data.frame()
   
+  return(effects_summary)
   
 }
+
+#  Stability investigation, fitting sub-models to deciles of treatment effect
 
 plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
   ##
@@ -474,16 +364,18 @@ plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
   # data.val - Validation dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # bart_model - Model to be used for validation
   
-  # Effects calibration of Development dataset
+  # calculate effects calibration of Development dataset
   t.dev <- effects_calibration(data = data.dev,
                                bart_model = bart_model)
   
+  # plot sub-model effects
   plot_predicted_observed_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
   
-  # Effects calibration of Validation dataset
+  # calculate effects calibration of Validation dataset
   t.val <- effects_calibration(data = data.val,
                                bart_model = bart_model)
   
+  # plot sub-model effects
   plot_predicted_observed_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
   
   
@@ -617,13 +509,13 @@ diff_treatment_effect <- function(bart_model, dataset, rby) {
   # make names of list elements the same as variables being investigated
   names(effects.list) <- variables
   
+  # iterate through the variables
   for (i in 1:nvars) {
     
     # Calculate differential treatment effects
-    effects <- calc_diff_treatment_effect(bart_model, dataset, variables[i], rby)
+    effects.list[[i]] <- calc_diff_treatment_effect(bart_model, dataset, variables[i], rby)
     
-    effects.list[[i]] <- effects
-    
+    # print out update on stage of calculation
     print(paste0("Calculation of differential treatment effects for ", variables[i], ": DONE"))
   }
   
@@ -642,46 +534,46 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
   # load all data for range of variable values; name: final.all
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
   
+  
+  # different approaches whether the variable is continuous or categorical
   if (is.numeric(dataset[, variable])) {
+    # if variable is continuous
     
     # ntile values of variable
     range <- quantile(final.all[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
     
-    # new dataset
-    new.dataset <- dataset
-    
-    # create a long dataset with all possible combinations of range and dataset
-    for (i in 1:length(range)) {
-      if (i == 1) {
-        new.dataset[,variable] <- range[i]
-      } else {
-        interim.dataset <- dataset
-        interim.dataset[,variable] <- range[i]
-        new.dataset <- rbind(new.dataset, interim.dataset)
-      }
-    }
-    
   } else {
+    # if variable is categorical
     
+    # possible values of the variable
     range <- levels(final.all[,variable])
     
-    # new dataset
-    new.dataset <- dataset
-    
-    # create a long dataset with all possible combinations of range and dataset
-    for (i in 1:length(range)) {
-      if (i == 1) {
-        new.dataset[,variable] <- range[i]
-      } else {
-        interim.dataset <- dataset
-        interim.dataset[,variable] <- range[i]
-        new.dataset <- rbind(new.dataset, interim.dataset)
-      }
+  }
+  
+  # new dataset with all values from deciles in dataset
+  new.dataset <- dataset
+  
+  # create a long dataset with all possible combinations of range and dataset
+  for (i in 1:length(range)) {
+    # first decile only change values
+    if (i == 1) {
+      new.dataset[,variable] <- range[i]
+    # other deciles append new values to full dataset
+    } else {
+      interim.dataset <- dataset
+      interim.dataset[,variable] <- range[i]
+      new.dataset <- rbind(new.dataset, interim.dataset)
     }
+  }
+    
+  # if variable is categorical, turn new.dataset variable into factor
+  if (!is.numeric(dataset[, variable])) {
+    
+    # turn new.dataset variable into factor
     new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
   }
   
-  
+  # calculate treatment effects for all variants of the dataset
   effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
     mutate(ntile = rep(1:length(range), each = nrow(dataset)),
            ntile.value = rep(range, each = nrow(dataset)))
@@ -700,10 +592,11 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
   # load all data for range of variable values; name: final.all
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
   
-  
-  
+  # different approaches whether the variable is continuous or categorical
   if (is.numeric(final.all[, variable])) {
+    # if variable is continuous
     
+    # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
       geom_histogram(aes(x = final.all[, variable]))
@@ -711,6 +604,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
     if (nrow(effects) == max(effects$ntile)) {
       # what to do if we only have one entry for each ntile
       
+      # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
         ggplot() +
         geom_line(aes(x = ntile.value, y = mean), col = "red") +
@@ -721,6 +615,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
     } else {
       # what to do if we have more than one entry for each ntile
       
+      # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
         group_by(ntile, ntile.value) %>%
         mutate(`5%`= quantile(mean, probs = c(0.05)),
@@ -737,16 +632,24 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
       
     }
     
+    # some variables require logging the x-axis due to extreme values
     if (variable == "preast" | variable == "prebil" | variable == "prealt") {
+      
+      # log scale of histogram plot
+      plot_hist <- plot_hist +
+        scale_x_log10()
+      
+      # log scale of differential effects plot
       plot_diff  <- plot_diff +
         scale_x_log10() +
         xlab(paste0(xtitle, " (log)"))
-      plot_hist <- plot_hist +
-        scale_x_log10()
+      
     }
     
   } else {
+    # if variable is categorical
     
+    # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
       geom_bar(aes(x = final.all[, variable]))
@@ -754,6 +657,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
     if (nrow(effects) == max(effects$ntile)) {
       # what to do if we only have one entry for each ntile
       
+      # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
         mutate(ntile = as.double(ntile)) %>%
         ggplot() +
@@ -765,6 +669,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
     } else {
       # what to do if we have more than one entry for each ntile
       
+      # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
         group_by(ntile, ntile.value) %>%
         mutate(`5%`= quantile(mean, probs = c(0.05)),
@@ -780,28 +685,27 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
         xlab(xtitle) + ylab("Treatment Effect") +
         scale_x_continuous(labels = levels(final.all[, variable]), breaks = 1:length(levels(final.all[,variable])))
       
-      
     }
-    
-    
-    
     
   }
   
-  
+  # plot of combined histogram + differential effects
   plot.diff.marg <- cowplot::plot_grid(
     
+    # plot of differential effects
     plot_diff
     
     ,
     
     cowplot::plot_grid(
       
+      # spacing of plots
       ggplot() +
         theme_void()
       
       ,
       
+      # plot of histogram
       plot_hist
       
       , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
@@ -817,7 +721,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
 }
 
 
-# Evaluating ATE from model
+# Evaluating ATE from model, unadjusted
 
 ATE_validation <- function(data) {
   ##### Input variables
@@ -825,49 +729,56 @@ ATE_validation <- function(data) {
   # bart_model: bart model used for full model in order to take variables used
 
   # split predicted treatment effects into deciles
-  predicted_observed_complete_routine <- data %>%
+  predicted_treatment_effect <- data %>%
     plyr::ddply("hba1c_diff.q", dplyr::summarise,
                 N = length(hba1c_diff),
                 hba1c_diff.pred = mean(hba1c_diff))
   
-  mnumber = c(1:10)
-  models  <- as.list(1:10)
-
-  hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
-
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  
+  # iterate through deciles
   for (i in mnumber) {
     
+    # calculate mean of outcome HbA1c in SGLT2
     sglt2.mean <- data %>%
       filter(hba1c_diff.q == i) %>%
       filter(drugclass == "SGLT2") %>%
       select(posthba1c_final) %>%
       colMeans()
     
+    # calculate mean of outcome HbA1c in GLP1
     glp1.mean <- data %>%
       filter(hba1c_diff.q == i) %>%
       filter(drugclass == "GLP1") %>%
       select(posthba1c_final) %>%
       colMeans()
     
-    
+    # calculate treatment effect SGLT2 - GLP1
     mean.value <- sglt2.mean - glp1.mean
     
-    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj, mean.value)
-    lower.unadj <- append(lower.unadj, mean.value)
-    upper.unadj <- append(upper.unadj, mean.value)
+    # pull all values together
+    hba1c_diff.obs <- append(hba1c_diff.obs, mean.value)
+    lower.obs <- append(lower.obs, mean.value)
+    upper.obs <- append(upper.obs, mean.value)
   }
   
-  #Final data.frame  
-  t <- data.frame(predicted_observed_complete_routine,
-                  cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>% 
-    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+  # returned data.frame with results 
+  t <- data.frame(predicted_treatment_effect,
+                  cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>% 
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
   
   return(t)
   
 }
 
 
-calc_ATE_prop_score <- function(dataset) {
+calc_ATE_prop_score <- function(dataset, seed = NULL) {
   ##### Input variables
   # bart_model: bart model used for full model in order to take variables used
   # dataset: dataset for which we calculate propensity scores
@@ -875,6 +786,7 @@ calc_ATE_prop_score <- function(dataset) {
   # load all data for range of variable values; name: final.all
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
 
+  # extracting selected variables for individuals in dataset
   data.new <- dataset %>%
     select(patid, pateddrug) %>%
     left_join(final.all %>%
@@ -891,6 +803,7 @@ calc_ATE_prop_score <- function(dataset) {
                        score,
                        Category), by = c("patid", "pateddrug"))
   
+  # fit propensity model with the variables that influence therapy indication
   prop_model <- bartMachine::bartMachine(X = data.new %>%
                                            select(prebmi,
                                                   t2dmduration,
@@ -907,58 +820,76 @@ calc_ATE_prop_score <- function(dataset) {
                                          impute_missingness_with_x_j_bar_for_lm = TRUE,
                                          num_trees = 200,
                                          num_burn_in = 1000,
-                                         num_iterations_after_burn_in = 200)
+                                         num_iterations_after_burn_in = 200,
+                                         seed = seed)
 
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-  prop_scores <- prop_model
+  # keep propensity model
+  prop_model
 
-  return(prop_scores)
+  return(prop_model)
 }
 
-calc_ATE_validation <- function(data) {
+calc_ATE_validation <- function(data, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
 
   # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data)
+  prop_model <- calc_ATE_prop_score(data, seed)
   
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2,
+  #   should be the way around)
   prop_score <- 1 - prop_model$p_hat_train
 
   # split predicted treatment effects into deciles
-  predicted_observed_complete_routine <- data %>%
+  predicted_treatment_effect <- data %>%
     plyr::ddply("hba1c_diff.q", dplyr::summarise,
                 N = length(hba1c_diff),
                 hba1c_diff.pred = mean(hba1c_diff))
-
-  mnumber = c(1:10)
-  models  <- as.list(1:10)
-
-  hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
   
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  
+  # join dataset and propensity score
   data.new <- data %>%
     cbind(prop_score)
-
+  
+  # iterate through deciles
   for (i in mnumber) {
+    # fit linear regression for decile
     models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass) + prop_score),data=data.new,subset=hba1c_diff.q==i)
-    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,models[[i]]$coefficients[2])
+    
+    # collect treatment effect from regression
+    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
     confint_all <- confint(models[[i]], levels=0.95)
-    lower.unadj <- append(lower.unadj,confint_all[2,1])
-    upper.unadj <- append(upper.unadj,confint_all[2,2])
+    
+    # collect lower bound CI
+    lower.obs <- append(lower.obs,confint_all[2,1])
+    
+    # collect upper bound CI
+    upper.obs <- append(upper.obs,confint_all[2,2])
 
   }
-
   
-  effects <- data.frame(predicted_observed_complete_routine,cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>%
-    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
   
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  
+  # returned list with fitted propensity model + decile treatment effects  
   t <- list(prop_model = prop_model, effects = effects)
   
   return(t)
 }
 
 
-#Function to output HTE by subgroup
+#Function to output ATE by subgroup
 ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
   ###
   # data: dataset used in fitting,
@@ -968,87 +899,258 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
   # obsupperci: upper bound of CI for prediction
   # dataset.type: type of dataset to choose axis: "Development" or "Validation"
   
+  # Plot predicted treatment effects vs observed treatment effects
+  plot <- ggplot(data = data,aes_string(x = pred,y = obs)) +
+    geom_point(alpha = 1) + 
+    theme_bw() +
+    geom_errorbar(aes_string(ymin = obslowerci, ymax = obsupperci), colour = "black", width = 0.1) +
+    xlab("Predicted treatment effect") + 
+    ylab("Observed treatment effect") +
+    scale_x_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
+    scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
+    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
   
-  ggplot(data=data,aes_string(x=pred,y=obs)) +
-    geom_point(alpha=1) + theme_bw() +
-    geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
-    xlab("Predicted treatment effect") + ylab("Observed treatment effect") +
-  scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    # scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-    # scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) +
-    geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+  return(plot)
+  
 }
 
 
 
 ### prop matching
 
-calc_ATE_validation_prop_matching <- function(data) {
+calc_ATE_validation_prop_matching <- function(data, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   
   # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data)
+  prop_model <- calc_ATE_prop_score(data, seed)
   
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_model$p_hat_train
   
   # split predicted treatment effects into deciles
-  predicted_observed_complete_routine <- data %>%
+  predicted_treatment_effect <- data %>%
     plyr::ddply("hba1c_diff.q", dplyr::summarise,
                 N = length(hba1c_diff),
                 hba1c_diff.pred = mean(hba1c_diff))
   
-  mnumber = c(1:10)
-  models  <- as.list(1:10)
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
   
-  hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
   
+  # join dataset and propensity score
   data.new <- data %>%
     cbind(prop_score)
   
-  
+  # iterate through deciles
   for (i in mnumber) {
     
+    # dataset individuals in decile that had GLP1
     rows.glp1 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "GLP1")
+    
+    # dataset individuals in decile that had SGLT2
     rows.sglt2 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "SGLT2")
     
+    # list of matched SGLT2 rows to GLP1 
     matched.glp1 <- vector(mode = "numeric", length = length(rows.glp1))
     
+    # iterate through rows of GLP1
     for (l in 1:length(rows.glp1)) {
+      # closest SGLT2 row to GLP1
       chosen.row <- which.min(abs(prop_score[rows.sglt2] - prop_score[rows.glp1[l]]))
       
+      # check if distance is less than 0.05 (caliper distance)
       if (prop_score[rows.sglt2[chosen.row]] - prop_score[rows.glp1[l]] < 0.05) {
-        rows.sglt2 <- rows.sglt2[-chosen.row]
+        # if chosen row is within caliper distance
+        
+        # update list of matched rows
         matched.glp1[l] <- rows.sglt2[chosen.row]
+        
+        # remove row from being matched again
+        rows.sglt2 <- rows.sglt2[-chosen.row]
+        
       } else {
+        # if chosen row is outside caliper distance
+        
+        # update list of matched rows with NA
         matched.glp1[l] <- NA
+        
       }
     }
     
-    # drop na in matched.glp1
-    na.rows <- !is.na(matched.glp1)
+    # rows without NA in list of SGLT2 rows matched
+    not.na.rows <- !is.na(matched.glp1)
     
-    matched.glp1 <- matched.glp1[na.rows]
-    rows.glp1 <- rows.glp1[na.rows]
+    # only keep rows with matched entries
+    matched.glp1 <- matched.glp1[not.na.rows]
+    rows.glp1 <- rows.glp1[not.na.rows]
     
+    # fit linear regression for decile in the matched dataset
     models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
-    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,models[[i]]$coefficients[2])
+    
+    # collect treatment effect from regression
+    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
     confint_all <- confint(models[[i]], levels=0.95)
-    lower.unadj <- append(lower.unadj,confint_all[2,1])
-    upper.unadj <- append(upper.unadj,confint_all[2,2])
+    
+    # collect lower bound CI
+    lower.obs <- append(lower.obs,confint_all[2,1])
+    
+    # collect upper bound CI
+    upper.obs <- append(upper.obs,confint_all[2,2])
     
   }
   
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
   
-  effects <- data.frame(predicted_observed_complete_routine,cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>%
-    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
-  
+  # returned list with fitted propensity model + decile treatment effects  
   t <- list(prop_model = prop_model, effects = effects)
   
   return(t)
+}
+
+
+
+###################################################
+###################################################
+###################################################
+###################################################
+
+### Calculate TOC (forked from github/grf-labs/grf)
+
+boot_grf <- function(data, statistic, R, clusters, half.sample = TRUE, ...) {
+  samples.by.cluster <- split(seq_along(clusters), clusters)
+  n <- length(samples.by.cluster) # number of clusters
+  if (n <= 1 || (half.sample && floor(n / 2) <= 1)) {
+    stop("Cannot bootstrap sample with only one effective unit.")
+  }
+  if (half.sample) {
+    n.bs <- floor(n / 2)
+    index.list <- replicate(R, unlist(samples.by.cluster[sample.int(n, n.bs, replace = FALSE)], use.names = FALSE), simplify = FALSE)
+  } else {
+    index.list <- replicate(R, unlist(samples.by.cluster[sample.int(n, replace = TRUE)], use.names = FALSE), simplify = FALSE)
+  }
+  
+  t0 <- statistic(data, seq_len(NROW(data)), ...)
+  t0 <- matrix(unlist(t0), ncol = length(t0))
+  
+  res <- lapply(seq_len(R), function(i) statistic(data, index.list[[i]], ...))
+  t <- matrix(, R, length(t0))
+  for (r in seq_len(R)) {
+    t[r, ] <- unlist(res[[r]])
+  }
+  
+  list(t0 = t0, t = t)
+}
+
+estimate_rate <- function(data, indices, q, wtd.mean) {
+  prio <- data[indices, 3]
+  sort.idx <- order(prio, decreasing = TRUE)
+  sample.weights <- data[indices, 2][sort.idx]
+  
+  num.ties <- tabulate(prio) # count by rank in increasing order
+  num.ties <- num.ties[num.ties != 0] # ignore potential ranks not present in BS sample
+  # if continuous scoring then no need for ~slower aggregation
+  if (all(num.ties == 1)) {
+    DR.scores.sorted <- (data[indices, 1] / data[indices, 2])[sort.idx]
+  } else {
+    grp.sum <- rowsum(data[indices, 1:2][sort.idx, ], prio[sort.idx], reorder = FALSE)
+    DR.avg <- grp.sum[, 1] / grp.sum[, 2]
+    DR.scores.sorted <- rep.int(DR.avg, rev(num.ties))
+  }
+  sample.weights.cumsum <- cumsum(sample.weights)
+  sample.weights.sum <- sample.weights.cumsum[length(sample.weights)]
+  ATE <- sum(DR.scores.sorted * sample.weights) / sample.weights.sum
+  TOC <- cumsum(DR.scores.sorted * sample.weights) / sample.weights.cumsum - ATE
+  RATE <- wtd.mean(TOC, sample.weights)
+  
+  nw <- q * sample.weights.sum
+  idx <- findInterval(nw + 1e-15, sample.weights.cumsum) # epsilon tol. since finite precision may cause not equal
+  denominator.adj <- nw - sample.weights.cumsum[pmax(idx, 1)] # \sum weight remainder, zero when no fractional obs. needed
+  numerator.adj <- denominator.adj * DR.scores.sorted[pmin(idx + 1, max(idx))]
+  idx[idx == 0] <- 1
+  uniq.idx <- unique(idx)
+  grid.id <- rep.int(seq_along(uniq.idx), c(uniq.idx[1], diff(uniq.idx)))
+  DR.scores.grid <- rowsum(cbind(DR.scores.sorted * sample.weights, sample.weights), grid.id, reorder = FALSE)
+  TOC.grid <- (cumsum(DR.scores.grid[, 1])[grid.id[idx]] + numerator.adj) /
+    (cumsum(DR.scores.grid[, 2])[grid.id[idx]] + denominator.adj) - ATE
+  
+  c(RATE, TOC.grid, use.names = FALSE)
+}
+
+## Function for TOC
+toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 0.1), target = c("AUTOC", "QINI")) {
+  subset.clusters <- 1:nrow(data)
+  subset.weights <- rep(1, nrow(data))/ sum( rep(1, nrow(data)))
+  priorities <- as.data.frame(tau, fix.empty.names = FALSE)
+  empty.names <- colnames(priorities) == ""
+  colnames(priorities)[empty.names] <- c("priority1", "priority2")[1:ncol(priorities)][empty.names]
+  priorities[,] <- lapply(priorities, function(x) as.integer(as.factor(x)))
+  
+  W.orig <- model.matrix(~drugclass, data) %>% as.data.frame() %>%select(starts_with("drugclass")) %>% unlist()
+  Y.orig <- data[,"posthba1c_final"]
+  
+  debiasing.weights <- (W.orig - W.hat) / (W.hat * (1 - W.hat))
+  Y.residual <- Y.orig - (Y.hat + tau * (W.orig - W.hat))
+  
+  DR.scores <- tau + debiasing.weights * Y.residual
+  
+  if (target == "AUTOC") {
+    wtd.mean <- function(x, w) sum(x * w) / sum(w)
+  } else if (target == "QINI") {
+    wtd.mean <- function(x, w) sum(cumsum(w) / sum(w) * w * x) / sum(w)
+  }
+  
+  
+  boot.output <- boot_grf(
+    data = data.frame(DR.scores * subset.weights, subset.weights, priorities),
+    # In case of two priorities do a paired bootstrap estimating both prios on same sample.
+    statistic = function(data, indices, q, wtd.mean)
+      lapply(c(4, 3)[1:ncol(priorities)], function(j) estimate_rate(data[, -j], indices, q, wtd.mean)),
+    R = R,
+    clusters = subset.clusters,
+    half.sample = TRUE,
+    q = q,
+    wtd.mean = wtd.mean
+  )
+  
+  dim(boot.output[["t"]]) <- c(R, dim(boot.output[["t0"]]))
+  point.estimate <- boot.output[["t0"]]
+  std.errors <- apply(boot.output[["t"]], c(2, 3), sd)
+  if (ncol(priorities) > 1) {
+    point.estimate <- cbind(point.estimate, point.estimate[, 1] - point.estimate[, 2])
+    std.errors <- cbind(std.errors, apply(boot.output[["t"]][,, 1] - boot.output[["t"]][,, 2], 2, sd))
+  }
+  point.estimate[abs(point.estimate) < 1e-15] <- 0
+  std.errors[abs(std.errors) < 1e-15] <- 0
+  
+  if (R < 2) {
+    std.errors[] <- 0
+  }
+  priority <- c(colnames(priorities), paste(colnames(priorities), collapse = " - "))[1:length(point.estimate[1, ])]
+  
+  output <- list()
+  class(output) <- "rank_average_treatment_effect"
+  output[["estimate"]] <- point.estimate[1, ]
+  output[["std.err"]] <- std.errors[1, ]
+  output[["target"]] <- paste(priority, "|", target)
+  output[["TOC"]] <- data.frame(estimate = c(point.estimate[-1, ]),
+                                std.err = c(std.errors[-1, ]),
+                                q = q,
+                                priority = priority[rep(1:length(priority), each = length(q))],
+                                stringsAsFactors = FALSE)
+  
+  return(output)
+  
 }
 
 
