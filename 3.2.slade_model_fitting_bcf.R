@@ -144,8 +144,17 @@ predicted_observed_complete_routine_dev <- dataset_full_bcf[1:nrow(data_complete
 ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
                                             cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
 
-plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -13, 13)
 
+
+
+predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 1] <- "SGLT2"
+predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
+
+ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_complete_routine_dev %>%
+                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+
+plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
 
 
@@ -210,6 +219,8 @@ hist_plot(effects.dev, "Dev BCF: treatment effect", -15, 20)
 plot_effects_validation
 
 plot_resid_dev
+
+plot_ATE_dev_prop_score
 
 dev.off()
 

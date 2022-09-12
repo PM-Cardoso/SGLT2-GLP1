@@ -207,6 +207,15 @@ plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "ob
 
 
 
+predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 1] <- "SGLT2"
+predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
+
+ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_complete_routine_dev %>%
+                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+
+plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+
+
 ###
 # Plot resid
 
@@ -250,6 +259,8 @@ plot_ATE_dev
 
 
 plot_resid_dev
+
+plot_ATE_dev_prop_score
 
 dev.off()
 

@@ -631,6 +631,19 @@ plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "ob
 
 
 
+ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+
+plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+
+
+
+ATE_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+
+plot_ATE_val_prop_score <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+
+
+
+
 #### PDF with all the plots
 
 
@@ -659,6 +672,17 @@ cowplot::plot_grid(
   ,
   
   cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation prop matching")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
   
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 dev.off()
