@@ -1,6 +1,6 @@
 ####################
 ## Description:
-##  - In this file we plot differential treatment effect for all variables
+##  - In this file we plot differential treatment effect for all variables from 4.4 model
 ####################
 
 # Used in slade to ensure the library being used is my personal library
@@ -31,7 +31,7 @@ dir.create(output_path)
 dir.create(paste0(output_path, "/Comparison"))
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Comparison/Model_7_1"))
+dir.create(paste0(output_path, "/Comparison/Model_4_4"))
 
 ## make directory for outputs
 dir.create("Plots")
@@ -60,24 +60,23 @@ source("0.1.slade_functions.R")
 ### Treatment effect for different features
 #############################
 
-bart_model_final <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/bart_model_final.rds"))
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/bart_model_final.rds"))
 
 
 dataset.dev <- final.dev %>%
-  filter(yrdrugstart > 2012) %>% 
   select(c(patid, pateddrug, posthba1c_final, 
            colnames(bart_model_final$X)))
 
 ## all variables
 if (class(try(
   
-  effects_summary_dev <- readRDS(paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev.rds"))
+  effects_summary_dev <- readRDS(paste0(output_path, "/Comparison/Model_4_4/effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   effects_summary_dev <- diff_treatment_effect(bart_model_final, dataset.dev, 25)
     
-  saveRDS(effects_summary_dev, paste0(output_path, "/Comparison/Model_7_1/effects_summary_dev.rds"))
+  saveRDS(effects_summary_dev, paste0(output_path, "/Comparison/Model_4_4/effects_summary_dev.rds"))
 }
 
 
