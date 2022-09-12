@@ -972,16 +972,83 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
   ggplot(data=data,aes_string(x=pred,y=obs)) +
     geom_point(alpha=1) + theme_bw() +
     geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
-    xlab("In-sample prediction from sub model") + ylab("Quantile ATE") + ggtitle("Predicted HbA1c differences") +
+    xlab("Predicted treatment effect") + ylab("Observed treatment effect") +
   scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
     scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
     # scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
     # scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(yminr,ymaxr,by=2))) +
-    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
+    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) +
     geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
 }
 
 
 
+### prop matching
+
+calc_ATE_validation_prop_matching <- function(data) {
+  ##### Input variables
+  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  
+  # calculate propensity score
+  prop_model <- calc_ATE_prop_score(data)
+  
+  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+  prop_score <- 1 - prop_model$p_hat_train
+  
+  # split predicted treatment effects into deciles
+  predicted_observed_complete_routine <- data %>%
+    plyr::ddply("hba1c_diff.q", dplyr::summarise,
+                N = length(hba1c_diff),
+                hba1c_diff.pred = mean(hba1c_diff))
+  
+  mnumber = c(1:10)
+  models  <- as.list(1:10)
+  
+  hba1c_diff.obs.unadj <- vector(); lower.unadj <- vector(); upper.unadj <- vector();
+  
+  data.new <- data %>%
+    cbind(prop_score)
+  
+  
+  for (i in mnumber) {
+    
+    rows.glp1 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "GLP1")
+    rows.sglt2 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "SGLT2")
+    
+    matched.glp1 <- vector(mode = "numeric", length = length(rows.glp1))
+    
+    for (l in 1:length(rows.glp1)) {
+      chosen.row <- which.min(abs(prop_score[rows.sglt2] - prop_score[rows.glp1[l]]))
+      
+      if (prop_score[rows.sglt2[chosen.row]] - prop_score[rows.glp1[l]] < 0.05) {
+        rows.sglt2 <- rows.sglt2[-chosen.row]
+        matched.glp1[l] <- rows.sglt2[chosen.row]
+      } else {
+        matched.glp1[l] <- NA
+      }
+    }
+    
+    # drop na in matched.glp1
+    na.rows <- !is.na(matched.glp1)
+    
+    matched.glp1 <- matched.glp1[na.rows]
+    rows.glp1 <- rows.glp1[na.rows]
+    
+    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
+    hba1c_diff.obs.unadj <- append(hba1c_diff.obs.unadj,models[[i]]$coefficients[2])
+    confint_all <- confint(models[[i]], levels=0.95)
+    lower.unadj <- append(lower.unadj,confint_all[2,1])
+    upper.unadj <- append(upper.unadj,confint_all[2,2])
+    
+  }
+  
+  
+  effects <- data.frame(predicted_observed_complete_routine,cbind(hba1c_diff.obs.unadj,lower.unadj,upper.unadj)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs.unadj,lci=lower.unadj,uci=upper.unadj)
+  
+  t <- list(prop_model = prop_model, effects = effects)
+  
+  return(t)
+}
 
 
