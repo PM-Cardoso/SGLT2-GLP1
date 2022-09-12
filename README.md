@@ -1,6 +1,17 @@
 # SGLT2-GLP1
 Collection of functions and scripts to investigate how clinical features can be used for prediction.
 
+## Final structure for analysis:
+
+1. Variable selection: this will be the union of variables selected from two methods:
+    - Variables identified as strong predictors of the outcome variable (HbA1c outcome) - function _bartMachine::var_selection_by_permute_
+    - Variables identified as having causal effect on the treatment effect of a therapy - function _grf::variable_importance_
+2. Fit BART model (function _bartMachine::bartMachine_), using missing data feature.
+3. Check model fit for the outcome:
+    - Plot predicted vs observed to check for any structure in the values.
+    - Plot standardised residuals to check for any structure in the residuals.
+4. Check model fit for treatment effects: (model fitted in observational data)
+    - Plot predicted treatment effect vs observed treatment effect.
 
 ---
 
