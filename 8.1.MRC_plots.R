@@ -6,8 +6,23 @@
 # Used in slade to ensure the library being used is my personal library
 .libPaths(.libPaths()[c(2,1,3)])
 
-library(tidyverse)
+## increase memery usage to 50gb of RAM
+options(java.parameters = "-Xmx50g")
 
+library(tidyverse)
+library(bartMachine)
+
+## make directory for outputs
+dir.create("Samples")
+
+## make directory for outputs
+dir.create("Samples/SGLT2-GLP1")
+
+## make directory for outputs
+dir.create("Samples/SGLT2-GLP1/Plots")
+
+## make directory for outputs
+dir.create("Samples/SGLT2-GLP1/Plots/MRC_plots")
 
 #####
 
@@ -321,42 +336,101 @@ dev.off()
 
 # Plot 4
 
-ATE_validation_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_validation_dev.rds")
+source("0.1.slade_functions.R")
 
-ATE_validation_val <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_validation_val.rds")
+# name: final.dev
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
+
+# name: final.val
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
+
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
+
+data_dev <- final.dev %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X)))
 
 
-#Function to output HTE by subgroup
-ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, title) {
-  ###
-  # data: dataset used in fitting,
-  # pred: column with predicted values
-  # obs: observed values
-  # obslowerci: lower bound of CI for prediction
-  # obsupperci: upper bound of CI for prediction
-  # dataset.type: type of dataset to choose axis: "Development" or "Validation"
+data_val <- final.val %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X)))
+
+
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_dev.rds")
+
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_val.rds")
+
+
+
+predicted_observed_dev <- data_dev %>%
+  cbind(hba1c_diff = effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+predicted_observed_val <- data_val %>%
+  cbind(hba1c_diff = effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+
+if (class(try(
   
+  ATE_validation_dev <- readRDS("Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_dev.rds")
   
-  ggplot(data=data,aes_string(x=pred,y=obs)) +
-    geom_point(alpha=1) + theme_bw() +
-    geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
-    xlab("Predicted HbA1c difference (mmol/mol)") + ylab("Observed HbA1c difference (mmol/mol") +
-    scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle(title) +
-    geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  
+  saveRDS(ATE_validation_dev, "Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_dev.rds")
+}
+  
+
+plot_ATE_dev_prop_score <- ATE_validation_dev[["effects"]] %>%
+  as.data.frame() %>%
+  ggplot() +
+  geom_point(aes(x = hba1c_diff.pred, y = obs), alpha = 1) + 
+  theme_bw() +
+  geom_errorbar(aes(x = hba1c_diff.pred, y = obs, ymin = lci, ymax = uci), colour = "black", width = 0.1) +
+  ylab("Decile average treatment effect") + 
+  xlab("Predicted average treatment effect") +
+  ggtitle("Development cohort") +
+  scale_x_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  scale_y_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
+
+if (class(try(
+  
+  ATE_validation_val <- readRDS("Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_val.rds")
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  
+  saveRDS(ATE_validation_val, "Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_val.rds")
 }
 
-
-
-plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -13, 13, "Development cohort")
-
-plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -13, 13, "Validation cohort")
+plot_ATE_val_prop_score <- ATE_validation_val[["effects"]] %>%
+  as.data.frame() %>%
+  ggplot() +
+  geom_point(aes(x = hba1c_diff.pred, y = obs), alpha = 1) + 
+  theme_bw() +
+  geom_errorbar(aes(x = hba1c_diff.pred, y = obs, ymin = lci, ymax = uci), colour = "black", width = 0.1) +
+  ylab("Decile average treatment effect") + 
+  xlab("Predicted average treatment effect") +
+  ggtitle("Validation cohort") +
+  scale_x_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  scale_y_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
 
 
 plot_4 <- cowplot::plot_grid(
-  plot_ATE_dev,
-  plot_ATE_val,
+  plot_ATE_dev_prop_score,
+  plot_ATE_val_prop_score,
   ncol = 2, nrow = 1
 )
 
