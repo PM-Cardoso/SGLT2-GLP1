@@ -784,7 +784,7 @@ calc_ATE_prop_score <- function(dataset, seed = NULL) {
   # dataset: dataset for which we calculate propensity scores
   
   # load all data for range of variable values; name: final.all
-  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 
   # extracting selected variables for individuals in dataset
   data.new <- dataset %>%
@@ -904,8 +904,8 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
     geom_point(alpha = 1) + 
     theme_bw() +
     geom_errorbar(aes_string(ymin = obslowerci, ymax = obsupperci), colour = "black", width = 0.1) +
-    xlab("Predicted treatment effect") + 
-    ylab("Observed treatment effect") +
+    ylab("Decile average treatment effect") + 
+    xlab("Predicted conditional average treatment effect") +
     scale_x_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
     scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
     geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
