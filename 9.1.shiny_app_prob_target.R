@@ -129,6 +129,11 @@ ui <- fluidPage(
 # Define server logic to plot various variables against mpg ----
 server <- function(input, output, session) {
   
+  
+  ## increase memory usage to 3gb of RAM
+  options(java.parameters = "-Xmx3g")
+  
+  require(bartMachine)
   require(tidyverse)
   
   # target HbA1c mmol/mol
