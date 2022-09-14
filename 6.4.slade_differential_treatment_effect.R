@@ -196,7 +196,7 @@ dev.off()
 average.patient <- cbind(
   drugclass = "SGLT2",
   egfr_ckdepi = mean(dataset.dev$egfr_ckdepi, na.rm = TRUE),
-  hba1cmonth = 6,
+  hba1cmonth = 12,
   prealt = mean(dataset.dev$prealt, na.rm = TRUE),
   prehba1cmmol = mean(dataset.dev$prehba1cmmol, na.rm = TRUE),
   score = mean(dataset.dev$score, na.rm = TRUE),
