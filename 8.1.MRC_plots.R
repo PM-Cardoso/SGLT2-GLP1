@@ -48,6 +48,30 @@ plot_effects_1 <- ggplot(data=dat1, aes(x=mean,fill=above)) +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
 
+# breaks by quantile
+# breaks <- c(
+#   -10,
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 1) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 2) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 2) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 3) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 3) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 4) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 4) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 5) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 5) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 6) %>% select(hba1c_diff) %>% min()),
+#   0,
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 6) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 7) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 7) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 8) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 8) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 9) %>% select(hba1c_diff) %>% min()),
+#   mean(predicted_observed_dev %>% filter(hba1c_diff.q == 9) %>% select(hba1c_diff) %>% max(), predicted_observed_dev %>% filter(hba1c_diff.q == 10) %>% select(hba1c_diff) %>% min()),
+#   10
+# )
+# plot_effects_1 <- ggplot(data=dat1, aes(x=mean,fill=above)) +
+#   geom_histogram(position="identity", alpha=0.5,color="black", breaks = breaks) +
+#   geom_vline(aes(xintercept=0), linetype="dashed")+
+#   labs(title="Overall Population",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   theme_classic() +
+#   theme(legend.position = c(0.80, 0.97)) +
+#   theme(legend.title = element_blank())
+
 
 effects_summary_dev_male <- effects_summary_dev %>%
   cbind(malesex = final.dev$malesex) %>%
@@ -69,6 +93,16 @@ plot_effects_2 <- ggplot(data=dat2, aes(x=mean,fill=above)) +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
 
+# breaks by quantile
+# plot_effects_2 <- ggplot(data=dat2, aes(x=mean,fill=above)) +
+#   geom_histogram(position="identity", alpha=0.5,color="black",breaks=breaks) +
+#   geom_vline(aes(xintercept=0), linetype="dashed")+
+#   labs(title="Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   theme_classic() +
+#   theme(legend.position = c(0.80, 0.97)) +
+#   theme(legend.title = element_blank())
+
 
 dat3 <- effects_summary_dev_female %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
 
@@ -81,6 +115,16 @@ plot_effects_3 <- ggplot(data=dat3, aes(x=mean,fill=above)) +
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
+
+# breaks by quantile
+# plot_effects_3 <- ggplot(data=dat3, aes(x=mean,fill=above)) +
+#   geom_histogram(position="identity", alpha=0.5,color="black",breaks=breaks) +
+#   geom_vline(aes(xintercept=0), linetype="dashed")+
+#   labs(title="Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   theme_classic() +
+#   theme(legend.position = c(0.80, 0.97)) +
+#   theme(legend.title = element_blank())
 
 
 plot_1 <- cowplot::plot_grid(
