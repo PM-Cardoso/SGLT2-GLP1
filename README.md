@@ -47,6 +47,7 @@ Files:
 
 - 7.0: Sensitivity analysis.
     - .1: Exclusion of GLP1 patients before 2013.
+    - .2: Variable importance model 4.4.
     
 - 8.0: Presentations/Slides
     - .1: MRC: 29th September London
