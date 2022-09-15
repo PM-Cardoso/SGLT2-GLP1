@@ -35,6 +35,7 @@ Files:
     - .2: Fitting a BART model with routine variables in propensity score model and biomarkers in outcome model. This includes an evaluation of model fit.
     - .3: Fitting a BART model with variable selection for propensity score and variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.
     - **.4: Fitting a BART model with variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.** (Model chosen)
+    - .5: Fitting a BART model with variable selection for using BART + _grf_ for the outcome model. This includes an evaluation of model fit. (Change from 4.4 - instead of 'score', we use 'score.excl.mi')
     
 - 5.0: _bartMachine_ models using no methodical procedure.
     - .1: Fitting a collection of naive Bart models for HbA1c outcome using routine clinical variables / all variables / propensity scores, alternating between them.
