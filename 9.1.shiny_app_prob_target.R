@@ -4,7 +4,13 @@
 ##      achieving a target HbA1c.
 ####################
 
-library(shiny)
+
+## increase memory usage to 3gb of RAM
+options(java.parameters = "-Xmx3000m")
+
+library(bartMachine)
+require(tidyverse)
+require(shiny)
 
 # Define UI for inputting patient values
 ui <- fluidPage(
@@ -21,8 +27,15 @@ ui <- fluidPage(
                      value = "52",
                      width = "30%"),
            br(),
-           actionButton("calculate", "Calculate")
+           actionButton("calculate", "Calculate"),
            
+           br(),
+           
+           radioButtons("output_type",
+                        label = h3("Output type:"),
+                        choices = list("Absolute probability" = 1,
+                                       "Probability interval" = 2),
+                        selected = 1)
            ),
     
     column(2,
@@ -115,26 +128,30 @@ ui <- fluidPage(
   br(), 
   
   
-  # title of panel
-  h2("Chance of achieving HbA1c target at 12 months"),
+  # Conditional panel in case output_type = 1 (absolute probability)
+  conditionalPanel(condition = "input.output_type == 1",
+                   
+    # title of panel
+    h4("12-month probability of achieving target HbA1c"),
+    plotOutput("probability_plot", height = "160px", width = "400px")
+  ),
   
-  h3(textOutput("probability_SGLT2_text")),
-  plotOutput("probability_SGLT2_plot", height = "100px", width = "600px"),
-  h3(textOutput("probability_GLP1_text")),
-  plotOutput("probability_GLP1_plot", height = "100px", width = "600px")
+  # Conditional panel in case output_type = 2 (probability interval)
+  conditionalPanel(condition = "input.output_type == 2",
+    
+    # title of panel
+    h4("Estimated 12-month average HbA1c"),
+    plotOutput("histogram_plot", height = "250px", width = "400px")
+    
+                   
+                   
+  )
   
 )
 
 
 # Define server logic to plot various variables against mpg ----
 server <- function(input, output, session) {
-  
-  
-  ## increase memory usage to 3gb of RAM
-  options(java.parameters = "-Xmx3g")
-  
-  require(bartMachine)
-  require(tidyverse)
   
   # target HbA1c mmol/mol
   target <- eventReactive(input$calculate, {
@@ -212,24 +229,8 @@ server <- function(input, output, session) {
     posteriors <-  bartMachine::bart_machine_get_posterior(bart_model, patient)
     
   })
-  # make output text of probability SGLT2
-  output$probability_SGLT2_text <- renderText({
-  
-    # load target HbA1c 
-    target <- target()
-    
-    # load predictions
-    posteriors <- posteriors()
-    
-    # SGLT2 probability of achieving target and surpassing it
-    probability_SGLT2 <- length(which(posteriors$y_hat_posterior_samples[1,] < target))/length(posteriors$y_hat_posterior_samples[1,])
-    
-    text <- paste0("SGLT2-inhibitors: ")
-    
-  })
-  
   # make output plot of probability SGLT2
-  output$probability_SGLT2_plot <- renderPlot({
+  output$probability_plot <- renderPlot({
     
     # load target HbA1c 
     target <- target()
@@ -239,85 +240,33 @@ server <- function(input, output, session) {
     
     # SGLT2 probability of achieving target and surpassing it
     probability_SGLT2 <- length(which(posteriors$y_hat_posterior_samples[1,] < target))/length(posteriors$y_hat_posterior_samples[1,])
-    
-    # reshape data
-    df <- data.frame(
-      SGLT2 = probability_SGLT2*100
-    ) %>%
-      gather(key, val) %>%
-      mutate(
-        key = factor(key, rev(unique(key))),
-        Total = 100)
-
-    plot <- ggplot(df, aes(key, val)) +
-      geom_col(fill = "forestgreen") +
-      geom_col(aes(y = Total), alpha = 0.5, colour = "black") +
-      geom_text(
-        aes(y = 5, label = paste0(val,"%")),
-        hjust = 0,
-        fontface = "bold",
-        colour = "white",
-        size = 10) +
-      coord_flip() +
-      theme_minimal() +
-      theme(
-        axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank())
-
-    plot
-  })
-
-  # make output text of probability GLP1
-  output$probability_GLP1_text <- renderText({
-    
-    # load target HbA1c 
-    target <- target()
-    
-    # load predictions
-    posteriors <- posteriors()
-    
-    # SGLT2 probability of achieving target and surpassing it
-    probability_GLP1 <- length(which(posteriors$y_hat_posterior_samples[2,] < target))/length(posteriors$y_hat_posterior_samples[2,])
-    
-    text <- paste0("GLP1-agnostics: ")
-
-  })
-  
-  # make output plot of probability GLP1
-  output$probability_GLP1_plot <- renderPlot({
-    
-    # load target HbA1c 
-    target <- target()
-    
-    # load predictions
-    posteriors <- posteriors()
     
     # GLP1 probability of achieving target and surpassing it
     probability_GLP1 <- length(which(posteriors$y_hat_posterior_samples[2,] < target))/length(posteriors$y_hat_posterior_samples[2,])
     
+    
+    
     # reshape data
     df <- data.frame(
+      SGLT2 = probability_SGLT2*100,
       GLP1 = probability_GLP1*100
     ) %>%
       gather(key, val) %>%
       mutate(
-        key = factor(key, rev(unique(key))),
+        key = factor(key, levels = c("GLP1", "SGLT2")),
         Total = 100)
-    
+
     plot <- ggplot(df, aes(key, val)) +
-      geom_col(fill = "forestgreen") +
-      geom_col(aes(y = Total), alpha = 0.5, colour = "black") +
+      geom_col(fill = c("#f1a340","#998ec3")) +
+      geom_col(aes(y = Total), alpha = 0.5) +
       geom_text(
-        aes(y = 5, label = paste0(val, "%")),
+        aes(y = 5, label = paste0(key, ": ", val,"%")),
         hjust = 0,
         fontface = "bold",
         colour = "white",
         size = 10) +
       coord_flip() +
+      scale_colour_manual(values=c("#998ec3","#f1a340")) +
       theme_minimal() +
       theme(
         axis.title = element_blank(),
@@ -326,15 +275,41 @@ server <- function(input, output, session) {
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank())
-    
+
     plot
     
+  })
+
+  output$histogram_plot <- renderPlot({
+    
+    # load target HbA1c 
+    target <- target()
+    
+    # load predictions
+    posteriors <- posteriors()
+    
+    plot <- posteriors$y_hat_posterior_samples %>%
+      t() %>%
+      as.data.frame() %>%
+      set_names("SGLT2", "GLP1") %>%
+      gather(key, value) %>%
+      ggplot() +
+      geom_density(aes(x = value, fill = key), alpha = 0.5, colour = "black") +
+      labs(x = "Average HbA1c (mmol/mol)", y = "Density") +
+      scale_fill_manual(values=c("#998ec3","#f1a340"))+
+      theme_classic() +
+      theme(legend.position = c(0.80, 0.87)) +
+      theme(legend.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank())
+      
+    plot
     
   })
   
 }
 
-
+# shinyApp(ui, server)
 runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
 
 
