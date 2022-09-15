@@ -531,7 +531,7 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
   # variable: variable being investigated
   # rby: number of ntiles
   
-  # load all data for range of variable values; name: final.all
+  # load all data for range of variable values; name: final.all.extra.vars
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
   
   
@@ -540,13 +540,13 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
     # if variable is continuous
     
     # ntile values of variable
-    range <- quantile(final.all[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
+    range <- quantile(final.all.extra.vars[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
     
   } else {
     # if variable is categorical
     
     # possible values of the variable
-    range <- levels(final.all[,variable])
+    range <- levels(final.all.extra.vars[,variable])
     
   }
   
@@ -589,17 +589,17 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
   # variable: variable being investigated
   # xtitle: title of x axis
   
-  # load all data for range of variable values; name: final.all
+  # load all data for range of variable values; name: final.all.extra.vars
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
   
   # different approaches whether the variable is continuous or categorical
-  if (is.numeric(final.all[, variable])) {
+  if (is.numeric(final.all.extra.vars[, variable])) {
     # if variable is continuous
     
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_histogram(aes(x = final.all[, variable]))
+      geom_histogram(aes(x = final.all.extra.vars[, variable]))
     
     if (nrow(effects) == max(effects$ntile)) {
       # what to do if we only have one entry for each ntile
@@ -652,7 +652,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_bar(aes(x = final.all[, variable]))
+      geom_bar(aes(x = final.all.extra.vars[, variable]))
     
     if (nrow(effects) == max(effects$ntile)) {
       # what to do if we only have one entry for each ntile
@@ -664,7 +664,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
         geom_point(aes(x = ntile, y = mean), col = "red") +
         geom_errorbar(aes(ymin = `5%`, ymax = `95%`, x = ntile), alpha = 0.1) +
         xlab(xtitle) + ylab("Treatment Effect") +
-        scale_x_continuous(labels = levels(final.all[, variable]), breaks = 1:length(levels(final.all[,variable])))
+        scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
       
     } else {
       # what to do if we have more than one entry for each ntile
@@ -683,7 +683,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle) {
         geom_point(aes(x = ntile, y = mean), col = "red") +
         geom_errorbar(aes(ymin = `5%`, ymax = `95%`, x = ntile), alpha = 0.1) +
         xlab(xtitle) + ylab("Treatment Effect") +
-        scale_x_continuous(labels = levels(final.all[, variable]), breaks = 1:length(levels(final.all[,variable])))
+        scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
       
     }
     
@@ -783,13 +783,13 @@ calc_ATE_prop_score <- function(dataset, seed = NULL) {
   # bart_model: bart model used for full model in order to take variables used
   # dataset: dataset for which we calculate propensity scores
   
-  # load all data for range of variable values; name: final.all
+  # load all data for range of variable values; name: final.all.extra.vars
   load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 
   # extracting selected variables for individuals in dataset
   data.new <- dataset %>%
     select(patid, pateddrug) %>%
-    left_join(final.all %>%
+    left_join(final.all.extra.vars %>%
                 select(patid, 
                        pateddrug,
                        drugclass,

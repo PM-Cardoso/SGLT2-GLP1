@@ -147,7 +147,7 @@ dev.off()
 
 effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Comparison/Model_4_4/effects_summary_dev.rds")
 
-# load all data for range of variable values; name: final.all
+# load all data for range of variable values; name: final.all.extra.vars
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 
 # HbA1c
@@ -159,7 +159,7 @@ xtitle <- "HbA1c"
 
 plot_hist <- ggplot() +
   theme_classic() +
-  geom_histogram(aes(x = final.all[, variable])) +
+  geom_histogram(aes(x = final.all.extra.vars[, variable])) +
   theme(axis.line.x = element_blank(),
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank(),
@@ -217,7 +217,7 @@ xtitle <- "eGFR"
 
 plot_hist <- ggplot() +
   theme_classic() +
-  geom_histogram(aes(x = final.all[, variable])) +
+  geom_histogram(aes(x = final.all.extra.vars[, variable])) +
   xlim(45, 155) +
   theme(axis.line.x = element_blank(),
         axis.title.x = element_blank(),
@@ -276,7 +276,7 @@ xtitle <- "Sex"
 
 plot_hist <- ggplot() +
   theme_classic() +
-  geom_bar(aes(x = final.all[, variable])) +
+  geom_bar(aes(x = final.all.extra.vars[, variable])) +
   theme(axis.line.x = element_blank(),
         axis.title.x = element_blank(),
         axis.ticks.x = element_blank(),
@@ -299,7 +299,7 @@ plot_diff <- effects %>%
   geom_point(aes(x = ntile, y = mean), col = "red") +
   geom_errorbar(aes(ymin = `5%`, ymax = `95%`, x = ntile), alpha = 0.1, width = 0.1) +
   xlab(xtitle) + ylab("Treatment Effect") +
-  scale_x_continuous(labels = c("Female", "Male"), breaks = 1:length(levels(final.all[,variable])), limits = c(0.5, 2.5))
+  scale_x_continuous(labels = c("Female", "Male"), breaks = 1:length(levels(final.all.extra.vars[,variable])), limits = c(0.5, 2.5))
 
 
 plot.malesex.diff.marg <- cowplot::plot_grid(

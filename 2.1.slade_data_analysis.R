@@ -41,7 +41,7 @@ dir.create("Plots")
 ###############################################################################
 ###############################################################################
 
-# name: final.all
+# name: final.all.extra.vars
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
 
 
@@ -49,7 +49,7 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
 ###### Drugs prescribed by year
 ###########################
 
-subtype_year <- final.all %>%
+subtype_year <- final.all.extra.vars %>%
   select(glp1subtype, sglt2subtype, yrdrugstart) %>%
   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
   table() %>%
@@ -91,7 +91,7 @@ plot_subtype_year_facet <- subtype_year %>%
 
 
 
-# hba1c_change <- final.all %>%
+# hba1c_change <- final.all.extra.vars %>%
 #   select(glp1subtype, sglt2subtype, posthba1c_final, prehba1cmmol) %>%
 #   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
 #   mutate(HbA1c = posthba1c_final - prehba1cmmol) %>%
@@ -123,14 +123,14 @@ plot_subtype_year_facet <- subtype_year %>%
 ##########################
 
 
-baseline_dataset <- final.all %>%
+baseline_dataset <- final.all.extra.vars %>%
   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") 
 
 
 
 m1 <- ols(posthba1c_final~prehba1cmmol+rcs(yrdrugstart,3)*Subtype + drugline + ncurrtx + rcs(hba1cmonth,3)*Subtype + rcs(agetx,3)*Subtype,data=baseline_dataset,x=TRUE,y=TRUE)
 
-m1.p <- Predict(m1,prehba1cmmol=median(baseline_dataset$prehba1cmmol),Subtype=c("cana", "dapa", "dulaglutide", "empa", "exenatide", "liraglutide", "lixisenatide"), yrdrugstart=c(seq(2007,2019)), agetx = mean(final.all$agetx), ncurrtx=2, drugline=c(2,3,4,5), hba1cmonth=6) %>%
+m1.p <- Predict(m1,prehba1cmmol=median(baseline_dataset$prehba1cmmol),Subtype=c("cana", "dapa", "dulaglutide", "empa", "exenatide", "liraglutide", "lixisenatide"), yrdrugstart=c(seq(2007,2019)), agetx = mean(final.all.extra.vars$agetx), ncurrtx=2, drugline=c(2,3,4,5), hba1cmonth=6) %>%
   as.data.frame() %>% 
   mutate(Response = yhat-prehba1cmmol,
          ci.l = lower - prehba1cmmol,
@@ -208,7 +208,7 @@ plot_predicted_subtype_drugline <- m1.p %>%
 
 
 
-# hba1c_change_year <- final.all %>%
+# hba1c_change_year <- final.all.extra.vars %>%
 #   select(glp1subtype, sglt2subtype, posthba1c_final, prehba1cmmol, yrdrugstart) %>%
 #   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
 #   mutate(HbA1c = posthba1c_final - prehba1cmmol) %>%
@@ -241,7 +241,7 @@ plot_predicted_subtype_drugline <- m1.p %>%
 ###### Initial HbA1c by subtype over time
 ##########################
 
-initial_hba1c <- final.all %>%
+initial_hba1c <- final.all.extra.vars %>%
   select(glp1subtype, sglt2subtype, prehba1cmmol, yrdrugstart) %>%
   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
   group_by(Subtype, yrdrugstart) %>%
@@ -266,14 +266,14 @@ plot_initial_hba1c <- initial_hba1c %>%
 ##########################
 
 
-drugline_subtype_year_dataset <- final.all %>%
+drugline_subtype_year_dataset <- final.all.extra.vars %>%
   select(glp1subtype, sglt2subtype, drugline, yrdrugstart) %>%
   unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "")
 
 
 for (i in 1:length(unique(drugline_subtype_year_dataset$Subtype))) {
   if (i == 1) {
-    drugline_subtype_year <- final.all %>%
+    drugline_subtype_year <- final.all.extra.vars %>%
       select(glp1subtype, sglt2subtype, drugline, yrdrugstart) %>%
       unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
       filter(Subtype == unique(drugline_subtype_year_dataset$Subtype)[i]) %>%
@@ -288,7 +288,7 @@ for (i in 1:length(unique(drugline_subtype_year_dataset$Subtype))) {
   } else {
     drugline_subtype_year <- rbind(
       drugline_subtype_year,
-      final.all %>%
+      final.all.extra.vars %>%
         select(glp1subtype, sglt2subtype, drugline, yrdrugstart) %>%
         unite("Subtype", glp1subtype:sglt2subtype, remove = TRUE, sep= "") %>%
         filter(Subtype == unique(drugline_subtype_year_dataset$Subtype)[i]) %>%
@@ -322,7 +322,7 @@ plot_drugline_subtype_year <- drugline_subtype_year %>%
 ##########################
 
 
-hba1c.association <- final.all %>%
+hba1c.association <- final.all.extra.vars %>%
   mutate(hba1c.change = posthba1c_final - prehba1cmmol) %>%
   select(prehba1cmmol, hba1c.change, drugclass)
 

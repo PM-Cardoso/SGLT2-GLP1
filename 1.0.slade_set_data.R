@@ -528,6 +528,7 @@ final.all <- final.all %>% select(
   prehba1cmmol, # prehba1cpc, prehba1cdate, prehba1cchange, iniresp_final,  # removing information about prehba1c
   ################ Derived variables
   score, # risk of CVD
+  # score.excl.mi # USE THIS INSTEAD
   ################ Diabetes microvascular complications and comorbidities
   predrug.earliest.stroke, predrug.5yrrecent.stroke, predrug.earliest.tia, predrug.5yrrecent.tia,
   predrug.earliest.revasc, predrug.5yrrecent.revasc, predrug.earliest.pad, predrug.5yrrecent.pad,
@@ -550,7 +551,7 @@ final.all <- final.all %>% select(
   # postdrug.first.af, postdrug.first.angina, postdrug.first.cld, postdrug.first.mi,
   ################ Discontinuation
   # stopdrugdate, stopdrug3m_6mFU, stopdrug3m_3mFU, stopdrug6m_6mFU, stopdrug6m_3mFU, stopdrug12m_6mFU, 
-  # stopdrug12m_3mFU, # use this one for discountinuation
+  # stopdrug12m_3mFU, stopdrug6m_3mFU, # use this one for discountinuation (6 months)
   ################ Adherence
   # adherence_t, fladherence_t, flnonadh, nonadh,
   ################ Time difference
@@ -569,7 +570,7 @@ final.all <- final.all %>% select(
   # hb_extreme, nonwhite, t2dmdurationlog, t2dmdurationcs, t2dmdurationcslog, agetxcs, agetxcslog,
   # yob, tod, deathdate, indexdate, eth16, smok, ascvd, ascvd.hf, ckd, ascvd.hf.ckd, age, S0_current_male,
   # S0_current_female, S0_10yr_male, S0_10yr_female, lp, risk_10_male.cvd, risk_10_female.cvd, score.high,
-  # ascvd.hf.ckd.scorehigh, score.excl.mi, score.high.excl.mi, timeprevcom_less61, agedx,
+  # ascvd.hf.ckd.scorehigh, score.high.excl.mi, timeprevcom_less61, agedx,
   
 )
 
@@ -584,7 +585,10 @@ final.all <- final.all %>% select(
 ##### Total number of individuals: 16443(9964)
 ################################################
 
-save(final.all,file=paste0(output_path, "/cprd_19_sglt2glp1_allcohort.Rda"))
+final.all.extra.vars <- final.all %>%
+  cbind(score.excl.mi = cprd$score.excl.mi)
+
+save(final.all.extra.vars,file=paste0(output_path, "/cprd_19_sglt2glp1_allcohort.Rda"))
 
 ################################################
 ##### Define Development dataset (60% on each drug): 9866(5978)
