@@ -49,9 +49,14 @@ Files:
 - 7.0: Sensitivity analysis.
     - .1: Exclusion of GLP1 patients before 2013.
     - .2: Variable importance model 4.4.
+    - .3: Modelling predicted treatment effect against model variables.
     
 - 8.0: Presentations/Slides
     - .1: MRC: 29th September London
     
 - 9.0: Shiny App
     - .1: Model 4.4 - probability of achieving target HbA1c.
+    
+- 10.0: Modelling accompanying data
+    - .1: Weight reduction
+
