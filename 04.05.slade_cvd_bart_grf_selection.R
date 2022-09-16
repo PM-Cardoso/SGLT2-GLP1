@@ -138,12 +138,12 @@ if (class(try(
 
 # Variables selected:
 # 
-# [1] "prehba1cmmol"       "yrdrugstart"        "hba1cmonth"
-# [4] "egfr_ckdepi"        "drugclass_GLP1"     "prealt"
-# [7] "drugclass_SGLT2"    "score"              "drugline_2"
-# [10] "ncurrtx_2"          "ncurrtx_3"          "malesex_1"
-# [13] "drugline_5"         "Category_Ex-smoker" "drugline_3"
-# [16] "drugline_4"
+# [1] "prehba1cmmol"       "hba1cmonth"         "yrdrugstart"
+# [4] "prealt"             "egfr_ckdepi"        "drugclass_SGLT2"
+# [7] "drugclass_GLP1"     "drugline_2"         "ncurrtx_2"
+# [10] "ncurrtx_3"          "drugline_3"         "drugline_5"
+# [13] "Category_Ex-smoker" "drugline_4"
+
 
 
 if (class(try(
