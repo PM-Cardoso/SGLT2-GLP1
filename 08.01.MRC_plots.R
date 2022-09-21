@@ -43,7 +43,7 @@ plot_effects_1 <- ggplot(data=dat1, aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-12,18,by=2)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Overall Population",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-  scale_fill_manual(values=c("#998ec3","#f1a340"))+
+  scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -67,7 +67,7 @@ plot_effects_1 <- ggplot(data=dat1, aes(x=mean,fill=above)) +
 #   geom_histogram(position="identity", alpha=0.5,color="black", breaks = breaks) +
 #   geom_vline(aes(xintercept=0), linetype="dashed")+
 #   labs(title="Overall Population",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   scale_fill_manual(values=c("red","#f1a340"))+
 #   theme_classic() +
 #   theme(legend.position = c(0.80, 0.97)) +
 #   theme(legend.title = element_blank())
@@ -88,7 +88,7 @@ plot_effects_2 <- ggplot(data=dat2, aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-12,18,by=2)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-  scale_fill_manual(values=c("#998ec3","#f1a340"))+
+  scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -98,7 +98,7 @@ plot_effects_2 <- ggplot(data=dat2, aes(x=mean,fill=above)) +
 #   geom_histogram(position="identity", alpha=0.5,color="black",breaks=breaks) +
 #   geom_vline(aes(xintercept=0), linetype="dashed")+
 #   labs(title="Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   scale_fill_manual(values=c("red","#f1a340"))+
 #   theme_classic() +
 #   theme(legend.position = c(0.80, 0.97)) +
 #   theme(legend.title = element_blank())
@@ -111,7 +111,7 @@ plot_effects_3 <- ggplot(data=dat3, aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-12,18,by=2)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-  scale_fill_manual(values=c("#998ec3","#f1a340"))+
+  scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -121,7 +121,7 @@ plot_effects_3 <- ggplot(data=dat3, aes(x=mean,fill=above)) +
 #   geom_histogram(position="identity", alpha=0.5,color="black",breaks=breaks) +
 #   geom_vline(aes(xintercept=0), linetype="dashed")+
 #   labs(title="Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
-#   scale_fill_manual(values=c("#998ec3","#f1a340"))+
+#   scale_fill_manual(values=c("red","#f1a340"))+
 #   theme_classic() +
 #   theme(legend.position = c(0.80, 0.97)) +
 #   theme(legend.title = element_blank())
@@ -382,6 +382,9 @@ dev.off()
 
 source("0.1.slade_functions.R")
 
+# name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
 # name: final.dev
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
 
@@ -390,12 +393,18 @@ load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
 bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
 
-data_dev <- final.dev %>% 
+data_dev <- final.dev %>%
+  # select(-score) %>%
+  # left_join(final.all.extra.vars %>%
+  #             select(patid, pateddrug, score.excl.mi)) %>% 
   select(c(patid, pateddrug, posthba1c_final, 
            colnames(bart_model_final$X)))
 
 
-data_val <- final.val %>% 
+data_val <- final.val %>%
+  # select(-score) %>%
+  # left_join(final.all.extra.vars %>%
+  #             select(patid, pateddrug, score.excl.mi)) %>% 
   select(c(patid, pateddrug, posthba1c_final, 
            colnames(bart_model_final$X)))
 
@@ -416,21 +425,9 @@ predicted_observed_val <- data_val %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
+ATE_matching_validation_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_dev.rds")
 
-
-if (class(try(
-  
-  ATE_validation_dev <- readRDS("Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_dev.rds")
-  
-  , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
-  
-  saveRDS(ATE_validation_dev, "Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_dev.rds")
-}
-  
-
-plot_ATE_dev_prop_score <- ATE_validation_dev[["effects"]] %>%
+plot_ATE_dev_prop_score <- ATE_matching_validation_dev[["effects"]] %>%
   as.data.frame() %>%
   ggplot() +
   geom_point(aes(x = hba1c_diff.pred, y = obs), alpha = 1) + 
@@ -439,24 +436,15 @@ plot_ATE_dev_prop_score <- ATE_validation_dev[["effects"]] %>%
   ylab("Decile average treatment effect") + 
   xlab("Predicted average treatment effect") +
   ggtitle("Development cohort") +
-  scale_x_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
-  scale_y_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  scale_x_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
+  scale_y_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
   geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
 
-if (class(try(
-  
-  ATE_validation_val <- readRDS("Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_val.rds")
-  
-  , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
-  
-  saveRDS(ATE_validation_val, "Samples/SGLT2-GLP1/Plots/MRC_plots/ATE_validation_val.rds")
-}
+ATE_matching_validation_val <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_val.rds")
 
-plot_ATE_val_prop_score <- ATE_validation_val[["effects"]] %>%
+plot_ATE_val_prop_score <- ATE_matching_validation_val[["effects"]] %>%
   as.data.frame() %>%
   ggplot() +
   geom_point(aes(x = hba1c_diff.pred, y = obs), alpha = 1) + 
@@ -465,8 +453,8 @@ plot_ATE_val_prop_score <- ATE_validation_val[["effects"]] %>%
   ylab("Decile average treatment effect") + 
   xlab("Predicted average treatment effect") +
   ggtitle("Validation cohort") +
-  scale_x_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
-  scale_y_continuous(limits = c(-13, 13), breaks = c(seq(-13, 13, by = 2))) +
+  scale_x_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
+  scale_y_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
   geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
@@ -520,7 +508,7 @@ plot_5 <- posteriors %>%
   ggplot() +
   geom_density(aes(x = value, fill = key), alpha = 0.5, colour = "black") +
   labs(x = "Average HbA1c (mmol/mol)", y = "Density") +
-  scale_fill_manual(values=c("#998ec3","#f1a340"))+
+  scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.87)) +
   theme(legend.title = element_blank(),
@@ -545,7 +533,7 @@ plot_6 <- posteriors %>%
   geom_histogram(position="identity", alpha = 0.5, color="black",breaks=seq(-6,6,by=0.5)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(x="HbA1c difference (mmol/mol)", y = "Density") +
-  scale_fill_manual(values=c("#998ec3","#f1a340"))+
+  scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.87)) +
   theme(legend.title = element_blank(),
