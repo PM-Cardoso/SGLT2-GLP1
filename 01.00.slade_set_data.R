@@ -586,7 +586,9 @@ final.all <- final.all %>% select(
 ################################################
 
 final.all.extra.vars <- final.all %>%
-  cbind(score.excl.mi = cprd$score.excl.mi)
+  cbind(score.excl.mi = cprd$score.excl.mi,
+        postweight6m = cprd$postweight6m, # using 6 months due to the lack of data at 12 months
+        stopdrug6m_3mFU = cprd$stopdrug6m_3mFU)
 
 save(final.all.extra.vars,file=paste0(output_path, "/cprd_19_sglt2glp1_allcohort.Rda"))
 
