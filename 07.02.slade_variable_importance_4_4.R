@@ -115,9 +115,12 @@ plot_var_importance <- variable_importance$avg_var_props %>%
   annotate(x = 0, xend=0, y=0, yend=25, colour="black", lwd=0.75, geom="segment")
 
 
-pdf(file = paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/variable_importance_2.pdf"))
+
+pdf(file = "Plots/7.2.variable_importance.pdf")
 plot_var_importance
 dev.off()
+
+
 
 
 
