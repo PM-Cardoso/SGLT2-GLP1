@@ -58,6 +58,7 @@ source("0.1.slade_functions.R")
 ### Complete model of only routine data, no propensity score (n: 9866))
 #############################
 
+# load datasets
 data_complete_routine_dev <- final.dev %>%
   select(
     patid,
@@ -102,8 +103,10 @@ data_complete_routine_val <- final.val %>%
   drop_na() # removed 804
 
 
+# join datasets together
 dataset_full <- rbind(data_complete_routine_dev, data_complete_routine_val)
 
+# create a version of the dataset with dummy columns for categorical variables
 dataset_model.matrix <- model.matrix(~posthba1c_final + drugclass + ncurrtx + drugline + yrdrugstart + t2dmduration + agetx +
                                        malesex + Category + hba1cmonth + prebmi + prealt + egfr_ckdepi + prehba1cmmol, dataset_full) %>%
   as.data.frame() %>%
@@ -111,19 +114,17 @@ dataset_model.matrix <- model.matrix(~posthba1c_final + drugclass + ncurrtx + dr
   mutate(drugclass = drugclassSGLT2) %>%
   select(-drugclassSGLT2)
 
-
+# fit a propensity score model on the development dataset
 prop.score <- glm(drugclass ~ ncurrtx + drugline + t2dmduration + agetx + 
                     malesex + Category + hba1cmonth + prebmi + prealt + egfr_ckdepi + prehba1cmmol, family = binomial(link = "logit"), data = dataset_full[1:nrow(data_complete_routine_dev),])
 
-
-
+# fit a grf model with the propensity scores calculated earlier
 grf_model <- grf::causal_forest(X = dataset_model.matrix %>%
                              slice(1:nrow(data_complete_routine_dev)) %>%
                              select(-posthba1c_final, -drugclass),
                            Y = dataset_model.matrix[1:nrow(data_complete_routine_dev), "posthba1c_final"],
                            W = dataset_model.matrix[1:nrow(data_complete_routine_dev), "drugclass"],
                            W.hat = prop.score$fitted.values)
-
 
 # Calibration of the model
 grf.calibration <- grf::test_calibration(grf_model)
@@ -138,14 +139,15 @@ grf.calibration <- grf::test_calibration(grf_model)
 #   Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 
 
-#Dev
+# Development effects
 effects.dev <- cbind(mean = grf_model$predictions) %>%
   data.frame() %>%
   set_names(c("mean"))
 
-
+# calculate priority care confounding
 priority.cate.dev <- 1 * grf_model$predictions
 
+# calculate TOC
 rate.dev <- toc_function(dataset_model.matrix[1:nrow(data_complete_routine_dev),],
                          priority.cate.dev, 
                          prop.score$fitted.values, 
@@ -153,16 +155,12 @@ rate.dev <- toc_function(dataset_model.matrix[1:nrow(data_complete_routine_dev),
                          q = seq(0.1,1,by = 0.05),
                          target = "AUTOC")
 
-# rate.dev$TOC %>%
-#   ggplot() +
-#   geom_line(aes(x = q, y = estimate)) +
-#   geom_line(aes(x = q, y = estimate-1.95*std.err), linetype = "dashed") +
-#   geom_line(aes(x = q, y = estimate+1.95*std.err), linetype = "dashed") +
-#   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
-
-#Val
+# Validation effects
+# calculate propensity scores for validation datasets
 prop.score_val <- predict(prop.score, dataset_full[-c(1:nrow(data_complete_routine_dev)),])
+
+# fit a new model for validation dataset
 cf.eval <- grf::causal_forest(X = dataset_model.matrix %>%
                            slice(-c(1:nrow(data_complete_routine_dev))) %>%
                            select(-posthba1c_final, -drugclass),
@@ -170,9 +168,10 @@ cf.eval <- grf::causal_forest(X = dataset_model.matrix %>%
                          dataset_model.matrix[-c(1:nrow(data_complete_routine_dev)), "drugclass"],
                          W.hat = prop.score_val)
 
+# calculate priority care confounding
 priority.cate.val <- 1 * cf.eval$predictions
 
-
+# calculate TOC
 rate.val <- toc_function(dataset_model.matrix[-c(1:nrow(data_complete_routine_dev)),],
                          priority.cate.val, 
                          prop.score_val, 
@@ -182,31 +181,34 @@ rate.val <- toc_function(dataset_model.matrix[-c(1:nrow(data_complete_routine_de
                          q = seq(0.1,1,by = 0.05),
                          target = "AUTOC")
 
-# rate.val$TOC %>%
-#   ggplot() +
-#   geom_line(aes(x = q, y = estimate)) +
-#   geom_line(aes(x = q, y = estimate-1.95*std.err), linetype = "dashed") +
-#   geom_line(aes(x = q, y = estimate+1.95*std.err), linetype = "dashed") +
-#   ggtitle(paste0("Val GRF: TOC - ",signif(rate.val$estimate, 3)," [sd:", signif(rate.val$std.err, 3),"]"))
-
-
 #######
 
-
+# split dataset to deciles of treatment effects
 predicted_observed_complete_routine_dev <- dataset_model.matrix %>%
   slice(1:nrow(data_complete_routine_dev)) %>%
   cbind(hba1c_diff = effects.dev$mean) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
-
+# lm(hba1c ~ drugclass + prop_score)
 ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
                                             cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
     
 plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10)
 
+plot_ATE_dev <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation: lm(hba1c~drugclass+prop_score)")
+  
+  ,
+  
+  plot_ATE_dev
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
+# Propensity score matching
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 1] <- "SGLT2"
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
 
@@ -214,6 +216,38 @@ ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_compl
                                                           cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
 
 plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+
+plot_ATE_dev_prop_score <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation: propensity score matching")
+  
+  ,
+  
+  plot_ATE_dev_prop_score
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+# Inverse Propensity score weighting 
+ATE_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_complete_routine_dev %>%
+                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+
+plot_ATE_dev_prop_score_weighting <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+
+plot_ATE_dev_prop_score_weighting <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation: inverse propensity score weighting")
+  
+  ,
+  
+  plot_ATE_dev_prop_score_weighting
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+
 
 
 ###
@@ -255,12 +289,13 @@ rate.dev$TOC %>%
   ggtitle(paste0("Dev GRF: TOC - ",signif(rate.dev$estimate, 3)," [sd:", signif(rate.dev$std.err, 3),"]"))
 
 
-plot_ATE_dev
-
-
 plot_resid_dev
 
+plot_ATE_dev
+
 plot_ATE_dev_prop_score
+
+plot_ATE_dev_prop_score_weighting
 
 dev.off()
 

@@ -55,6 +55,7 @@ source("0.1.slade_functions.R")
 ### Complete model of only routine data, no propensity score (n: 9866))
 #############################
 
+# load datasets
 data_complete_routine_dev <- final.dev %>%
   select(
     patid,
@@ -98,9 +99,10 @@ data_complete_routine_val <- final.val %>%
   ) %>%
   drop_na() # removed 804
 
-
+# join datasets
 dataset_full <- rbind(data_complete_routine_dev, data_complete_routine_val)
 
+# create a version of the dataset with dummy columns for categorical variables
 dataset_model.matrix <- model.matrix(~posthba1c_final + drugclass + ncurrtx + drugline + yrdrugstart + t2dmduration + agetx +
                                        malesex + Category + hba1cmonth + prebmi + prealt + egfr_ckdepi + prehba1cmmol, dataset_full) %>%
   as.data.frame() %>%
@@ -108,16 +110,16 @@ dataset_model.matrix <- model.matrix(~posthba1c_final + drugclass + ncurrtx + dr
   mutate(drugclass = drugclassSGLT2) %>%
   select(-drugclassSGLT2)
 
-
+# fit a propensity score model on the development dataset
 prop.score <- glm(drugclass ~ ncurrtx + drugline + t2dmduration + agetx + 
                     malesex + Category + hba1cmonth + prebmi + prealt + egfr_ckdepi + prehba1cmmol, family = binomial(link = "logit"), data = dataset_full[1:nrow(data_complete_routine_dev),])
 
-
+# turn dataset into matrix
 dataset_full_bcf <- dataset_model.matrix %>%
   mutate_all(function(x) as.numeric(x)) %>%
   as.matrix()
 
-
+# fit bcf model
 post <- bcf::bcf(y = dataset_full_bcf[1:nrow(data_complete_routine_dev),1],
             z = dataset_full_bcf[1:nrow(data_complete_routine_dev),19],
             x_control = dataset_full_bcf[1:nrow(data_complete_routine_dev),-c(1,19)],
@@ -125,7 +127,7 @@ post <- bcf::bcf(y = dataset_full_bcf[1:nrow(data_complete_routine_dev),1],
             nburn = 1000,
             nsim = 1000)
 
-
+# collect treatment effects
 effects.dev <- cbind(mean = post$tau %>% colMeans()) %>%
   data.frame() %>%
   set_names(c("mean"))
@@ -133,21 +135,32 @@ effects.dev <- cbind(mean = post$tau %>% colMeans()) %>%
 
 #########
 
-
+# split dataset to deciles of treatment effects
 predicted_observed_complete_routine_dev <- dataset_full_bcf[1:nrow(data_complete_routine_dev), ] %>%
   cbind(hba1c_diff = effects.dev$mean) %>%
   as.data.frame() %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
-
+# lm(hba1c ~ drugclass + prop_score)
 ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
                                             cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
 
 plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -13, 13)
 
+plot_ATE_dev <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation: lm(hba1c~drugclass+prop_score)")
+  
+  ,
+  
+  plot_ATE_dev
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
+# Propensity score matching
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 1] <- "SGLT2"
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
 
@@ -156,22 +169,38 @@ ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_compl
 
 plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
-
-
-# Plot
-plot_effects_validation <- cowplot::plot_grid(
+plot_ATE_dev_prop_score <- cowplot::plot_grid(
   
-  #title
   cowplot::ggdraw() +
-    cowplot::draw_label("Effects Validation")
+    cowplot::draw_label("Effects validation: propensity score matching")
   
   ,
   
-  #effects plot
-  plot_ATE_dev
+  plot_ATE_dev_prop_score
   
-  , ncol = 1, nrow = 2, rel_heights = c(0.1, 1)
-)
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+# Inverse Propensity score weighting 
+ATE_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_complete_routine_dev %>%
+                                                                   cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+
+plot_ATE_dev_prop_score_weighting <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+
+plot_ATE_dev_prop_score_weighting <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation: inverse propensity score weighting")
+  
+  ,
+  
+  plot_ATE_dev_prop_score_weighting
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+
+
 
 
 ###
@@ -216,11 +245,13 @@ prop.score$fitted.values %>%
 
 hist_plot(effects.dev, "Dev BCF: treatment effect", -15, 20)
 
-plot_effects_validation
-
 plot_resid_dev
 
+plot_ATE_dev
+
 plot_ATE_dev_prop_score
+
+plot_ATE_dev_prop_score_weighting
 
 dev.off()
 
