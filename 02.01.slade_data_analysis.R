@@ -337,7 +337,7 @@ plot.hba1c.association <- hba1c.association %>%
     stat_smooth(aes(x = prehba1cmmol, y = hba1c.change, colour = drugclass), method = "auto") +
     xlab("Baseline HbA1c (mmol/mol)") + ylab("HbA1c Response (mmol/mol)") +
     ggtitle("Association between baseline HbA1c and HbA1c response") +
-    scale_colour_manual(values=c("#998ec3","#f1a340")) +
+    scale_colour_manual(values=c("red","#f1a340")) +
     theme(legend.title = element_blank(),
           legend.position = c(0.80, 0.80))
 
