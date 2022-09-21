@@ -515,20 +515,98 @@ if (class(try(
 
 plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
+plot_ATE <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation lm(hba1c~drugclass+prop_score)")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
+# Validation ATE prop score matching
+if (class(try(
+  
+  ATE_matching_validation_dev <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  
+  saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_dev.rds"))
+  
+}
+
+plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -16, 16)
+
+if (class(try(
+  
+  ATE_matching_validation_val <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  
+  saveRDS(ATE_matching_validation_val, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_val.rds"))
+  
+}
+
+plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -16, 16)
+
+plot_ATE_prop_score_matching <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation prop score matching")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
-ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+# Validation ATE prop score inverse weighting
+if (class(try(
+  
+  ATE_weighting_validation_dev <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_weighting_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_weighting_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  
+  saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_weighting_validation_dev.rds"))
+  
+}
 
-plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -15, 15)
+plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
+if (class(try(
+  
+  ATE_weighting_validation_val <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_weighting_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_weighting_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  
+  saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_weighting_validation_val.rds"))
+  
+}
 
+plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
-ATE_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
-
-plot_ATE_val_prop_score <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
-
+plot_ATE_prop_score_weighting <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation prop score inverse weighting")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 #### PDF with all the plots
@@ -550,27 +628,9 @@ cowplot::plot_grid(
   
   , nrow = 2, ncol = 1, labels = c("A", "B")
 )
-cowplot::plot_grid(
-  
-  cowplot::ggdraw() +
-    cowplot::draw_label("Effects validation")
-  
-  ,
-  
-  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
-
-  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
-
-cowplot::plot_grid(
-  
-  cowplot::ggdraw() +
-    cowplot::draw_label("Effects validation prop matching")
-  
-  ,
-  
-  cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
-  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+plot_ATE
+plot_ATE_prop_score_matching
+plot_ATE_prop_score_weighting
 dev.off()
 
 pdf(file = "Plots/4.4.model4_partial_dependence.pdf")
@@ -585,42 +645,6 @@ for (i in colnames(features)) {
   pd_plot(bart_model_final, i)
 }
 dev.off()
-
-
-
-##############
-
-# Validating ATE
-if (class(try(
-  
-  ATE_validation_dev <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_validation_dev.rds"))
-  
-  , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev)
-  
-  saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_validation_dev.rds"))
-  
-}
-
-plot_ATE_dev <- hte_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", "Development")
-
-
-if (class(try(
-  
-  ATE_validation_val <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_validation_val.rds"))
-  
-  , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_val <- calc_ATE_validation(predicted_observed_val)
-  
-  saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/ATE_validation_val.rds"))
-  
-}
-
-plot_ATE_val <- hte_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
-
-
 
 
 
