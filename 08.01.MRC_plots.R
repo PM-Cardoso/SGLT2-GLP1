@@ -481,6 +481,7 @@ load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
 
 bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
 
+# patient 39
 patient <- rbind(
   final.dev %>% 
     select(c(patid, pateddrug, posthba1c_final, 
