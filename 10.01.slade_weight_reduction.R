@@ -86,8 +86,8 @@ resid_plot <- function(pred_dev, pred_val, title) {
         geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
         xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
         ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        xlab("Observed Weight change (mmol/mol)") +
-        ylab("Predicted Weight change (mmol/mol)")
+        xlab("Observed Post Weight") +
+        ylab("Predicted Post Weight")
       
       ,
       
@@ -100,8 +100,8 @@ resid_plot <- function(pred_dev, pred_val, title) {
         geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
         xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
         ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        xlab("Observed Weight change (mmol/mol)") +
-        ylab("Predicted Weight change (mmol/mol)")
+        xlab("Observed Post Weight") +
+        ylab("Predicted Post Weight")
       
       ,
       
@@ -115,7 +115,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
         stat_smooth(aes(x = mean, y = std.resid)) +
         xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
         ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
-        xlab("Average Predicted Weight change (mmol/mol)") +
+        xlab("Average Predicted  Post Weight") +
         ylab("Standardised Residuals")
       
       ,
@@ -130,7 +130,7 @@ resid_plot <- function(pred_dev, pred_val, title) {
         stat_smooth(aes(x = mean, y = std.resid)) +
         xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
         ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
-        xlab("Average Predicted Weight change (mmol/mol)") +
+        xlab("Average Predicted Post Weight") +
         ylab("Standardised Residuals")
       
       , ncol = 2, nrow = 2, labels = c("A", "B", "", "")
@@ -157,8 +157,7 @@ dataset.dev <- final.dev %>%
   select(-score) %>%
   left_join(final.all.extra.vars %>%
               select(patid, pateddrug, score.excl.mi, postweight6m)) %>%
-  mutate(weight_change = postweight6m - preweight ) %>%
-  drop_na(weight_change) # drop 2846
+  drop_na(postweight6m) # drop 2846
 
 
 ## Fit model using all the available in treatment selection BART model variables to estimate weight change
@@ -170,6 +169,7 @@ if (class(try(
   
   bart_model_weight <- bartMachine::bartMachine(X = dataset.dev %>%
                                            select(drugclass,
+                                                  preweight,
                                                   # below is vars from both variable selections
                                                   egfr_ckdepi,
                                                   hba1cmonth,
@@ -185,14 +185,15 @@ if (class(try(
                                                   agetx,
                                                   malesex,
                                                   prehdl,
-                                                  prebmi,
+                                                  # prebmi, # used preweight instead of prebmi
                                                   prebil,
                                                   preplatelets,
                                                   t2dmduration,
                                                   prealb,
                                                   presys,
                                                   preast),
-                                         y = dataset.dev[,"weight_change"],
+                                         # y = dataset.dev[,"weight_change"],
+                                         y = dataset.dev[,"postweight6m"],
                                          use_missing_data = TRUE,
                                          impute_missingness_with_rf_impute = FALSE,
                                          impute_missingness_with_x_j_bar_for_lm = TRUE,
@@ -213,7 +214,7 @@ if (class(try(
 # Dev
 
 data_dev <- dataset.dev %>% 
-  select(c(patid, pateddrug, weight_change, 
+  select(c(patid, pateddrug, postweight6m, 
            colnames(bart_model_weight$X)))
 
 
@@ -241,8 +242,8 @@ if (class(try(
   , silent = TRUE)) == "try-error") {
   
   interim_dataset <- data_dev %>%
-    mutate(posthba1c_final = weight_change) %>%
-    select(-weight_change)
+    mutate(posthba1c_final = postweight6m) %>%
+    select(-postweight6m)
   
   cred_pred_dev <- calc_resid(interim_dataset, posteriors_dev)
   
@@ -256,9 +257,8 @@ data_val <- final.val %>%
   select(-score) %>%
   left_join(final.all.extra.vars %>%
               select(patid, pateddrug, score.excl.mi, postweight6m)) %>%
-  mutate(weight_change = postweight6m - preweight ) %>%
-  drop_na(weight_change) %>%  # drop 1934
-  select(c(patid, pateddrug, weight_change, 
+  drop_na(postweight6m) %>%  # drop 1934
+  select(c(patid, pateddrug, postweight6m, 
            colnames(bart_model_weight$X)))
 
 
@@ -286,8 +286,8 @@ if (class(try(
   , silent = TRUE)) == "try-error") {
   
   interim_dataset <- data_val %>%
-    mutate(posthba1c_final = weight_change) %>%
-    select(-weight_change)
+    mutate(posthba1c_final = postweight6m) %>%
+    select(-postweight6m)
   
   cred_pred_val <- calc_resid(interim_dataset, posteriors_val)
   
@@ -339,7 +339,7 @@ plot_effect_1 <- plot_effect_1 %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -354,7 +354,7 @@ plot_effect_2 <- plot_effect_2 %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -379,7 +379,7 @@ plot_effect_1_male <- plot_effect_1_male %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="Male",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -393,7 +393,7 @@ plot_effect_1_female <- plot_effect_1_female %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="Female",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -416,7 +416,7 @@ plot_effect_2_male <- plot_effect_2_male %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="Male",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -430,7 +430,7 @@ plot_effect_2_female <- plot_effect_2_female %>%
   ggplot(aes(x=mean,fill=above)) +
   geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(-3.5,7.5,by=0.25)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
-  labs(title="Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
+  labs(title="Female",x="Post Weight", y = "Number of people") +
   scale_fill_manual(values=c("red","#f1a340"))+
   theme_classic() +
   theme(legend.position = c(0.80, 0.97)) +
@@ -461,6 +461,9 @@ cowplot::plot_grid(
 )
 dev.off()
 
+
+###############################
+###### Variable selection
 
 
 
