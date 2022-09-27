@@ -465,6 +465,23 @@ dev.off()
 ###############################
 ###### Variable selection
 
+# Perform variable selection in the weight mdoel
+
+if (class(try(
+  
+  bart_var_selection <- readRDS(paste0(output_path, "/Weight_reduction/bart_var_selection.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  bart_var_selection <- bartMachine::var_selection_by_permute(bart_machine = bart_model_weight,
+                                                              num_reps_for_avg = 15,
+                                                              num_permute_samples = 50,
+                                                              num_trees_for_permute = 20)
+  
+  saveRDS(bart_var_selection, paste0(output_path, "/Weight_reduction/bart_var_selection.rds"))
+  
+}
+
 
 
 
