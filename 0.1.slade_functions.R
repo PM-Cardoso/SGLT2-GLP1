@@ -340,6 +340,30 @@ calc_effect_summary <- function(bart_model, data) {
   # Calculate treatment effects for entries
   effect <- calc_effect(bart_model, data)
   
+  # # Summarise treatment effect for each entry
+  effects_summary <- cbind(
+    `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
+    `50%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
+    `95%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
+    mean = apply(effect, MARGIN = 1, function(x) mean(c(x)))
+  ) %>%
+    as.data.frame()
+  
+  return(effects_summary)
+  
+}
+
+
+## Summarise calculated treatment effect
+
+calc_effect_summary_diff_treat <- function(bart_model, data) {
+  ##### Input variables
+  # bart_model - bart model used for fitting
+  # data - data being investigated
+  
+  # Calculate treatment effects for entries
+  effect <- calc_effect(bart_model, data)
+  
   # # # Summarise treatment effect for each entry
   # effects_summary <- cbind(
   #   `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
@@ -579,7 +603,7 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
   #   mutate(ntile = rep(1:length(range), each = nrow(dataset)),
   #          ntile.value = rep(range, each = nrow(dataset)))
 
-  effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
+  effects_summary <- calc_effect_summary_diff_treat(bart_model, new.dataset) %>%
     cbind(ntile = rep(1:length(range)),
           ntile.value = rep(range)) %>%
     gather(key, mean, -ntile, -ntile.value)
