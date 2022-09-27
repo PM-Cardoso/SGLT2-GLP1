@@ -268,6 +268,10 @@ server <- function(input, output, session) {
     posteriors_weight <-  bartMachine::bart_machine_get_posterior(bart_model_weights, patient %>%
                                                                     select(colnames(bart_model_weights$X)))
     
+    posteriors_weight$y_hat <- posteriors_weight$y_hat - patient$preweight
+    
+    posteriors_weight$y_hat_posterior_samples <- posteriors_weight$y_hat_posterior_samples - patient$preweight
+    
     posteriors_weight
   })
   
