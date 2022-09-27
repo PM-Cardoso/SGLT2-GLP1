@@ -613,11 +613,20 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
 
 # Plot differential treatment effect
 
-plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
+plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1, thinning = NULL, ymin = NULL, ymax = NULL) {
   ##### Input variables
   # effects: effects summary calculated from calc_diff_treatment_effect function
   # variable: variable being investigated
   # xtitle: title of x axis
+  # thinning: thin number of samples plotted
+  # ymin, ymax: limits of y axis in plot
+  
+  if (!is.null(thinning)) {
+    
+    effects <- effects %>%
+      filter(key %in% sample(unique(effects$key), thinning))
+    
+  }
   
   # load all data for range of variable values; name: final.all.extra.vars
   load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
@@ -637,10 +646,8 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
       # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
         ggplot() +
-        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k)) +
-        # geom_line(aes(x = ntile.value, y = mean), col = "red") +
-        # geom_point(aes(x = ntile.value, y = mean), size = 2, col = "red", shape = 1) +
-        # geom_ribbon(aes(ymin = `5%`, ymax = `95%`, x = ntile.value), alpha = 0.1) +
+        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
+        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k), level = 0.95) +
         xlab(xtitle) + ylab("Treatment Effect")
       
     } else {
@@ -648,18 +655,9 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
       
       # plot differential treatment effects for the range of values
       plot_diff <- effects %>%
-        # group_by(ntile, ntile.value) %>%
-        # mutate(`5%`= quantile(mean, probs = c(0.05)),
-        #        `50%` = quantile(mean, probs = c(0.50)),
-        #        `95%` = quantile(mean, probs = c(0.95)),
-        #        mean = mean(mean)) %>%
-        # ungroup() %>%
-        # unique() %>%
         ggplot() +
-        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k)) +
-        # geom_line(aes(x = ntile.value, y = mean), col = "red") +
-        # geom_point(aes(x = ntile.value, y = mean), size = 2, col = "red", shape = 1) +
-        # geom_ribbon(aes(ymin = `5%`, ymax = `95%`, x = ntile.value), alpha = 0.1) +
+        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
+        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k), level = 0.95) +
         xlab(xtitle) + ylab("Treatment Effect")
       
       
@@ -699,6 +697,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
         ungroup() %>%
         mutate(ntile = as.double(ntile)) %>%
         ggplot() +
+        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
         geom_point(aes(x = ntile, y = mean.value), col = "red") +
         geom_errorbar(aes(ymin = lower.value, ymax = upper.value, x = ntile), alpha = 0.1) +
         xlab(xtitle) + ylab("Treatment Effect") +
@@ -716,6 +715,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
         ungroup() %>%
         mutate(ntile = as.double(ntile)) %>%
         ggplot() +
+        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
         geom_point(aes(x = ntile, y = mean.value), col = "red") +
         geom_errorbar(aes(ymin = lower.value, ymax = upper.value, x = ntile), alpha = 0.1) +
         xlab(xtitle) + ylab("Treatment Effect") +
@@ -723,6 +723,11 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1) {
       
     }
     
+  }
+  
+  if (!is.null(ymin) & !is.null(ymax)) {
+    plot_diff <- plot_diff +
+      ylim(ymin, ymax)
   }
   
   # plot of combined histogram + differential effects
