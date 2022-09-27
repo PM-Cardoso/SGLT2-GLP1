@@ -22,7 +22,7 @@ ui <- fluidPage(
   titlePanel("HbA1c prediction"),
   
   fluidRow(
-    column(3,
+    column(2,
            h3("Clinical information:"),
            h4("HbA1c target (mmol/mol)"),
            textInput("target_num",
@@ -126,13 +126,15 @@ ui <- fluidPage(
                         label = h6("CVD score"),
                         value = 0.01,
                         min = 0,
-                        max = 25),
-           h4("Weight model"),
+                        max = 25)
+           ),
+    column(2,
+           h3("Weight model"),
            numericInput("weight_num",
                         label = h6("Weight (kg)"),
                         value = 126,
                         min = 30,
-                        max = 300)
+                        max = 300),
            )
   ),
   br(), 
@@ -231,11 +233,8 @@ server <- function(input, output, session) {
     # turn into data.frame
     patient <- as.data.frame(patient)
   })
-
-  eventReactive(input$reload, {
-    session$reload()
-  })
   
+  # hba1c change model
   posteriors_hba1c <- eventReactive(input$calculate, {
     
     patient <- patient()
@@ -253,6 +252,7 @@ server <- function(input, output, session) {
     posteriors_hba1c
   })
   
+  # weight change model
   posteriors_weight <- eventReactive(input$calculate, {
     
     patient <- patient()
