@@ -434,7 +434,7 @@ plot_ATE_dev_prop_score <- ATE_matching_validation_dev[["effects"]] %>%
   theme_bw() +
   geom_errorbar(aes(x = hba1c_diff.pred, y = obs, ymin = lci, ymax = uci), colour = "black", width = 0.1) +
   ylab("Decile average treatment effect") + 
-  xlab("Predicted average treatment effect") +
+  xlab("Predicted conditional average treatment effects") +
   ggtitle("Development cohort") +
   scale_x_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
   scale_y_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
@@ -451,7 +451,7 @@ plot_ATE_val_prop_score <- ATE_matching_validation_val[["effects"]] %>%
   theme_bw() +
   geom_errorbar(aes(x = hba1c_diff.pred, y = obs, ymin = lci, ymax = uci), colour = "black", width = 0.1) +
   ylab("Decile average treatment effect") + 
-  xlab("Predicted average treatment effect") +
+  xlab("Predicted conditional average treatment effects") +
   ggtitle("Validation cohort") +
   scale_x_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
   scale_y_continuous(limits = c(-15, 15), breaks = c(seq(-15, 15, by = 2))) +
@@ -467,7 +467,7 @@ plot_4 <- cowplot::plot_grid(
 )
 
 
-pdf("Plot4.pdf", width = 7, height = 4)
+pdf("Plot4.pdf", width = 8, height = 4)
 plot_4
 dev.off()
 
