@@ -292,8 +292,8 @@ server <- function(input, output, session) {
     
     # reshape data
     df <- data.frame(
-      SGLT2 = probability_SGLT2*100,
-      GLP1 = probability_GLP1*100
+      SGLT2 = round(probability_SGLT2*100),
+      GLP1 = round(probability_GLP1*100)
     ) %>%
       gather(key, val) %>%
       mutate(
