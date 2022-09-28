@@ -762,6 +762,285 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1, thinnin
 }
 
 
+# Differential treatment response
+
+# wrapper function for the variables of a model
+diff_treatment_response <- function(bart_model, dataset, rby) {
+  ##### Input variables
+  # bart_model: bart_model used in model fit
+  # dataset: dataset used for differential 
+  # rby: number of ntiles
+  
+  # variables being investigated
+  variables <- colnames(bart_model$X)
+  
+  # number of variables being investigated
+  nvars <- length(variables)
+  
+  # list of differential treatment effects for all variables
+  effects.list <- vector("list", length = nvars)
+  
+  # make names of list elements the same as variables being investigated
+  names(effects.list) <- variables
+  
+  # iterate through the variables
+  for (i in 1:nvars) {
+    
+    # Calculate differential treatment effects
+    effects.list[[i]] <- calc_diff_treatment_response(bart_model, dataset, variables[i], rby)
+    
+    # print out update on stage of calculation
+    print(paste0("Calculation of differential treatment effects for ", variables[i], ": DONE"))
+  }
+  
+  return(effects.list)
+  
+}
+
+# Calculate differential treatment response
+calc_diff_treatment_response <- function(bart_model, dataset, variable, rby) {
+  ##### Input variables
+  # bart_model: bart_model used in model fit
+  # dataset: dataset used for differential 
+  # variable: variable being investigated
+  # rby: number of ntiles
+  
+  # load all data for range of variable values; name: final.all.extra.vars
+  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  
+  
+  # different approaches whether the variable is continuous or categorical
+  if (is.numeric(dataset[, variable])) {
+    # if variable is continuous
+    
+    # ntile values of variable
+    range <- quantile(final.all.extra.vars[,variable], probs = c(seq(0, 1, length.out = rby)), na.rm = TRUE)
+    
+  } else {
+    # if variable is categorical
+    
+    # possible values of the variable
+    range <- levels(final.all.extra.vars[,variable])
+    
+  }
+  
+  # new dataset with all values from deciles in dataset
+  new.dataset <- dataset
+  
+  # create a long dataset with all possible combinations of range and dataset
+  for (i in 1:length(range)) {
+    # first decile only change values
+    if (i == 1) {
+      new.dataset[,variable] <- range[i]
+      # other deciles append new values to full dataset
+    } else {
+      interim.dataset <- dataset
+      interim.dataset[,variable] <- range[i]
+      new.dataset <- rbind(new.dataset, interim.dataset)
+    }
+  }
+  
+  # if variable is categorical, turn new.dataset variable into factor
+  if (!is.numeric(dataset[, variable])) {
+    
+    # turn new.dataset variable into factor
+    new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
+  }
+  
+  # calculate treatment effects for all variants of the dataset
+  # effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
+  #   mutate(ntile = rep(1:length(range), each = nrow(dataset)),
+  #          ntile.value = rep(range, each = nrow(dataset)))
+  
+  # effects_summary <- calc_effect_summary_diff_treat(bart_model, new.dataset) %>%
+  #   cbind(ntile = rep(1:length(range)),
+  #         ntile.value = rep(range)) %>%
+  #   gather(key, mean, -ntile, -ntile.value)
+  
+  response <- calc_response(bart_model, new.dataset)
+  
+  response_summary <- calc_response_summary(response)
+  
+  response_summary_dataset <- rbind(
+    response_summary[["SGLT2"]] %>%
+      mutate(ntile = rep(1:length(range), each = nrow(dataset)),
+             ntile.value = rep(range, each = nrow(dataset)),
+             key = "SGLT2"),
+    response_summary[["GLP1"]] %>%
+      mutate(ntile = rep(1:length(range), each = nrow(dataset)),
+             ntile.value = rep(range, each = nrow(dataset)),
+             key = "GLP1")
+  ) %>%
+    as.data.frame()
+  
+  return(response_summary_dataset)
+}
+
+
+## Calculate treatment response
+
+calc_response <- function(bart_model, data) {
+  ##### Input variables
+  # bart_model - bart model used for fitting
+  # data - data being investigated
+  
+  # get posteriors for SGLT2
+  effect_SGLT2 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
+                                                            select(
+                                                              colnames(bart_model$X)
+                                                            ) %>%
+                                                            mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
+  
+  # get posteriors for GLP1
+  effect_GLP1 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
+                                                           select(
+                                                             colnames(bart_model$X)
+                                                           ) %>%
+                                                           mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
+  
+  # calculate treatment effect for entry
+  response <- list(SGLT2 = effect_SGLT2,
+                   GLP1 = effect_GLP1)
+  
+  return(response)
+  
+}
+
+## Summarise Treatment response
+calc_response_summary <- function(response) {
+  ##### Input variables
+  # response posteriors
+  
+  # summarise SGLT2
+  summary_SGLT2 <- cbind(
+    `5%` = apply(response[["SGLT2"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
+    `50%` = apply(response[["SGLT2"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
+    `95%` = apply(response[["SGLT2"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
+    mean = apply(response[["SGLT2"]]$y_hat_posterior_samples, MARGIN = 1, function(x) mean(c(x)))
+  ) %>%
+    as.data.frame()
+  
+  # summarise GLP1
+  summary_GLP1 <- cbind(
+    `5%` = apply(response[["GLP1"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
+    `50%` = apply(response[["GLP1"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
+    `95%` = apply(response[["GLP1"]]$y_hat_posterior_samples, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
+    mean = apply(response[["GLP1"]]$y_hat_posterior_samples, MARGIN = 1, function(x) mean(c(x)))
+  ) %>%
+    as.data.frame()
+  
+  
+  response_summary <- list(SGLT2 = summary_SGLT2,
+                           GLP1 = summary_GLP1)
+  
+  return(response_summary)
+}
+
+
+# Plot differential treatment response
+
+plot_diff_treatment_response <- function(response, post_hba1c, variable, xtitle, k = 1) {
+  ##### Input variables
+  # response: response summary calculated from calc_diff_treatment_effect function
+  # post_hba1c: patient hba1c value post therapy
+  # variable: variable being investigated
+  # xtitle: title of x axis
+  # ymin, ymax: limits of y axis in plot
+  
+  response$`5%` <- response$`5%` - post_hba1c
+  response$`50%` <- response$`50%` - post_hba1c
+  response$`95%` <- response$`95%` - post_hba1c
+  response$mean <- response$mean - post_hba1c
+  
+  # load all data for range of variable values; name: final.all.extra.vars
+  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  
+  # different approaches whether the variable is continuous or categorical
+  if (is.numeric(final.all.extra.vars[, variable])) {
+    # if variable is continuous
+    
+    # plot histogram of all values in variable
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_histogram(aes(x = final.all.extra.vars[, variable]))
+    
+    
+    
+    plot_diff <- response %>%
+      ggplot() +
+      stat_smooth(aes(x = ntile.value, y = mean, colour = key)) +
+      scale_colour_manual(values=c("red","#f1a340")) +
+      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + theme(legend.position = "none")
+    
+    
+    # some variables require logging the x-axis due to extreme values
+    if (variable == "preast" | variable == "prebil" | variable == "prealt") {
+      
+      # log scale of histogram plot
+      plot_hist <- plot_hist +
+        scale_x_log10()
+      
+      # log scale of differential response plot
+      plot_diff  <- plot_diff +
+        scale_x_log10() +
+        xlab(paste0(xtitle, " (log)"))
+      
+    }
+    
+  } else {
+    # if variable is categorical
+    
+    # plot histogram of all values in variable
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_bar(aes(x = final.all.extra.vars[, variable]))
+    
+    
+    plot_diff <- response %>%
+      ggplot() +
+      geom_errorbar(aes(ymin = `5%`, ymax = `95%`, x = ntile), colour = "black", position=position_dodge(width=0.5)) +
+      geom_point(aes(x = ntile, y = mean, colour = key), position=position_dodge(width=0.5)) +
+      scale_colour_manual(values=c("red","#f1a340")) +
+      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + 
+      theme(legend.position = "none") +
+      scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
+    
+    
+  }
+  
+  
+  # plot of combined histogram + differential response
+  plot.diff.marg <- cowplot::plot_grid(
+    
+    # plot of differential response
+    plot_diff
+    
+    ,
+    
+    cowplot::plot_grid(
+      
+      # spacing of plots
+      ggplot() +
+        theme_void()
+      
+      ,
+      
+      # plot of histogram
+      plot_hist
+      
+      , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
+      
+    )
+    
+    , ncol = 1, nrow = 2, rel_heights = c(0.85, 0.15)
+    
+  )
+  
+  return(plot.diff.marg)
+  
+}
+
+
 # Evaluating ATE from model, unadjusted
 
 ATE_validation <- function(data) {
