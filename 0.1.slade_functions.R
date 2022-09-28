@@ -847,16 +847,6 @@ calc_diff_treatment_response <- function(bart_model, dataset, variable, rby) {
     new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
   }
   
-  # calculate treatment effects for all variants of the dataset
-  # effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
-  #   mutate(ntile = rep(1:length(range), each = nrow(dataset)),
-  #          ntile.value = rep(range, each = nrow(dataset)))
-  
-  # effects_summary <- calc_effect_summary_diff_treat(bart_model, new.dataset) %>%
-  #   cbind(ntile = rep(1:length(range)),
-  #         ntile.value = rep(range)) %>%
-  #   gather(key, mean, -ntile, -ntile.value)
-  
   response <- calc_response(bart_model, new.dataset)
   
   response_summary <- calc_response_summary(response)
@@ -998,8 +988,7 @@ plot_diff_treatment_response <- function(response, post_hba1c, variable, xtitle,
     
     plot_diff <- response %>%
       ggplot() +
-      geom_errorbar(aes(ymin = `5%`, ymax = `95%`, x = ntile), colour = "black", position=position_dodge(width=0.5)) +
-      geom_point(aes(x = ntile, y = mean, colour = key), position=position_dodge(width=0.5)) +
+      geom_pointrange(aes(y = mean, ymin = `5%`, ymax = `95%`, x = ntile, colour = key), position = position_dodge2(width=0.5)) +
       scale_colour_manual(values=c("red","#f1a340")) +
       xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + 
       theme(legend.position = "none") +
