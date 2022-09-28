@@ -72,127 +72,127 @@ dataset.dev <- final.dev %>%
   select(c(patid, pateddrug, posthba1c_final, 
            colnames(bart_model_final$X)))
 
-## all variables
-if (class(try(
-  
-  effects_summary_dev <- readRDS(paste0(output_path, "/Comparison/Model_4_5/effects_summary_dev.rds"))
-  
-  , silent = TRUE)) == "try-error") {
-  
-  effects_summary_dev <- diff_treatment_effect(bart_model_final, dataset.dev, 25)
-    
-  saveRDS(effects_summary_dev, paste0(output_path, "/Comparison/Model_4_5/effects_summary_dev.rds"))
-}
-
-
-## egfr_ckdepi
-
-# plot treatment effect + histogram marginal
-plot.egfr.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["egfr_ckdepi"]], "egfr_ckdepi", "eGFR", 4)
-
-## prealt
-
-# plot treatment effect + histogram marginal
-plot.alt.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prealt"]], "prealt", "ALT", 4)
-
-## prehba1cmmol
-
-# plot treatment effect + histogram marginal
-plot.hba1c.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prehba1cmmol"]], "prehba1cmmol", "HbA1c", 4)
-
-## score.excl.mi
-
-# plot treatment effect + histogram marginal
-plot.score.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["score.excl.mi"]], "score.excl.mi", "CVD Score", 4)
-
-## agetx
-
-# plot treatment effect + histogram marginal
-plot.age.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["agetx"]], "agetx", "Age", 4)
-
-## prehdl
-
-# plot treatment effect + histogram marginal
-plot.hdl.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prehdl"]], "prehdl", "HDL", 4)
-
-## prebmi
-
-# plot treatment effect + histogram marginal
-plot.bmi.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prebmi"]], "prebmi", "BMI", 4)
-
-## prebil
-
-# plot treatment effect + histogram marginal
-plot.bil.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prebil"]], "prebil", "BIL", 4)
-
-## preplatelets
-
-# plot treatment effect + histogram marginal
-plot.platelets.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["preplatelets"]], "preplatelets", "Platelets", 4)
-
-## t2dmduration
-
-# plot treatment effect + histogram marginal
-plot.t2dmduration.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["t2dmduration"]], "t2dmduration", "t2dmduration", 4)
-
-## prealb
-
-# plot treatment effect + histogram marginal
-plot.alb.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prealb"]], "prealb", "ALB", 4)
-
-## presys
-
-# plot treatment effect + histogram marginal
-plot.sys.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["presys"]], "presys", "SYS", 4)
-
-## preast
-
-# plot treatment effect + histogram marginal
-plot.ast.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["preast"]], "preast", "AST", 4)
-
-## drugline
-
-# plot treatment effect + histogram marginal
-plot.drugline.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["drugline"]], "drugline", "Drugline")
-
-## Category Smoker
-
-# plot treatment effect + histogram marginal
-plot.category.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["Category"]], "Category", "Smoking")
-
-## ncurrtx
-
-# plot treatment effect + histogram marginal
-plot.ncurrtx.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["ncurrtx"]], "ncurrtx", "ncurrtx")
-
-## malesex
-
-# plot treatment effect + histogram marginal
-plot.malesex.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["malesex"]], "malesex", "Sex")
-
-
-#### PDF with all the plots
-
-
-pdf(file = "Plots/6.4.differential_treatment_effect.pdf")
-plot.age.diff.marg
-plot.ast.diff.marg
-plot.alb.diff.marg
-plot.t2dmduration.diff.marg
-plot.platelets.diff.marg
-plot.bil.diff.marg
-plot.bmi.diff.marg
-plot.hdl.diff.marg
-plot.sys.diff.marg
-plot.score.diff.marg
-plot.hba1c.diff.marg
-plot.alt.diff.marg
-plot.egfr.diff.marg
-plot.drugline.diff.marg
-plot.category.diff.marg
-plot.ncurrtx.diff.marg
-plot.malesex.diff.marg
-dev.off()
+# ## all variables
+# if (class(try(
+#   
+#   effects_summary_dev <- readRDS(paste0(output_path, "/Comparison/Model_4_5/effects_summary_dev.rds"))
+#   
+#   , silent = TRUE)) == "try-error") {
+#   
+#   effects_summary_dev <- diff_treatment_effect(bart_model_final, dataset.dev, 25)
+#     
+#   saveRDS(effects_summary_dev, paste0(output_path, "/Comparison/Model_4_5/effects_summary_dev.rds"))
+# }
+# 
+# 
+# ## egfr_ckdepi
+# 
+# # plot treatment effect + histogram marginal
+# plot.egfr.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["egfr_ckdepi"]], "egfr_ckdepi", "eGFR", 4)
+# 
+# ## prealt
+# 
+# # plot treatment effect + histogram marginal
+# plot.alt.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prealt"]], "prealt", "ALT", 4)
+# 
+# ## prehba1cmmol
+# 
+# # plot treatment effect + histogram marginal
+# plot.hba1c.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prehba1cmmol"]], "prehba1cmmol", "HbA1c", 4)
+# 
+# ## score.excl.mi
+# 
+# # plot treatment effect + histogram marginal
+# plot.score.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["score.excl.mi"]], "score.excl.mi", "CVD Score", 4)
+# 
+# ## agetx
+# 
+# # plot treatment effect + histogram marginal
+# plot.age.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["agetx"]], "agetx", "Age", 4)
+# 
+# ## prehdl
+# 
+# # plot treatment effect + histogram marginal
+# plot.hdl.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prehdl"]], "prehdl", "HDL", 4)
+# 
+# ## prebmi
+# 
+# # plot treatment effect + histogram marginal
+# plot.bmi.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prebmi"]], "prebmi", "BMI", 4)
+# 
+# ## prebil
+# 
+# # plot treatment effect + histogram marginal
+# plot.bil.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prebil"]], "prebil", "BIL", 4)
+# 
+# ## preplatelets
+# 
+# # plot treatment effect + histogram marginal
+# plot.platelets.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["preplatelets"]], "preplatelets", "Platelets", 4)
+# 
+# ## t2dmduration
+# 
+# # plot treatment effect + histogram marginal
+# plot.t2dmduration.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["t2dmduration"]], "t2dmduration", "t2dmduration", 4)
+# 
+# ## prealb
+# 
+# # plot treatment effect + histogram marginal
+# plot.alb.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["prealb"]], "prealb", "ALB", 4)
+# 
+# ## presys
+# 
+# # plot treatment effect + histogram marginal
+# plot.sys.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["presys"]], "presys", "SYS", 4)
+# 
+# ## preast
+# 
+# # plot treatment effect + histogram marginal
+# plot.ast.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["preast"]], "preast", "AST", 4)
+# 
+# ## drugline
+# 
+# # plot treatment effect + histogram marginal
+# plot.drugline.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["drugline"]], "drugline", "Drugline")
+# 
+# ## Category Smoker
+# 
+# # plot treatment effect + histogram marginal
+# plot.category.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["Category"]], "Category", "Smoking")
+# 
+# ## ncurrtx
+# 
+# # plot treatment effect + histogram marginal
+# plot.ncurrtx.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["ncurrtx"]], "ncurrtx", "ncurrtx")
+# 
+# ## malesex
+# 
+# # plot treatment effect + histogram marginal
+# plot.malesex.diff.marg <- plot_diff_treatment_effect(effects_summary_dev[["malesex"]], "malesex", "Sex")
+# 
+# 
+# #### PDF with all the plots
+# 
+# 
+# pdf(file = "Plots/6.4.differential_treatment_effect.pdf")
+# plot.age.diff.marg
+# plot.ast.diff.marg
+# plot.alb.diff.marg
+# plot.t2dmduration.diff.marg
+# plot.platelets.diff.marg
+# plot.bil.diff.marg
+# plot.bmi.diff.marg
+# plot.hdl.diff.marg
+# plot.sys.diff.marg
+# plot.score.diff.marg
+# plot.hba1c.diff.marg
+# plot.alt.diff.marg
+# plot.egfr.diff.marg
+# plot.drugline.diff.marg
+# plot.category.diff.marg
+# plot.ncurrtx.diff.marg
+# plot.malesex.diff.marg
+# dev.off()
 
 
 
@@ -242,7 +242,6 @@ average.patient <- cbind(
          presys = as.numeric(presys),
          preast = as.numeric(preast)
   )
-       
 
 
 effects_summary_patient <- diff_treatment_effect(bart_model_final, average.patient, 25)
@@ -251,88 +250,119 @@ effects_summary_patient <- diff_treatment_effect(bart_model_final, average.patie
 ## egfr_ckdepi
 
 # plot treatment effect + histogram marginal
-plot.egfr.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["egfr_ckdepi"]], "egfr_ckdepi", "eGFR", 4)
+plot.egfr.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["egfr_ckdepi"]], 
+                                                  variable = "egfr_ckdepi", xtitle = "eGFR", 
+                                                  thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## prealt
 
 # plot treatment effect + histogram marginal
-plot.alt.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prealt"]], "prealt", "ALT", 4)
+plot.alt.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prealt"]], 
+                                                  variable = "prealt", xtitle = "ALT", 
+                                                  thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## prehba1cmmol
 
 # plot treatment effect + histogram marginal
-plot.hba1c.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prehba1cmmol"]], "prehba1cmmol", "HbA1c", 4)
+plot.hba1c.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prehba1cmmol"]], 
+                                                 variable = "prehba1cmmol", xtitle = "HbA1c", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## score.excl.mi
 
 # plot treatment effect + histogram marginal
-plot.score.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["score.excl.mi"]], "score.excl.mi", "CVD Score", 4)
-
+plot.score.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["score.excl.mi"]], 
+                                                   variable = "score.excl.mi", xtitle = "CVD Score", 
+                                                   thinning = 5, k = 4, ymin = -8, ymax = 8)
 ## agetx
 
 # plot treatment effect + histogram marginal
-plot.age.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["agetx"]], "agetx", "Age", 4)
-
+plot.age.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["agetx"]], 
+                                                   variable = "agetx", xtitle = "Age", 
+                                                   thinning = 5, k = 4, ymin = -8, ymax = 8)
 ## prehdl
 
 # plot treatment effect + histogram marginal
-plot.hdl.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prehdl"]], "prehdl", "HDL", 4)
+plot.hdl.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prehdl"]], 
+                                                 variable = "prehdl", xtitle = "HDL", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## prebmi
 
 # plot treatment effect + histogram marginal
-plot.bmi.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prebmi"]], "prebmi", "BMI", 4)
+plot.bmi.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prebmi"]], 
+                                                 variable = "prebmi", xtitle = "BMI", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## prebil
 
 # plot treatment effect + histogram marginal
-plot.bil.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prebil"]], "prebil", "BIL", 4)
+plot.bil.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prebil"]], 
+                                                 variable = "prebil", xtitle = "BIL", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## preplatelets
 
 # plot treatment effect + histogram marginal
-plot.platelets.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["preplatelets"]], "preplatelets", "Platelets", 4)
+plot.platelets.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["preplatelets"]], 
+                                                 variable = "preplatelets", xtitle = "Platelets", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## t2dmduration
 
 # plot treatment effect + histogram marginal
-plot.t2dmduration.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["t2dmduration"]], "t2dmduration", "t2dmduration", 4)
+plot.t2dmduration.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["t2dmduration"]], 
+                                                       variable = "t2dmduration", xtitle = "t2dmduration", 
+                                                       thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## prealb
 
 # plot treatment effect + histogram marginal
-plot.alb.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["prealb"]], "prealb", "ALB", 4)
+plot.alb.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["prealb"]], 
+                                                          variable = "prealb", xtitle = "ALB", 
+                                                          thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## presys
 
 # plot treatment effect + histogram marginal
-plot.sys.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["presys"]], "presys", "SYS", 4)
+plot.sys.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["presys"]], 
+                                                 variable = "presys", xtitle = "SYS", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## preast
 
 # plot treatment effect + histogram marginal
-plot.ast.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["preast"]], "preast", "AST", 4)
+plot.ast.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["preast"]], 
+                                                 variable = "preast", xtitle = "AST", 
+                                                 thinning = 5, k = 4, ymin = -8, ymax = 8)
 
 ## drugline
 
 # plot treatment effect + histogram marginal
-plot.drugline.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["drugline"]], "drugline", "Drugline", 4)
+plot.drugline.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["drugline"]], 
+                                                 variable = "drugline", xtitle = "Drugline", 
+                                                 thinning = 5, ymin = -8, ymax = 8)
 
 ## Category Smoker
 
 # plot treatment effect + histogram marginal
-plot.category.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["Category"]], "Category", "Smoking", 4)
+plot.category.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["Category"]], 
+                                                      variable = "Category", xtitle = "Smoking", 
+                                                      thinning = 5, ymin = -8, ymax = 8)
 
 ## ncurrtx
 
 # plot treatment effect + histogram marginal
-plot.ncurrtx.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["ncurrtx"]], "ncurrtx", "ncurrtx", 4)
+plot.ncurrtx.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["ncurrtx"]], 
+                                                      variable = "ncurrtx", xtitle = "ncurrtx", 
+                                                      thinning = 5, ymin = -8, ymax = 8)
 
 ## malesex
 
 # plot treatment effect + histogram marginal
-plot.malesex.diff.marg <- plot_diff_treatment_effect(effects_summary_patient[["malesex"]], "malesex", "Sex")
-
+plot.malesex.diff.marg <- plot_diff_treatment_effect(effects = effects_summary_patient[["malesex"]], 
+                                                     variable = "malesex", xtitle = "Sex", 
+                                                     thinning = 5, ymin = -8, ymax = 8)
 
 
 
@@ -357,11 +387,251 @@ plot.drugline.diff.marg
 plot.category.diff.marg
 plot.ncurrtx.diff.marg
 plot.malesex.diff.marg
+
+# grid plot of all plots
+cowplot::plot_grid(
+  plot.age.diff.marg,
+  plot.ast.diff.marg,
+  plot.alb.diff.marg,
+  plot.t2dmduration.diff.marg,
+  plot.platelets.diff.marg,
+  plot.bil.diff.marg,
+  plot.bmi.diff.marg,
+  plot.hdl.diff.marg,
+  plot.sys.diff.marg,
+  plot.score.diff.marg,
+  plot.hba1c.diff.marg,
+  plot.alt.diff.marg,
+  plot.egfr.diff.marg,
+  plot.drugline.diff.marg,
+  plot.category.diff.marg,
+  plot.ncurrtx.diff.marg,
+  plot.malesex.diff.marg
+)
 dev.off()
 
 
 
+# Patients with complete data
+# 9433, 9481, 9517, 9601, 9649, 9241, 9301
 
+
+# patient 39, MRC_plots.R
+# patient final hba1c = dataset.dev[9241,"posthba1c_final"] = 54
+specific.patient <- cbind(
+  drugclass = "SGLT2",
+  egfr_ckdepi = as.numeric(dataset.dev[9433, "egfr_ckdepi"]),
+  hba1cmonth = 12,
+  prealt = as.numeric(dataset.dev[9433, "prealt"]),
+  prehba1cmmol = as.numeric(dataset.dev[9433, "prehba1cmmol"]),
+  score.excl.mi = as.numeric(dataset.dev[9433, "score.excl.mi"]),
+  Category = "Non-smoker",
+  drugline = "2",
+  ncurrtx = "1",
+  yrdrugstart = 2016,
+  agetx = as.numeric(dataset.dev[9433, "agetx"]),
+  malesex = "1",
+  prehdl = as.numeric(dataset.dev[9433, "prehdl"]),
+  prebmi = as.numeric(dataset.dev[9433, "prebmi"]),
+  prebil = as.numeric(dataset.dev[9433, "prebil"]),
+  preplatelets = as.numeric(dataset.dev[9433, "preplatelets"]),
+  t2dmduration = as.numeric(dataset.dev[9433, "t2dmduration"]),
+  prealb = as.numeric(dataset.dev[9433, "prealb"]),
+  presys = as.numeric(dataset.dev[9433, "presys"]),
+  preast = as.numeric(dataset.dev[9433, "preast"])
+) %>%
+  as.data.frame() %>%
+  mutate(drugclass = factor(drugclass, levels = levels(dataset.dev$drugclass)),
+         egfr_ckdepi = as.numeric(egfr_ckdepi),
+         hba1cmonth = as.numeric(hba1cmonth),
+         prealt = as.numeric(prealt),
+         prehba1cmmol = as.numeric(prehba1cmmol),
+         score.excl.mi = as.numeric(score.excl.mi),
+         Category = factor(Category, levels = levels(dataset.dev$Category)),
+         drugline = factor(drugline, levels = levels(dataset.dev$drugline)),
+         ncurrtx = factor(ncurrtx, levels = levels(dataset.dev$ncurrtx)),
+         yrdrugstart = as.numeric(yrdrugstart),
+         agetx = as.numeric(agetx),
+         malesex = factor(malesex, levels = levels(dataset.dev$malesex)),
+         prehdl = as.numeric(prehdl),
+         prebmi = as.numeric(prebmi),
+         prebil = as.numeric(prebil),
+         preplatelets = as.numeric(preplatelets),
+         t2dmduration = as.numeric(t2dmduration),
+         prealb = as.numeric(prealb),
+         presys = as.numeric(presys),
+         preast = as.numeric(preast)
+  )
+
+
+
+################
+## Different treatment response split between therapies
+
+response_summary_patient <- diff_treatment_response(bart_model_final, specific.patient, 25)
+
+
+## egfr_ckdepi
+
+# plot treatment response + histogram marginal
+plot.egfr.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["egfr_ckdepi"]], 
+                                                    post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                  variable = "egfr_ckdepi", xtitle = "eGFR")
+
+## prealt
+
+# plot treatment effect + histogram marginal
+plot.alt.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prealt"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "prealt", xtitle = "ALT")
+
+## prehba1cmmol
+
+# plot treatment effect + histogram marginal
+plot.hba1c.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prehba1cmmol"]], 
+                                                     post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                   variable = "prehba1cmmol", xtitle = "HbA1c")
+
+## score.excl.mi
+
+# plot treatment effect + histogram marginal
+plot.score.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["score.excl.mi"]], 
+                                                     post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                   variable = "score.excl.mi", xtitle = "CVD Score")
+
+## agetx
+
+# plot treatment effect + histogram marginal
+plot.age.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["agetx"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "agetx", xtitle = "Age")
+
+## prehdl
+
+# plot treatment effect + histogram marginal
+plot.hdl.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prehdl"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "prehdl", xtitle = "HDL")
+
+## prebmi
+
+# plot treatment effect + histogram marginal
+plot.bmi.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prebmi"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "prebmi", xtitle = "BMI")
+
+## prebil
+
+# plot treatment effect + histogram marginal
+plot.bil.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prebil"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "prebil", xtitle = "BIL")
+
+## preplatelets
+
+# plot treatment effect + histogram marginal
+plot.platelets.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["preplatelets"]],
+                                                         post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]), 
+                                                       variable = "preplatelets", xtitle = "Platelets")
+
+## t2dmduration
+
+# plot treatment effect + histogram marginal
+plot.t2dmduration.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["t2dmduration"]], 
+                                                            post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                          variable = "t2dmduration", xtitle = "t2dmduration")
+
+## prealb
+
+# plot treatment effect + histogram marginal
+plot.alb.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["prealb"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "prealb", xtitle = "ALB")
+
+## presys
+
+# plot treatment effect + histogram marginal
+plot.sys.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["presys"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "presys", xtitle = "SYS")
+
+## preast
+
+# plot treatment effect + histogram marginal
+plot.ast.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["preast"]], 
+                                                   post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                 variable = "preast", xtitle = "AST")
+
+## drugline
+
+# plot treatment effect + histogram marginal
+plot.drugline.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["drugline"]], 
+                                                        post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                      variable = "drugline", xtitle = "Drugline")
+
+## Category Smoker
+
+# plot treatment effect + histogram marginal
+plot.category.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["Category"]], 
+                                                        post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                      variable = "Category", xtitle = "Smoking")
+
+## ncurrtx
+
+# plot treatment effect + histogram marginal
+plot.ncurrtx.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["ncurrtx"]], 
+                                                       post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                     variable = "ncurrtx", xtitle = "ncurrtx")
+
+## malesex
+
+# plot treatment effect + histogram marginal
+plot.malesex.diff.marg <- plot_diff_treatment_response(response = response_summary_patient[["malesex"]], 
+                                                       post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                     variable = "malesex", xtitle = "Sex")
+
+
+pdf(file = "Plots/6.4.patient_differential_treatment_response.pdf")
+plot.age.diff.marg
+plot.ast.diff.marg
+plot.alb.diff.marg
+plot.t2dmduration.diff.marg
+plot.platelets.diff.marg
+plot.bil.diff.marg
+plot.bmi.diff.marg
+plot.hdl.diff.marg
+plot.sys.diff.marg
+plot.score.diff.marg
+plot.hba1c.diff.marg
+plot.alt.diff.marg
+plot.egfr.diff.marg
+plot.drugline.diff.marg
+plot.category.diff.marg
+plot.ncurrtx.diff.marg
+plot.malesex.diff.marg
+
+# grid plot of all plots
+cowplot::plot_grid(
+  plot.age.diff.marg,
+  plot.ast.diff.marg,
+  plot.alb.diff.marg,
+  plot.t2dmduration.diff.marg,
+  plot.platelets.diff.marg,
+  plot.bil.diff.marg,
+  plot.bmi.diff.marg,
+  plot.hdl.diff.marg,
+  plot.sys.diff.marg,
+  plot.score.diff.marg,
+  plot.hba1c.diff.marg,
+  plot.alt.diff.marg,
+  plot.egfr.diff.marg,
+  plot.drugline.diff.marg,
+  plot.category.diff.marg,
+  plot.ncurrtx.diff.marg,
+  plot.malesex.diff.marg
+)
+dev.off()
+                               
 
 
 
