@@ -25,7 +25,7 @@ Files:
 - 2.0: Descriptive analysis of data
     - .1: Collection of plots demonstrating specific details/quirks of the dataset.
     - .2: Table description of Development and Validation data
-    - .3: Treatment Effects/Variable description table/plot
+    - .3: Treatment Effects/Variable description table/plot (Model 4.5)
 
 - 3.0: R packages to model causal treatment effect.
     - .1: Fitting of a causal model using _grf_ R package. This includes an evaluation of model fit.
@@ -35,8 +35,8 @@ Files:
     - .1: Fitting a BART model with variable selection for propensity score and outcome model. This includes an evaluation of model fit.
     - .2: Fitting a BART model with routine variables in propensity score model and biomarkers in outcome model. This includes an evaluation of model fit.
     - .3: Fitting a BART model with variable selection for propensity score and variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.
-    - **.4: Fitting a BART model with variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.** (Model chosen)
-    - .5: Fitting a BART model with variable selection for using BART + _grf_ for the outcome model. This includes an evaluation of model fit. (Change from 4.4 - instead of 'score', we use 'score.excl.mi')
+    - .4: Fitting a BART model with variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.
+    - .5: **Fitting a BART model with variable selection for using BART + _grf_ for the outcome model. This includes an evaluation of model fit. (Change from 4.4 - instead of 'score', we use 'score.excl.mi')** (Model chosen)
     
 - 5.0: _bartMachine_ models using no methodical procedure.
     - .1: Fitting a collection of naive Bart models for HbA1c outcome using routine clinical variables / all variables / propensity scores, alternating between them.
