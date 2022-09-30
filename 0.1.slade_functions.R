@@ -990,7 +990,8 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_bar(aes(x = final.all.extra.vars[, variable]))
+      geom_bar(aes(x = final.all.extra.vars[, variable]), na.rm = TRUE) +
+      scale_x_discrete(na.translate = FALSE)
     
     
     plot_diff <- response %>%
@@ -1187,6 +1188,66 @@ calc_ATE_validation <- function(data, seed = NULL) {
 }
 
 
+calc_ATE_validation_weight <- function(data, seed = NULL) {
+  ##### Input variables
+  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  
+  # calculate propensity score
+  prop_model <- calc_ATE_prop_score(data, seed)
+  
+  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2,
+  #   should be the way around)
+  prop_score <- 1 - prop_model$p_hat_train
+  
+  # split predicted treatment effects into deciles
+  predicted_treatment_effect <- data %>%
+    plyr::ddply("hba1c_diff.q", dplyr::summarise,
+                N = length(hba1c_diff),
+                hba1c_diff.pred = mean(hba1c_diff))
+  
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  
+  # join dataset and propensity score
+  data.new <- data %>%
+    cbind(prop_score)
+  
+  # iterate through deciles
+  for (i in mnumber) {
+    # fit linear regression for decile
+    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass) + prop_score),data=data.new,subset=hba1c_diff.q==i)
+    
+    # collect treatment effect from regression
+    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
+    confint_all <- confint(models[[i]], levels=0.95)
+    
+    # collect lower bound CI
+    lower.obs <- append(lower.obs,confint_all[2,1])
+    
+    # collect upper bound CI
+    upper.obs <- append(upper.obs,confint_all[2,2])
+    
+  }
+  
+  
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  
+  # returned list with fitted propensity model + decile treatment effects  
+  t <- list(prop_model = prop_model, effects = effects)
+  
+  return(t)
+}
+
+
 #Function to output ATE by subgroup
 ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
   ###
@@ -1316,9 +1377,182 @@ calc_ATE_validation_prop_matching <- function(data, seed = NULL) {
 }
 
 
+### prop matching
+
+calc_ATE_validation_prop_matching_weight <- function(data, seed = NULL) {
+  ##### Input variables
+  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  
+  # calculate propensity score
+  prop_model <- calc_ATE_prop_score(data, seed)
+  
+  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+  prop_score <- 1 - prop_model$p_hat_train
+  
+  # split predicted treatment effects into deciles
+  predicted_treatment_effect <- data %>%
+    plyr::ddply("hba1c_diff.q", dplyr::summarise,
+                N = length(hba1c_diff),
+                hba1c_diff.pred = mean(hba1c_diff))
+  
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  
+  # join dataset and propensity score
+  data.new <- data %>%
+    cbind(prop_score)
+  
+  # iterate through deciles
+  for (i in mnumber) {
+    
+    # dataset individuals in decile that had GLP1
+    rows.glp1 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "GLP1")
+    
+    # dataset individuals in decile that had SGLT2
+    rows.sglt2 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "SGLT2")
+    
+    # list of matched SGLT2 rows to GLP1 
+    matched.glp1 <- vector(mode = "numeric", length = length(rows.glp1))
+    
+    # iterate through rows of GLP1
+    for (l in 1:length(rows.glp1)) {
+      # closest SGLT2 row to GLP1
+      chosen.row <- which.min(abs(prop_score[rows.sglt2] - prop_score[rows.glp1[l]]))
+      
+      # check if distance is less than 0.05 (caliper distance)
+      if (prop_score[rows.sglt2[chosen.row]] - prop_score[rows.glp1[l]] < 0.05) {
+        # if chosen row is within caliper distance
+        
+        # update list of matched rows
+        matched.glp1[l] <- rows.sglt2[chosen.row]
+        
+        # remove row from being matched again
+        rows.sglt2 <- rows.sglt2[-chosen.row]
+        
+      } else {
+        # if chosen row is outside caliper distance
+        
+        # update list of matched rows with NA
+        matched.glp1[l] <- NA
+        
+      }
+    }
+    
+    # rows without NA in list of SGLT2 rows matched
+    not.na.rows <- !is.na(matched.glp1)
+    
+    # only keep rows with matched entries
+    matched.glp1 <- matched.glp1[not.na.rows]
+    rows.glp1 <- rows.glp1[not.na.rows]
+    
+    # fit linear regression for decile in the matched dataset
+    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass)),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
+    
+    # collect treatment effect from regression
+    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
+    confint_all <- confint(models[[i]], levels=0.95)
+    
+    # collect lower bound CI
+    lower.obs <- append(lower.obs,confint_all[2,1])
+    
+    # collect upper bound CI
+    upper.obs <- append(upper.obs,confint_all[2,2])
+    
+  }
+  
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  
+  # returned list with fitted propensity model + decile treatment effects  
+  t <- list(prop_model = prop_model, effects = effects)
+  
+  return(t)
+}
+
+
 ### inverse propensity score weighting 
 
 calc_ATE_validation_inverse_prop_weighting <- function(data, seed = NULL) {
+  ##### Input variables
+  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  
+  # calculate propensity score
+  prop_model <- calc_ATE_prop_score(data, seed)
+  
+  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+  prop_score <- 1 - prop_model$p_hat_train
+  
+  # split predicted treatment effects into deciles
+  predicted_treatment_effect <- data %>%
+    plyr::ddply("hba1c_diff.q", dplyr::summarise,
+                N = length(hba1c_diff),
+                hba1c_diff.pred = mean(hba1c_diff))
+  
+  # maximum number of deciles being tested
+  quantiles <- max(data$hba1c_diff.q)
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  
+  # join dataset and propensity score
+  data.new <- data %>%
+    cbind(calc_prop = prop_score)
+  
+  # weights for SGLT2 Z = 1
+  sglt2.data <- data.new %>%
+    filter(drugclass == "SGLT2") %>%
+    mutate(calc_prop = 1/(calc_prop))
+  
+  # weights for GLP1 Z = 0
+  glp1.data <- data.new %>%
+    filter(drugclass == "GLP1") %>%
+    mutate(calc_prop = 1/(1-calc_prop))
+  
+  data.new <- rbind(sglt2.data, glp1.data)
+  
+  # iterate through deciles
+  for (i in mnumber) {
+    # fit linear regression for decile
+    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = calc_prop)
+    
+    # collect treatment effect from regression
+    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
+    confint_all <- confint(models[[i]], levels=0.95)
+    
+    # collect lower bound CI
+    lower.obs <- append(lower.obs,confint_all[2,1])
+    
+    # collect upper bound CI
+    upper.obs <- append(upper.obs,confint_all[2,2])
+    
+  }
+  
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  
+  # returned list with fitted propensity model + decile treatment effects  
+  t <- list(prop_model = prop_model, effects = effects)
+  
+  return(t)
+}
+
+
+### inverse propensity score weighting 
+
+calc_ATE_validation_inverse_prop_weighting_weight <- function(data, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   
@@ -1361,7 +1595,7 @@ calc_ATE_validation_inverse_prop_weighting <- function(data, seed = NULL) {
   # iterate through deciles
   for (i in mnumber) {
     # fit linear regression for decile
-    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = prop_score)
+    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = prop_score)
     
     # collect treatment effect from regression
     hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
