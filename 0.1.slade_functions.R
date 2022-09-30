@@ -1011,31 +1011,8 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
   
   
   # plot of combined histogram + differential response
-  plot.diff.marg <- cowplot::plot_grid(
-    
-    # plot of differential response
-    plot_diff
-    
-    ,
-    
-    cowplot::plot_grid(
-      
-      # spacing of plots
-      ggplot() +
-        theme_void()
-      
-      ,
-      
-      # plot of histogram
-      plot_hist
-      
-      , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
-      
-    )
-    
-    , ncol = 1, nrow = 2, rel_heights = c(0.85, 0.15)
-    
-  )
+  plot.diff.marg <- patchwork::wrap_plots(plot_diff / plot_hist + patchwork::plot_layout(heights = c(0.85, 0.15)))
+
   
   return(plot.diff.marg)
   
