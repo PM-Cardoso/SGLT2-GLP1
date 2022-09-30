@@ -557,7 +557,7 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
   # rby: number of ntiles
   
   # load all data for range of variable values; name: final.all.extra.vars
-  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
   
   
   # different approaches whether the variable is continuous or categorical
@@ -629,7 +629,7 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1, thinnin
   }
   
   # load all data for range of variable values; name: final.all.extra.vars
-  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
   
   # different approaches whether the variable is continuous or categorical
   if (is.numeric(final.all.extra.vars[, variable])) {
@@ -806,7 +806,7 @@ calc_diff_treatment_response <- function(bart_model, dataset, variable, rby) {
   # rby: number of ntiles
   
   # load all data for range of variable values; name: final.all.extra.vars
-  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
   
   
   # different approaches whether the variable is continuous or categorical
@@ -929,21 +929,28 @@ calc_response_summary <- function(response) {
 
 # Plot differential treatment response
 
-plot_diff_treatment_response <- function(response, post_hba1c, variable, xtitle, k = 1) {
+plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, k = 1, ymin = NULL, ymax = NULL) {
   ##### Input variables
   # response: response summary calculated from calc_diff_treatment_effect function
-  # post_hba1c: patient hba1c value post therapy
+  # pre_hba1c: patient hba1c value post therapy
   # variable: variable being investigated
   # xtitle: title of x axis
   # ymin, ymax: limits of y axis in plot
   
-  response$`5%` <- response$`5%` - post_hba1c
-  response$`50%` <- response$`50%` - post_hba1c
-  response$`95%` <- response$`95%` - post_hba1c
-  response$mean <- response$mean - post_hba1c
+  if (variable == "prehba1cmmol") {
+    response$`5%` <- response$`5%` - response$ntile.value
+    response$`50%` <- response$`50%` - response$ntile.value
+    response$`95%` <- response$`95%` - response$ntile.value
+    response$mean <- response$mean - response$ntile.value 
+  } else {
+    response$`5%` <- response$`5%` - pre_hba1c
+    response$`50%` <- response$`50%` - pre_hba1c
+    response$`95%` <- response$`95%` - pre_hba1c
+    response$mean <- response$mean - pre_hba1c
+  }
   
   # load all data for range of variable values; name: final.all.extra.vars
-  load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_allcohort.Rda"))
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
   
   # different approaches whether the variable is continuous or categorical
   if (is.numeric(final.all.extra.vars[, variable])) {
@@ -995,6 +1002,11 @@ plot_diff_treatment_response <- function(response, post_hba1c, variable, xtitle,
       scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
     
     
+  }
+  
+  if (!is.null(ymin) & !is.null(ymax)) {
+    plot_diff <- plot_diff +
+      ylim(ymin, ymax)
   }
   
   
