@@ -401,7 +401,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
   
@@ -415,7 +415,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
   
@@ -809,7 +809,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
   
@@ -823,7 +823,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
   
@@ -1188,7 +1188,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
   
@@ -1202,7 +1202,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
   
@@ -1551,7 +1551,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
   
@@ -1565,7 +1565,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
   
@@ -1926,7 +1926,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
   
@@ -1940,7 +1940,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
   
@@ -2313,7 +2313,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
   
@@ -2327,7 +2327,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop.rds"))
   
@@ -2713,7 +2713,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
   
@@ -2727,7 +2727,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
   
@@ -3117,7 +3117,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
   
@@ -3131,7 +3131,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
   

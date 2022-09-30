@@ -690,7 +690,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
   
   saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_weighting_validation_dev.rds"))
   
@@ -704,7 +704,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
   
   saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_weighting_validation_val.rds"))
   
