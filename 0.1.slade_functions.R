@@ -8,7 +8,7 @@
 ###   separate colours for each favoured therapy
 
 # Plots
-hist_plot <- function(data, title, xmin, xmax) {
+hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/mol)", ytitle = "Number of people") {
   ### Input variables
   # data: dataset with column 'mean' corresponding to treatment effect
   # title: title for the plot
@@ -19,14 +19,16 @@ hist_plot <- function(data, title, xmin, xmax) {
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
   
   # plot
-  ggplot(data=dat, aes(x=mean,fill=above)) +
-    geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(xmin,xmax,by=1)) +
-    geom_vline(aes(xintercept=0), linetype="dashed")+
-    labs(title=title,x="HbA1c difference (mmol/mol)", y = "Number of people") +
-    scale_fill_manual(values=c("red","#f1a340"))+
+  plot <- ggplot(data = dat, aes(x = mean, fill = above)) +
+    geom_histogram(position = "identity", alpha = 0.5, color = "black", breaks = seq(xmin, xmax, by = 1)) +
+    geom_vline(aes(xintercept = 0), linetype = "dashed")+
+    labs(title = title, x = xtitle, y = ytitle) +
+    scale_fill_manual(values = c("red", "#f1a340"))+
     theme_classic() +
     theme(legend.position = c(0.80, 0.97)) +
     theme(legend.title = element_blank())
+  
+  return(plot)
 }
 
 
