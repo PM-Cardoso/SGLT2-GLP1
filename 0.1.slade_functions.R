@@ -7,7 +7,6 @@
 ### Plot of treatment effect histogram, 
 ###   separate colours for each favoured therapy
 
-# Plots
 hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/mol)", ytitle = "Number of people") {
   ### Input variables
   # data: dataset with column 'mean' corresponding to treatment effect
@@ -33,10 +32,8 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
   return(plot)
 }
 
+### Plot of in-sample prediction vs in-sample/out-sample prediction
 
-### Plots of predicted vs observed treatment effect
-
-#Function to output HTE by subgroup
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
   ### Input variables
   # data: dataset used in fitting,
@@ -71,9 +68,6 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
   return(plot)
 }
 
-
-
-
 ### Stability of Treatment effect prediction, sub models fitted to deciles of prediction.
 
 effects_calibration <- function(data, bart_model) {
@@ -98,7 +92,9 @@ effects_calibration <- function(data, bart_model) {
   # create lists with results
   mnumber = c(1:quantiles)
   models  <- as.list(1:quantiles)
-  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  hba1c_diff <- vector()
+  lower <- vector()
+  upper <- vector();
   
   # iterate through deciles
   for (i in mnumber) {
@@ -133,27 +129,66 @@ effects_calibration <- function(data, bart_model) {
     
     # summarise treatment effects into a single variable + interval
     effects_summary_dev <- cbind(
-      `5%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
-      `50%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
-      `95%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
       mean = apply(effect_dev, MARGIN = 1, function(x) mean(c(x)))
     ) %>%
       as.data.frame()
     
     # pull all values together
-    hba1c_diff.obs <- append(hba1c_diff.obs,mean(effects_summary_dev$mean))
-    lower.obs <- append(lower.obs,quantile(effects_summary_dev$mean, probs = c(0.05)))
-    upper.obs <- append(upper.obs,quantile(effects_summary_dev$mean, probs = c(0.95)))
+    hba1c_diff <- append(hba1c_diff, mean(effects_summary_dev$mean))
+    lower <- append(lower, quantile(effects_summary_dev$mean, probs = c(0.05)))
+    upper <- append(upper, quantile(effects_summary_dev$mean, probs = c(0.95)))
     
   }
   
   # returned data.frame with results
-  t <- data.frame(predicted_treatment_effect,
-                   cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>% 
-    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  final.dataset <- data.frame(predicted_treatment_effect,
+                              cbind(hba1c_diff, lower, upper)) %>% 
+    dplyr::mutate(obs = hba1c_diff, lci = lower, uci = upper)
   
-  return(t)
+  return(final.dataset)
 }
+
+
+
+#  Stability investigation, fitting sub-models to deciles of treatment effect
+
+plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
+  ##
+  ## This function fits sub-models to deciles of treatment effect
+  ##
+  ##### Input variables
+  # data.dev - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # data.val - Validation dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # bart_model - Model to be used for validation
+  
+  # calculate effects calibration of Development dataset
+  t.dev <- effects_calibration(data = data.dev,
+                               bart_model = bart_model)
+  
+  # plot sub-model effects
+  plot_submodel_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
+  
+  # calculate effects calibration of Validation dataset
+  t.val <- effects_calibration(data = data.val,
+                               bart_model = bart_model)
+  
+  # plot sub-model effects
+  plot_submodel_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
+  
+  
+  # Plot
+  plot <- patchwork::wrap_plots(
+    # Plot 1
+    plot_submodel_dev,
+    # Plot 2
+    plot_submodel_val
+  ) + patchwork::plot_annotation(tag_levels = "A", # labels A = development, B = validation
+                                 title = "Effect submodels", # title of full plot
+                                 theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
+  
+  return(plot)
+}
+
 
 ## Calculate residuals
 
@@ -382,45 +417,6 @@ calc_effect_summary_diff_treat <- function(bart_model, data) {
   return(effect)
   # return(effects_summary)
   
-}
-
-#  Stability investigation, fitting sub-models to deciles of treatment effect
-
-plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
-  ##
-  ## This function fits sub-models to deciles of treatment effect
-  ##
-  ##### Input variables
-  # data.dev - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # data.val - Validation dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # bart_model - Model to be used for validation
-  
-  # calculate effects calibration of Development dataset
-  t.dev <- effects_calibration(data = data.dev,
-                               bart_model = bart_model)
-  
-  # plot sub-model effects
-  plot_submodel_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
-  
-  # calculate effects calibration of Validation dataset
-  t.val <- effects_calibration(data = data.val,
-                               bart_model = bart_model)
-  
-  # plot sub-model effects
-  plot_submodel_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
-  
-  
-  # Plot
-  plot <- patchwork::wrap_plots(
-    # Plot 1
-    plot_submodel_dev,
-    # Plot 2
-    plot_submodel_val
-  ) + patchwork::plot_annotation(tag_levels = "A", # labels A = development, B = validation
-                                 title = "Effect submodels", # title of full plot
-                                 theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
-  
-  return(plot)
 }
 
 # ### Instability assessment
