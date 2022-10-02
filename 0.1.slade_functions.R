@@ -55,18 +55,20 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
     stop("'dataset.type' must be 'Development' or 'Validation'")
   }
   
-  # set the axis of the plot
-  ymin  <- -20;  ymax <- 20
-  
   # plot
-  ggplot(data=data,aes_string(x=pred,y=obs)) +
-    geom_point(alpha=1) + theme_bw() +
-    geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
-    ylab("In-sample prediction from sub model") + xlab(x.axis.title) + ggtitle("Predicted HbA1c differences") +
-    scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
-    geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+  plot <- ggplot(data = data, aes_string(x = pred, y = obs)) +
+    geom_point(alpha = 1) + 
+    theme_bw() +
+    geom_errorbar(aes_string(ymax = obslowerci, ymin = obsupperci), colour = "black", width = .1) +
+    ylab("In-sample prediction from sub model") + 
+    xlab(x.axis.title) + 
+    scale_x_continuous(limits = c(-20, 20), breaks = c(seq(-20, 20, by = 2))) +
+    scale_y_continuous(limits = c(-20, 20), breaks = c(seq(-20, 20, by = 2))) +
+    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+    geom_hline(yintercept = 0, linetype="dashed", color = "grey60") 
+  
+  return(plot)
 }
 
 
@@ -398,41 +400,25 @@ plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
                                bart_model = bart_model)
   
   # plot sub-model effects
-  plot_predicted_observed_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
+  plot_submodel_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
   
   # calculate effects calibration of Validation dataset
   t.val <- effects_calibration(data = data.val,
                                bart_model = bart_model)
   
   # plot sub-model effects
-  plot_predicted_observed_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
+  plot_submodel_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
   
   
   # Plot
-  plot <- cowplot::plot_grid(
-    
-    #title
-    cowplot::ggdraw() +
-      cowplot::draw_label("Effect submodels")
-    
-    ,
-    
-    #effects plot
-    cowplot::plot_grid(
-      
-      # Development plot
-      plot_predicted_observed_dev
-      
-      ,
-      
-      # Validation plot
-      plot_predicted_observed_val
-      
-      , ncol = 2, nrow = 1, labels = c("A", "B")
-    )
-    
-    , ncol = 1, nrow = 2, rel_heights = c(0.1, 1)
-  )
+  plot <- patchwork::wrap_plots(
+    # Plot 1
+    plot_submodel_dev,
+    # Plot 2
+    plot_submodel_val
+  ) + patchwork::plot_annotation(tag_levels = "A", # labels A = development, B = validation
+                                 title = "Effect submodels", # title of full plot
+                                 theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
   
   return(plot)
 }
