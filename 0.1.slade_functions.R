@@ -14,6 +14,8 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
   # title: title for the plot
   # xmin: lower limit of x axis
   # xmax: upper limit of x axis
+  # xtitle: title of x axis
+  # ytitle: title of y axis
   
   # define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
