@@ -579,6 +579,146 @@ plot_effect_2_female <- plot_effect_2_female %>%
 
 
 
+###############################
+####### Description of weight change for deciles of model
+
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/cvd_new/bart_model_final.rds"))
+
+data_dev <- final.dev %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X))) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, preweight, postweight6m))
+
+
+data_val <- final.val %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X))) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, preweight, postweight6m))
+
+
+effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_dev.rds"))
+
+effects_summary_val <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_val.rds"))
+
+
+#####################
+
+group_values <- function(data, variable, breaks) {
+  ### Input variables
+  # data: dataset used in splitting
+  # variable: variable with values to be split
+  # breaks: break points between values
+  
+  # stop in case 'variable' is not included in 'data'
+  if (is.null(data[, variable])) {stop("'variable' not included in 'data'")}
+  
+  # include extra values so that extremes are included
+  breaks.full <- c(breaks, floor(min(data[,variable])), ceiling(max(data[,variable])))
+  
+  new.data <- data %>%
+    cbind(intervals = cut(data[, variable], breaks = breaks.full))
+  
+  return(new.data)
+}
+
+# description of weight change by levels:
+## SGLT2:
+### < -8 mmol
+### -5 - -8 mmol
+### -3 - -5 mmol
+### 0 - -3 mmol
+## GLP1:
+### 0 - 3 mmol
+### 3 - 5 mmol
+### 5 - 8 mmol
+### > 8 mmol
+
+# breaks
+breaks = c(-8, -5, -3, 0, 3, 5, 8)
+
+######
+####
+
+dataset_breakdown_dev <- data_dev %>%
+  mutate(weight.change = postweight6m - preweight) %>%
+  select(weight.change, drugclass) %>%
+  cbind(hba1c_diff = effects_summary_dev$mean)
+
+
+dataset_intervals_dev <- group_values(data = dataset_breakdown_dev, 
+                                  variable = "hba1c_diff", 
+                                  breaks = breaks) %>%
+  select(-hba1c_diff) %>%
+  group_by(intervals, drugclass) %>%
+  mutate(mean.values = quantile(weight.change, probs = c(0.5), na.rm = TRUE),
+         low.values = quantile(weight.change, probs = c(0.25), na.rm = TRUE),
+         high.values = quantile(weight.change, probs = c(0.75), na.rm = TRUE)) %>%
+  select(-weight.change) %>%
+  unique()
+
+
+plot_weight_change_dev <- dataset_intervals_dev %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals,
+                      y = mean.values,
+                      ymin = low.values, 
+                      ymax = high.values, 
+                      colour = drugclass), 
+                  position=position_dodge(width=0.5)) +
+  ylab("Weight change kg (median [IQR])") +
+  coord_flip() +
+  theme(axis.title.y = element_blank(),
+        legend.position = "bottom")
+
+##
+
+dataset_breakdown_val <- data_val %>%
+  mutate(weight.change = postweight6m - preweight) %>%
+  select(weight.change, drugclass) %>%
+  cbind(hba1c_diff = effects_summary_val$mean)
+
+
+dataset_intervals_val <- group_values(data = dataset_breakdown_val, 
+                                      variable = "hba1c_diff", 
+                                      breaks = breaks) %>%
+  select(-hba1c_diff) %>%
+  group_by(intervals, drugclass) %>%
+  mutate(mean.values = quantile(weight.change, probs = c(0.5), na.rm = TRUE),
+         low.values = quantile(weight.change, probs = c(0.25), na.rm = TRUE),
+         high.values = quantile(weight.change, probs = c(0.75), na.rm = TRUE)) %>%
+  select(-weight.change) %>%
+  unique()
+
+
+plot_weight_change_val <- dataset_intervals_val %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals,
+                      y = mean.values,
+                      ymin = low.values, 
+                      ymax = high.values, 
+                      colour = drugclass), 
+                  position=position_dodge(width=0.5)) +
+  ylab("Weight change kg (median [IQR])") +
+  coord_flip() +
+  theme(axis.title.y = element_blank(),
+        legend.position = "bottom")
+
+
+plot_weight_change <- patchwork::wrap_plots(
+  # Development
+  plot_weight_change_dev,
+  # Validation
+  plot_weight_change_val
+) + patchwork::plot_annotation(tag_levels = 'A') +
+  patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
 
 
 
@@ -603,6 +743,7 @@ cowplot::plot_grid(
 plot_ATE
 plot_ATE_prop_score_matching
 plot_ATE_prop_score_weighting
+plot_weight_change
 dev.off()
 
 
@@ -625,6 +766,198 @@ if (class(try(
   saveRDS(bart_var_selection, paste0(output_path, "/Weight_reduction/bart_var_selection.rds"))
   
 }
+
+
+
+###############################
+####### Description of weight change for deciles of model
+
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/cvd_new/bart_model_final.rds"))
+
+data_dev <- final.dev %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X))) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, preweight, postweight6m))
+
+
+data_val <- final.val %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X))) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, preweight, postweight6m))
+
+
+effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_dev.rds"))
+
+effects_summary_val <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_val.rds"))
+
+
+#####################
+
+group_values <- function(data, variable, breaks) {
+  ### Input variables
+  # data: dataset used in splitting
+  # variable: variable with values to be split
+  # breaks: break points between values
+  
+  # stop in case 'variable' is not included in 'data'
+  if (is.null(data[, variable])) {stop("'variable' not included in 'data'")}
+  
+  # include extra values so that extremes are included
+  breaks.full <- c(breaks, floor(min(data[,variable])), ceiling(max(data[,variable])))
+  
+  new.data <- data %>%
+    cbind(intervals = cut(data[, variable], breaks = breaks.full))
+  
+  return(new.data)
+}
+
+# description of weight change by levels:
+## SGLT2:
+### < -8 mmol
+### -5 - -8 mmol
+### -3 - -5 mmol
+### 0 - -3 mmol
+## GLP1:
+### 0 - 3 mmol
+### 3 - 5 mmol
+### 5 - 8 mmol
+### > 8 mmol
+#
+# breaks
+# breaks = c(-8, -5, -3, 0, 3, 5, 8)
+#
+# dataset_breakdown <- data_dev %>%
+#   mutate(weight.change = postweight6m - preweight) %>%
+#   select(weight.change) %>%
+#   cbind(hba1c_diff = effects_summary_dev$mean)
+# 
+# 
+# dataset_intervals <- group_values(data = dataset_breakdown, 
+#                                   variable = "hba1c_diff", 
+#                                   breaks = breaks) %>%
+#   select(-hba1c_diff) %>%
+#   group_by(intervals) %>%
+#   mutate(mean.values = mean(weight.change, na.rm = TRUE),
+#          low.values = quantile(weight.change, probs = c(0.05), na.rm = TRUE),
+#          high.values = quantile(weight.change, probs = c(0.95), na.rm = TRUE)) %>%
+#   select(-weight.change) %>%
+#   unique()
+#
+######
+####
+# 
+# ######
+# ####
+# 
+# dataset_new <- data_dev %>%
+#   mutate(weight.change = postweight6m - preweight) %>%
+#   cbind(hba1c_diff = effects_summary_dev$mean)
+# 
+# 
+# prop_score_model <- calc_ATE_prop_score(dataset_breakdown)
+# 
+# dataset_breakdown <- dataset_new %>%
+#   cbind(prop_score = 1 - prop_score_model$p_hat_train) %>%
+#   select(weight.change, hba1c_diff, prop_score, drugclass)
+# 
+# 
+# 
+# 
+# dataset_intervals <- group_values(data = dataset_breakdown, 
+#                                   variable = "hba1c_diff", 
+#                                   breaks = breaks) %>%
+#   select(-hba1c_diff) %>%
+#   filter(intervals == "(5,8]") %>%
+#   drop_na()
+# 
+# # weights for SGLT2 Z = 1
+# sglt2.data <- dataset_intervals %>%
+#   filter(drugclass == "SGLT2") %>%
+#   mutate(prop_score = 1/(prop_score))
+# 
+# # weights for GLP1 Z = 0
+# glp1.data <- dataset_intervals %>%
+#   filter(drugclass == "GLP1") %>%
+#   mutate(prop_score = 1/(1-prop_score))
+# 
+# new.data <- rbind(sglt2.data, glp1.data)
+# 
+# lm(weight.change~drugclass, new.data, weights = prop_score)
+# 
+# 
+# 
+# #####
+# 
+# dataset_new <- data_dev %>%
+#   mutate(weight.change = postweight6m - preweight) %>%
+#   cbind(hba1c_diff = effects_summary_dev$mean)
+# 
+# 
+# data <- group_values(data = dataset_new, 
+#                                   variable = "hba1c_diff", 
+#                                   breaks = breaks) %>%
+#   select(patid, pateddrug, drugclass, postweight6m, weight.change, hba1c_diff, intervals) %>%
+#   drop_na() %>%
+#   select(-postweight6m) %>%
+#   rename("postweight6m" = "weight.change") %>%
+#   mutate(hba1c_diff.q = as.numeric(intervals))
+# 
+# 
+# # calculate propensity score
+# prop_model <- calc_ATE_prop_score(data)
+# 
+# # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+# prop_score <- 1 - prop_model$p_hat_train
+# 
+# # split predicted treatment effects into deciles
+# predicted_treatment_effect <- data %>%
+#   plyr::ddply("hba1c_diff.q", dplyr::summarise,
+#               N = length(hba1c_diff),
+#               hba1c_diff.pred = mean(hba1c_diff))
+# 
+# # maximum number of deciles being tested
+# quantiles <- max(data$hba1c_diff.q)
+# 
+# # create lists with results
+# mnumber = c(1:quantiles)
+# models  <- as.list(1:quantiles)
+# hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+# 
+# # join dataset and propensity score
+# data.new <- data %>%
+#   cbind(prop_score)
+# 
+# # weights for SGLT2 Z = 1
+# sglt2.data <- data.new %>%
+#   filter(drugclass == "SGLT2") %>%
+#   mutate(prop_score = 1/(prop_score))
+# 
+# # weights for GLP1 Z = 0
+# glp1.data <- data.new %>%
+#   filter(drugclass == "GLP1") %>%
+#   mutate(prop_score = 1/(1-prop_score))
+# 
+# data.new <- rbind(sglt2.data, glp1.data)
+# 
+# 
+# # iterate through deciles
+# for (i in mnumber) {
+#   # fit linear regression for decile
+#   models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = prop_score)
+#   
+# }
+# 
+#
+
+
 
 
 
