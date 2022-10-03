@@ -190,6 +190,9 @@ plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
 }
 
 
+
+#### I'm right here ####
+
 ## Calculate residuals
 
 calc_resid <- function(data, posteriors) {
