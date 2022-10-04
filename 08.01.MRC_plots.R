@@ -546,3 +546,219 @@ pdf("Plot6.pdf", width = 4, height = 4)
 plot_6
 dev.off()
 
+
+#####
+
+# Plot 7
+
+source("0.1.slade_functions.R")
+
+
+plot_diff_treatment_response <- function(response, post_hba1c, variable, xtitle, k = 1, ymin = NULL, ymax = NULL, title = "") {
+  ##### Input variables
+  # response: response summary calculated from calc_diff_treatment_effect function
+  # post_hba1c: patient hba1c value post therapy
+  # variable: variable being investigated
+  # xtitle: title of x axis
+  # ymin, ymax: limits of y axis in plot
+  
+  response$`5%` <- response$`5%` - post_hba1c
+  response$`50%` <- response$`50%` - post_hba1c
+  response$`95%` <- response$`95%` - post_hba1c
+  response$mean <- response$mean - post_hba1c
+  
+  # load all data for range of variable values; name: final.all.extra.vars
+  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+  
+  # different approaches whether the variable is continuous or categorical
+  if (is.numeric(final.all.extra.vars[, variable])) {
+    # if variable is continuous
+    
+    # plot histogram of all values in variable
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_histogram(aes(x = final.all.extra.vars[, variable]))
+    
+    
+    
+    plot_diff <- response %>%
+      ggplot() +
+      stat_smooth(aes(x = ntile.value, y = mean, colour = key)) +
+      scale_colour_manual(values=c("red","#f1a340")) +
+      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + theme(legend.position = "none")
+    
+    
+    # some variables require logging the x-axis due to extreme values
+    if (variable == "preast" | variable == "prebil" | variable == "prealt") {
+      
+      # log scale of histogram plot
+      plot_hist <- plot_hist +
+        scale_x_log10()
+      
+      # log scale of differential response plot
+      plot_diff  <- plot_diff +
+        scale_x_log10() +
+        xlab(paste0(xtitle, " (log)"))
+      
+    }
+    
+  } else {
+    # if variable is categorical
+    
+    # plot histogram of all values in variable
+    plot_hist <- ggplot() +
+      theme_void() +
+      geom_bar(aes(x = final.all.extra.vars[, variable]))
+    
+    
+    plot_diff <- response %>%
+      ggplot() +
+      geom_pointrange(aes(y = mean, ymin = `5%`, ymax = `95%`, x = ntile, colour = key), position = position_dodge2(width=0.5)) +
+      scale_colour_manual(values=c("red","#f1a340")) +
+      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + 
+      theme(legend.position = "none") +
+      scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
+    
+    
+  }
+  
+  if (!is.null(ymin) & !is.null(ymax)) {
+    plot_diff <- plot_diff +
+      ylim(ymin, ymax)
+  }
+  
+  plot_diff <- plot_diff +
+    ggtitle(title)
+  
+  # plot of combined histogram + differential response
+  plot.diff.marg <- cowplot::plot_grid(
+    
+    # plot of differential response
+    plot_diff
+    
+    ,
+    
+    cowplot::plot_grid(
+      
+      # spacing of plots
+      ggplot() +
+        theme_void()
+      
+      ,
+      
+      # plot of histogram
+      plot_hist
+      
+      , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
+      
+    )
+    
+    , ncol = 1, nrow = 2, rel_heights = c(0.85, 0.15)
+    
+  )
+  
+  return(plot.diff.marg)
+  
+}
+
+# Differential treatment response for patient: eGFR change
+
+# name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+# name: final.dev
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
+
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/bart_model_final.rds")
+
+dataset.dev <- final.dev %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi)) %>%
+  select(c(patid, pateddrug, posthba1c_final, 
+           colnames(bart_model_final$X)))
+
+# patient 39, MRC_plots.R
+# patient final hba1c = dataset.dev[9241,"posthba1c_final"] = 54
+specific.patient <- cbind(
+  drugclass = "SGLT2",
+  egfr_ckdepi = as.numeric(dataset.dev[9433, "egfr_ckdepi"]),
+  hba1cmonth = 12,
+  prealt = as.numeric(dataset.dev[9433, "prealt"]),
+  prehba1cmmol = as.numeric(dataset.dev[9433, "prehba1cmmol"]),
+  score.excl.mi = as.numeric(dataset.dev[9433, "score.excl.mi"]),
+  Category = "Non-smoker",
+  drugline = "2",
+  ncurrtx = "1",
+  yrdrugstart = 2016,
+  agetx = as.numeric(dataset.dev[9433, "agetx"]),
+  malesex = "0",
+  prehdl = as.numeric(dataset.dev[9433, "prehdl"]),
+  prebmi = as.numeric(dataset.dev[9433, "prebmi"]),
+  prebil = as.numeric(dataset.dev[9433, "prebil"]),
+  preplatelets = as.numeric(dataset.dev[9433, "preplatelets"]),
+  t2dmduration = as.numeric(dataset.dev[9433, "t2dmduration"]),
+  prealb = as.numeric(dataset.dev[9433, "prealb"]),
+  presys = as.numeric(dataset.dev[9433, "presys"]),
+  preast = as.numeric(dataset.dev[9433, "preast"])
+) %>%
+  as.data.frame() %>%
+  mutate(drugclass = factor(drugclass, levels = levels(dataset.dev$drugclass)),
+         egfr_ckdepi = as.numeric(egfr_ckdepi),
+         hba1cmonth = as.numeric(hba1cmonth),
+         prealt = as.numeric(prealt),
+         prehba1cmmol = as.numeric(prehba1cmmol),
+         score.excl.mi = as.numeric(score.excl.mi),
+         Category = factor(Category, levels = levels(dataset.dev$Category)),
+         drugline = factor(drugline, levels = levels(dataset.dev$drugline)),
+         ncurrtx = factor(ncurrtx, levels = levels(dataset.dev$ncurrtx)),
+         yrdrugstart = as.numeric(yrdrugstart),
+         agetx = as.numeric(agetx),
+         malesex = factor(malesex, levels = levels(dataset.dev$malesex)),
+         prehdl = as.numeric(prehdl),
+         prebmi = as.numeric(prebmi),
+         prebil = as.numeric(prebil),
+         preplatelets = as.numeric(preplatelets),
+         t2dmduration = as.numeric(t2dmduration),
+         prealb = as.numeric(prealb),
+         presys = as.numeric(presys),
+         preast = as.numeric(preast)
+  )
+
+
+response_summary_patient <- diff_treatment_response(bart_model_final, specific.patient, 25)
+
+
+## egfr_ckdepi
+
+# plot treatment response + histogram marginal
+plot.egfr.diff.marg.female <- plot_diff_treatment_response(response = response_summary_patient[["egfr_ckdepi"]], 
+                                                    post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                    variable = "egfr_ckdepi", xtitle = "eGFR",
+                                                    ymin = -25, ymax = -13, title = "Female")
+
+
+specific.patient$malesex <- factor("1", levels = levels(dataset.dev$malesex))
+
+response_summary_patient <- diff_treatment_response(bart_model_final, specific.patient, 25)
+
+
+## egfr_ckdepi
+
+# plot treatment response + histogram marginal
+plot.egfr.diff.marg.male <- plot_diff_treatment_response(response = response_summary_patient[["egfr_ckdepi"]], 
+                                                           post_hba1c = as.numeric(final.dev[9433, "prehba1cmmol"]),
+                                                           variable = "egfr_ckdepi", xtitle = "eGFR",
+                                                         ymin = -25, ymax = -13, title = "Male")
+
+
+plot_7 <- cowplot::plot_grid(
+  plot.egfr.diff.marg.female,
+  plot.egfr.diff.marg.male
+)
+
+
+pdf("Plot7.pdf", width = 8, height = 5)
+plot_7
+dev.off()
+
+

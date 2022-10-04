@@ -827,7 +827,8 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_bar(aes(x = final.all.extra.vars[, variable]))
+      geom_bar(aes(x = final.all.extra.vars[, variable]), na.rm = TRUE) +
+      scale_x_discrete(na.translate = FALSE)
     
     
     plot_diff <- response %>%
@@ -1369,5 +1370,4 @@ toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 
   return(output)
   
 }
-
 
