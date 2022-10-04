@@ -7,32 +7,33 @@
 ### Plot of treatment effect histogram, 
 ###   separate colours for each favoured therapy
 
-# Plots
-hist_plot <- function(data, title, xmin, xmax) {
+hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/mol)", ytitle = "Number of people") {
   ### Input variables
   # data: dataset with column 'mean' corresponding to treatment effect
   # title: title for the plot
   # xmin: lower limit of x axis
   # xmax: upper limit of x axis
+  # xtitle: title of x axis
+  # ytitle: title of y axis
   
   # define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
   
   # plot
-  ggplot(data=dat, aes(x=mean,fill=above)) +
-    geom_histogram(position="identity", alpha=0.5,color="black",breaks=seq(xmin,xmax,by=1)) +
-    geom_vline(aes(xintercept=0), linetype="dashed")+
-    labs(title=title,x="HbA1c difference (mmol/mol)", y = "Number of people") +
-    scale_fill_manual(values=c("red","#f1a340"))+
+  plot <- ggplot(data = dat, aes(x = mean, fill = above)) +
+    geom_histogram(position = "identity", alpha = 0.5, color = "black", breaks = seq(xmin, xmax, by = 1)) +
+    geom_vline(aes(xintercept = 0), linetype = "dashed")+
+    labs(title = title, x = xtitle, y = ytitle) +
+    scale_fill_manual(values = c("red", "#f1a340"))+
     theme_classic() +
     theme(legend.position = c(0.80, 0.97)) +
     theme(legend.title = element_blank())
+  
+  return(plot)
 }
 
+### Plot of in-sample prediction vs in-sample/out-sample prediction
 
-### Plots of predicted vs observed treatment effect
-
-#Function to output HTE by subgroup
 hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
   ### Input variables
   # data: dataset used in fitting,
@@ -51,22 +52,21 @@ hte_plot <- function(data,pred,obs,obslowerci,obsupperci, dataset.type) {
     stop("'dataset.type' must be 'Development' or 'Validation'")
   }
   
-  # set the axis of the plot
-  ymin  <- -20;  ymax <- 20
-  
   # plot
-  ggplot(data=data,aes_string(x=pred,y=obs)) +
-    geom_point(alpha=1) + theme_bw() +
-    geom_errorbar(aes_string(ymin=obslowerci, ymax=obsupperci), colour="black", width=.1) +
-    ylab("In-sample prediction from sub model") + xlab(x.axis.title) + ggtitle("Predicted HbA1c differences") +
-    scale_x_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    scale_y_continuous(limits=c(ymin,ymax),breaks=c(seq(ymin,ymax,by=2))) +
-    geom_abline(intercept=0,slope=1, color="red", lwd=0.75) + ggtitle("") +
-    geom_vline(xintercept=0, linetype="dashed", color = "grey60") + geom_hline(yintercept=0, linetype="dashed", color = "grey60") 
+  plot <- ggplot(data = data, aes_string(x = pred, y = obs)) +
+    geom_point(alpha = 1) + 
+    theme_bw() +
+    geom_errorbar(aes_string(ymax = obslowerci, ymin = obsupperci), colour = "black", width = .1) +
+    ylab("In-sample prediction from sub model") + 
+    xlab(x.axis.title) + 
+    scale_x_continuous(limits = c(-20, 20), breaks = c(seq(-20, 20, by = 2))) +
+    scale_y_continuous(limits = c(-20, 20), breaks = c(seq(-20, 20, by = 2))) +
+    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+    geom_hline(yintercept = 0, linetype="dashed", color = "grey60") 
+  
+  return(plot)
 }
-
-
-
 
 ### Stability of Treatment effect prediction, sub models fitted to deciles of prediction.
 
@@ -92,7 +92,9 @@ effects_calibration <- function(data, bart_model) {
   # create lists with results
   mnumber = c(1:quantiles)
   models  <- as.list(1:quantiles)
-  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
+  hba1c_diff <- vector()
+  lower <- vector()
+  upper <- vector();
   
   # iterate through deciles
   for (i in mnumber) {
@@ -127,37 +129,76 @@ effects_calibration <- function(data, bart_model) {
     
     # summarise treatment effects into a single variable + interval
     effects_summary_dev <- cbind(
-      `5%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
-      `50%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
-      `95%` = apply(effect_dev, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
       mean = apply(effect_dev, MARGIN = 1, function(x) mean(c(x)))
     ) %>%
       as.data.frame()
     
     # pull all values together
-    hba1c_diff.obs <- append(hba1c_diff.obs,mean(effects_summary_dev$mean))
-    lower.obs <- append(lower.obs,quantile(effects_summary_dev$mean, probs = c(0.05)))
-    upper.obs <- append(upper.obs,quantile(effects_summary_dev$mean, probs = c(0.95)))
+    hba1c_diff <- append(hba1c_diff, mean(effects_summary_dev$mean))
+    lower <- append(lower, quantile(effects_summary_dev$mean, probs = c(0.05)))
+    upper <- append(upper, quantile(effects_summary_dev$mean, probs = c(0.95)))
     
   }
   
   # returned data.frame with results
-  t <- data.frame(predicted_treatment_effect,
-                   cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>% 
-    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+  final.dataset <- data.frame(predicted_treatment_effect,
+                              cbind(hba1c_diff, lower, upper)) %>% 
+    dplyr::mutate(obs = hba1c_diff, lci = lower, uci = upper)
   
-  return(t)
+  return(final.dataset)
+}
+
+
+
+#  Stability investigation, fitting sub-models to deciles of treatment effect
+
+plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
+  ##
+  ## This function fits sub-models to deciles of treatment effect
+  ##
+  ##### Input variables
+  # data.dev - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # data.val - Validation dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # bart_model - Model to be used for validation
+  
+  # calculate effects calibration of Development dataset
+  t.dev <- effects_calibration(data = data.dev,
+                               bart_model = bart_model)
+  
+  # plot sub-model effects
+  plot_submodel_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
+  
+  # calculate effects calibration of Validation dataset
+  t.val <- effects_calibration(data = data.val,
+                               bart_model = bart_model)
+  
+  # plot sub-model effects
+  plot_submodel_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
+  
+  
+  # Plot
+  plot <- patchwork::wrap_plots(
+    # Plot 1
+    plot_submodel_dev,
+    # Plot 2
+    plot_submodel_val
+  ) + patchwork::plot_annotation(tag_levels = "A", # labels A = development, B = validation
+                                 title = "Effect submodels", # title of full plot
+                                 theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
+  
+  return(plot)
 }
 
 ## Calculate residuals
 
-calc_resid <- function(data, posteriors) {
+calc_resid <- function(data, posteriors, outcome_variable) {
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
+  # outcome_variable - variable with outcome values
   
   # calculate standard deviation of residuals
-  resid.SD <- apply(posteriors$y_hat_posterior_samples, MARGIN = 2, function(x) (data$posthba1c_final - x)^2) %>%
+  resid.SD <- apply(posteriors$y_hat_posterior_samples, MARGIN = 2, function(x) (data[,outcome_variable] - x)^2) %>%
     colSums() %>%
     as.data.frame() %>%
     set_names(c("SD")) %>%
@@ -166,14 +207,14 @@ calc_resid <- function(data, posteriors) {
   # calculate standardised residuals
   resid <- posteriors$y_hat_posterior_samples
   for (i in 1:nrow(data)) {
-    resid[i,] <- (data$posthba1c_final[i] - resid[i,])/resid.SD[,1]
+    resid[i,] <- (data[i, outcome_variable] - resid[i,])/resid.SD[,1]
   }
   
   # return data.frame with residuals information for each data entry
   cred_pred <- cbind(lower_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) min(x)),
                      upper_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) max(x)),
                      mean = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) mean(x)),
-                     orig = data[,"posthba1c_final"]) %>%
+                     orig = data[,outcome_variable]) %>%
     as.data.frame() %>%
     mutate(resid = orig - mean,
            resid.low = orig - lower_bd,
@@ -190,24 +231,25 @@ calc_resid <- function(data, posteriors) {
 
 rsq <- function (x, y) cor(x, y) ^ 2
 
-calc_assessment <- function(data, posteriors) {
+calc_assessment <- function(data, posteriors, outcome_variable) {
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
+  # outcome_variable - variable with y values
   
   # Calculate R2
   r2 <- posteriors$y_hat_posterior_samples %>%
-    apply(MARGIN = 2, function(x) rsq(data[,"posthba1c_final"], x)) %>%
+    apply(MARGIN = 2, function(x) rsq(data[,outcome_variable], x)) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
   # Calculate RSS: residual sum of squares
   RSS <- posteriors$y_hat_posterior_samples %>%
-    apply(MARGIN = 2, function(x) sum((data[,"posthba1c_final"] - x)^2)) %>%
+    apply(MARGIN = 2, function(x) sum((data[,outcome_variable] - x)^2)) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
   # Calculate RMSE: root mean square error
   RMSE <- posteriors$y_hat_posterior_samples %>%
-    apply(MARGIN = 2, function(x) sqrt(sum((data[,"posthba1c_final"] - x)^2)/nrow(data))) %>%
+    apply(MARGIN = 2, function(x) sqrt(sum((data[,outcome_variable] - x)^2)/nrow(data))) %>%
     quantile(probs = c(0.05, 0.5, 0.95))
   
   # return data.frame with all assessments
@@ -215,6 +257,7 @@ calc_assessment <- function(data, posteriors) {
   
   return(assessment_values)
 }
+
 
 ## Plot predicted vs observed and standardised residuals
 
@@ -224,82 +267,67 @@ resid_plot <- function(pred_dev, pred_val, title) {
   # pred_val - predicted/observed values for validation dataset
   # title - plot title
   
-  # Full grid plot
-  cowplot::plot_grid(
-    
-    # title
-    cowplot::ggdraw() +
-      cowplot::draw_label(title)
-    
-    ,
-    
-    cowplot::plot_grid(
-      
-      # Plot of predicted vs observed for development dataset
-      pred_dev %>%
-        ggplot() +
-        theme_bw() +
-        geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-        geom_point(aes(x = orig, y = mean)) +
-        geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-        xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        xlab("Observed HbA1c (mmol/mol)") +
-        ylab("Predicted HbA1c (mmol/mol)")
-      
-      ,
-      
-      # Plot of predicted vs observed for validation dataset
-      pred_val %>%
-        ggplot() +
-        theme_bw() +
-        geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-        geom_point(aes(x = orig, y = mean)) +
-        geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-        xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-        xlab("Observed HbA1c (mmol/mol)") +
-        ylab("Predicted HbA1c (mmol/mol)")
-      
-      ,
-      
-      # Plot of standardised residuals for development dataset
-      pred_dev %>%
-        ggplot() +
-        theme_bw() +
-        geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
-        geom_point(aes(x = mean, y = std.resid)) +
-        geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-        stat_smooth(aes(x = mean, y = std.resid)) +
-        xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
-        ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
-        xlab("Average Predicted HbA1c (mmol/mol)") +
-        ylab("Standardised Residuals")
-      
-      ,
-      
-      # Plot of standardised residuals for validation dataset
-      pred_val %>%
-        ggplot() +
-        theme_bw() +
-        geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
-        geom_point(aes(x = mean, y = std.resid)) +
-        geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-        stat_smooth(aes(x = mean, y = std.resid)) +
-        xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
-        ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
-        xlab("Average Predicted HbA1c (mmol/mol)") +
-        ylab("Standardised Residuals")
-      
-      , ncol = 2, nrow = 2, labels = c("A", "B", "", "")
-      
+  # Plot of predicted vs observed for development dataset
+  plot_dev_pred <- pred_dev %>%
+    ggplot() +
+    theme_bw() +
+    geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+    geom_point(aes(x = orig, y = mean)) +
+    geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+    xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+    ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+    xlab("Observed HbA1c (mmol/mol)") +
+    ylab("Predicted HbA1c (mmol/mol)")
+  
+  # Plot of predicted vs observed for validation dataset
+  plot_val_pred <- pred_val %>%
+    ggplot() +
+    theme_bw() +
+    geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+    geom_point(aes(x = orig, y = mean)) +
+    geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+    xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+    ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+    xlab("Observed HbA1c (mmol/mol)") +
+    ylab("Predicted HbA1c (mmol/mol)")
+  
+  # Plot of standardised residuals for development dataset
+  plot_dev_std <- pred_dev %>%
+    ggplot() +
+    theme_bw() +
+    geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
+    geom_point(aes(x = mean, y = std.resid)) +
+    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+    stat_smooth(aes(x = mean, y = std.resid)) +
+    xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
+    ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
+    xlab("Average Predicted HbA1c (mmol/mol)") +
+    ylab("Standardised Residuals")
+  
+  # Plot of standardised residuals for validation dataset
+  plot_val_std <- pred_val %>%
+    ggplot() +
+    theme_bw() +
+    geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
+    geom_point(aes(x = mean, y = std.resid)) +
+    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
+    stat_smooth(aes(x = mean, y = std.resid)) +
+    xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
+    ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
+    xlab("Average Predicted HbA1c (mmol/mol)") +
+    ylab("Standardised Residuals")
+  
+  plot_list <- list(plot_dev_pred, plot_val_pred, plot_dev_std, plot_val_std)
+  
+  plot <- patchwork::wrap_plots(plot_list, ncol = 2) +
+    patchwork::plot_annotation(
+      title = title
     )
-    
-    , ncol = 1, nrow = 2, rel_heights = c(0.1,1)
-    
-  )
-
+  
+  return(plot)
+  
 }
+
 
 ## Calculate treatment effect
 
@@ -330,6 +358,7 @@ calc_effect <- function(bart_model, data) {
   
 }
 
+
 ## Summarise calculated treatment effect
 
 calc_effect_summary <- function(bart_model, data) {
@@ -353,7 +382,6 @@ calc_effect_summary <- function(bart_model, data) {
   
 }
 
-
 ## Summarise calculated treatment effect
 
 calc_effect_summary_diff_treat <- function(bart_model, data) {
@@ -364,153 +392,9 @@ calc_effect_summary_diff_treat <- function(bart_model, data) {
   # Calculate treatment effects for entries
   effect <- calc_effect(bart_model, data)
   
-  # # # Summarise treatment effect for each entry
-  # effects_summary <- cbind(
-  #   `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
-  #   `50%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
-  #   `95%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
-  #   mean = apply(effect, MARGIN = 1, function(x) mean(c(x)))
-  # ) %>%
-  #   as.data.frame()
-  
   return(effect)
-  # return(effects_summary)
   
 }
-
-#  Stability investigation, fitting sub-models to deciles of treatment effect
-
-plot_full_effects_validation <- function(data.dev, data.val, bart_model) {
-  ##
-  ## This function fits sub-models to deciles of treatment effect
-  ##
-  ##### Input variables
-  # data.dev - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # data.val - Validation dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # bart_model - Model to be used for validation
-  
-  # calculate effects calibration of Development dataset
-  t.dev <- effects_calibration(data = data.dev,
-                               bart_model = bart_model)
-  
-  # plot sub-model effects
-  plot_predicted_observed_dev <- hte_plot(t.dev, "hba1c_diff.pred", "obs", "lci", "uci", "Development")
-  
-  # calculate effects calibration of Validation dataset
-  t.val <- effects_calibration(data = data.val,
-                               bart_model = bart_model)
-  
-  # plot sub-model effects
-  plot_predicted_observed_val <- hte_plot(t.val, "hba1c_diff.pred", "obs", "lci", "uci", "Validation")
-  
-  
-  # Plot
-  plot <- cowplot::plot_grid(
-    
-    #title
-    cowplot::ggdraw() +
-      cowplot::draw_label("Effect submodels")
-    
-    ,
-    
-    #effects plot
-    cowplot::plot_grid(
-      
-      # Development plot
-      plot_predicted_observed_dev
-      
-      ,
-      
-      # Validation plot
-      plot_predicted_observed_val
-      
-      , ncol = 2, nrow = 1, labels = c("A", "B")
-    )
-    
-    , ncol = 1, nrow = 2, rel_heights = c(0.1, 1)
-  )
-  
-  return(plot)
-}
-
-# ### Instability assessment
-# 
-# instability_modelling <- function(bart_model, m, n) {
-#   ##### Input variables
-#   # bart_model: bart_model being investigated for instability
-#   # m: number of subsets from the dataset
-#   # n: number of rows included in each subset of the dataset
-#   
-#   # set a list of subsets of length m
-#   subsets_rows <- as.list(1:m)
-#   
-#   
-#   for (i in 1:m) {
-#     # total number of rows
-#     n_ind <- nrow(bart_model$X)
-#     # sample n rows from original dataset
-#     rows_ind <- sample(1:n_ind, n)
-#     # save subset rows
-#     subsets_rows[[i]] <- rows_ind
-#   }
-#   
-#   # set a list of bartMachine models for subsets
-#   subsets_models <- as.list(1:m)
-#   
-#   
-#   for (i in 1:m) {
-#     bart_sub_model <- bartMachine::bartMachine(X = bart_model$X[subsets_rows[[i]],],
-#                                                y = bart_model$y[subsets_rows[[i]]],
-#                                                use_missing_data = bart_model$use_missing_data,
-#                                                impute_missingness_with_rf_impute = bart_model$impute_missingness_with_rf_impute,
-#                                                impute_missingness_with_x_j_bar_for_lm = bart_model$impute_missingness_with_x_j_bar_for_lm,
-#                                                num_trees = bart_model$use_missing_data,
-#                                                num_burn_in = bart_model$num_burn_in,
-#                                                num_iterations_after_burn_in = bart_model$num_iterations_after_burn_in,
-#                                                serialize = TRUE
-#     )
-#     subsets_model[[i]] <- bart_sub_model
-#   }
-#   
-#   subset_modelling <- list(
-#     original = bart_model,
-#     m = m,
-#     n = n,
-#     rows = subsets_rows,
-#     models = subsets_models
-#   )
-#   
-#   return(subset_modelling)
-# }
-# 
-# instability_predictor_vs_observed_plot <- function(bart_model_subset) {
-#   ##### Input variables
-#   # bart_model_subset: list of rows and models used in the instability assessment
-#   
-#   p <- ggplot() +
-#     theme_bw() +
-#     stat_smooth(aes(x = bart_model_subset[["original"]]$y, 
-#                     y = bart_model_subset[["original"]]$y_hat_train),
-#                 method = "lm", colour = "blue")
-#   
-#   for (i in 1:bart_model_subset[["m"]]) {
-#     p <- p + stat_smooth(aes(x = bart_model_subset[["models"]][[i]]$y, 
-#                              y = bart_model_subset[["models"]][[i]]$y_hat_train),
-#                          method = "lm", colour = "blue", alpha = 0.3)
-#   }
-#   
-#   p <- p + geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-#     xlim(min(bart_model_subset[["original"]]$y,
-#              bart_model_subset[["original"]]$y_hat_train), 
-#          max(bart_model_subset[["original"]]$y,
-#              bart_model_subset[["original"]]$y_hat_train)) +
-#     ylim(min(bart_model_subset[["original"]]$y,
-#              bart_model_subset[["original"]]$y_hat_train), 
-#          max(bart_model_subset[["original"]]$y,
-#              bart_model_subset[["original"]]$y_hat_train)) +
-#     xlab("Observed HbA1c (mmol/mol)") +
-#     ylab("Predicted HbA1c (mmol/mol)")
-# }
 
 
 ### Differential treatment effect
@@ -598,11 +482,7 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
     new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
   }
   
-  # calculate treatment effects for all variants of the dataset
-  # effects_summary <- calc_effect_summary(bart_model, new.dataset) %>%
-  #   mutate(ntile = rep(1:length(range), each = nrow(dataset)),
-  #          ntile.value = rep(range, each = nrow(dataset)))
-
+  # summary of differential treatment effect
   effects_summary <- calc_effect_summary_diff_treat(bart_model, new.dataset) %>%
     cbind(ntile = rep(1:length(range)),
           ntile.value = rep(range)) %>%
@@ -610,6 +490,7 @@ calc_diff_treatment_effect <- function(bart_model, dataset, variable, rby) {
     
   return(effects_summary)
 }
+
 
 # Plot differential treatment effect
 
@@ -638,30 +519,22 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1, thinnin
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_histogram(aes(x = final.all.extra.vars[, variable]))
+      geom_histogram(aes(x = final.all.extra.vars[, variable])) +
+      theme(axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
+            axis.text.y = element_text(colour = "white"),
+            axis.ticks.y = element_line(colour = "white"))
     
-    if (nrow(effects) == max(effects$ntile)) {
-      # what to do if we only have one entry for each ntile
+    # plot differential treatment effects for the range of values
+    plot_diff <- effects %>%
+      ggplot() +
+      geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
+      stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k), level = 0.95) +
+      xlab(xtitle) + ylab("Treatment Effect")
       
-      # plot differential treatment effects for the range of values
-      plot_diff <- effects %>%
-        ggplot() +
-        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
-        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k), level = 0.95) +
-        xlab(xtitle) + ylab("Treatment Effect")
-      
-    } else {
-      # what to do if we have more than one entry for each ntile
-      
-      # plot differential treatment effects for the range of values
-      plot_diff <- effects %>%
-        ggplot() +
-        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
-        stat_smooth(aes(x = ntile.value, y = mean), col = "red", method = "gam", formula = y ~ s(x, bs = "cs", k=k), level = 0.95) +
-        xlab(xtitle) + ylab("Treatment Effect")
-      
-      
-    }
+    
     
     # some variables require logging the x-axis due to extreme values
     if (variable == "preast" | variable == "prebil" | variable == "prealt") {
@@ -683,80 +556,41 @@ plot_diff_treatment_effect <- function(effects, variable, xtitle, k = 1, thinnin
     # plot histogram of all values in variable
     plot_hist <- ggplot() +
       theme_void() +
-      geom_bar(aes(x = final.all.extra.vars[, variable]))
+      geom_bar(aes(x = final.all.extra.vars[, variable])) +
+      theme(axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_text(colour = "white"),
+            axis.text.y = element_text(colour = "white"),
+            axis.ticks.y = element_line(colour = "white"))
     
-    if (nrow(effects) == max(effects$ntile)) {
-      # what to do if we only have one entry for each ntile
-      
-      # plot differential treatment effects for the range of values
-      plot_diff <- effects %>%
-        group_by(ntile) %>%
-        mutate(mean.value = mean(mean),
-               lower.value = quantile(mean, probs = c(0.05)),
-               upper.value = quantile(mean, probs = c(0.95))) %>%
-        ungroup() %>%
-        mutate(ntile = as.double(ntile)) %>%
-        ggplot() +
-        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
-        geom_point(aes(x = ntile, y = mean.value), col = "red") +
-        geom_errorbar(aes(ymin = lower.value, ymax = upper.value, x = ntile), alpha = 0.1) +
-        xlab(xtitle) + ylab("Treatment Effect") +
-        scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
-      
-    } else {
-      # what to do if we have more than one entry for each ntile
-      
-      # plot differential treatment effects for the range of values
-      plot_diff <- effects %>%
-        group_by(ntile) %>%
-        mutate(mean.value = mean(mean),
-               lower.value = quantile(mean, probs = c(0.05)),
-               upper.value = quantile(mean, probs = c(0.95))) %>%
-        ungroup() %>%
-        mutate(ntile = as.double(ntile)) %>%
-        ggplot() +
-        geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
-        geom_point(aes(x = ntile, y = mean.value), col = "red") +
-        geom_errorbar(aes(ymin = lower.value, ymax = upper.value, x = ntile), alpha = 0.1) +
-        xlab(xtitle) + ylab("Treatment Effect") +
-        scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
-      
-    }
+    # plot differential treatment effects for the range of values
+    plot_diff <- effects %>%
+      group_by(ntile) %>%
+      mutate(mean.value = mean(mean),
+             lower.value = quantile(mean, probs = c(0.05)),
+             upper.value = quantile(mean, probs = c(0.95))) %>%
+      ungroup() %>%
+      mutate(ntile = as.double(ntile)) %>%
+      ggplot() +
+      geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") +
+      geom_point(aes(x = ntile, y = mean.value), col = "red") +
+      geom_errorbar(aes(ymin = lower.value, ymax = upper.value, x = ntile), alpha = 0.1) +
+      xlab(xtitle) + ylab("Treatment Effect") +
+      scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
+    
     
   }
   
+  # set limits for treatment effect axis
   if (!is.null(ymin) & !is.null(ymax)) {
     plot_diff <- plot_diff +
       ylim(ymin, ymax)
   }
   
   # plot of combined histogram + differential effects
-  plot.diff.marg <- cowplot::plot_grid(
-    
-    # plot of differential effects
-    plot_diff
-    
-    ,
-    
-    cowplot::plot_grid(
-      
-      # spacing of plots
-      ggplot() +
-        theme_void()
-      
-      ,
-      
-      # plot of histogram
-      plot_hist
-      
-      , ncol = 2, nrow = 1, rel_widths = c(0.06, 1)
-      
-    )
-    
-    , ncol = 1, nrow = 2, rel_heights = c(0.85, 0.15)
-    
-  )
-  
+  plot.diff.marg <- patchwork::wrap_plots(list(plot_diff, plot_hist), ncol = 1, heights = c(0.85, 0.15))
+
   return(plot.diff.marg)
   
 }
@@ -847,10 +681,13 @@ calc_diff_treatment_response <- function(bart_model, dataset, variable, rby) {
     new.dataset[,variable] <- factor(new.dataset[,variable], levels = range)
   }
   
+  # calculate treatment response
   response <- calc_response(bart_model, new.dataset)
   
+  # summarise treatment response
   response_summary <- calc_response_summary(response)
   
+  # combine into a single dataset
   response_summary_dataset <- rbind(
     response_summary[["SGLT2"]] %>%
       mutate(ntile = rep(1:length(range), each = nrow(dataset)),
@@ -1010,10 +847,8 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
       ylim(ymin, ymax)
   }
   
-  
-  # plot of combined histogram + differential response
-  plot.diff.marg <- patchwork::wrap_plots(plot_diff / plot_hist + patchwork::plot_layout(heights = c(0.85, 0.15)))
-
+  # plot of combined histogram + differential effects
+  plot.diff.marg <- patchwork::wrap_plots(list(plot_diff, plot_hist), ncol = 1, heights = c(0.85, 0.15))
   
   return(plot.diff.marg)
   
@@ -1128,69 +963,12 @@ calc_ATE_prop_score <- function(dataset, seed = NULL) {
   return(prop_model)
 }
 
-calc_ATE_validation <- function(data, seed = NULL) {
+
+
+calc_ATE_validation <- function(data, variable, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2,
-  #   should be the way around)
-  prop_score <- 1 - prop_model$p_hat_train
-
-  # split predicted treatment effects into deciles
-  predicted_treatment_effect <- data %>%
-    plyr::ddply("hba1c_diff.q", dplyr::summarise,
-                N = length(hba1c_diff),
-                hba1c_diff.pred = mean(hba1c_diff))
-  
-  # maximum number of deciles being tested
-  quantiles <- max(data$hba1c_diff.q)
-  
-  # create lists with results
-  mnumber = c(1:quantiles)
-  models  <- as.list(1:quantiles)
-  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
-  
-  # join dataset and propensity score
-  data.new <- data %>%
-    cbind(prop_score)
-  
-  # iterate through deciles
-  for (i in mnumber) {
-    # fit linear regression for decile
-    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass) + prop_score),data=data.new,subset=hba1c_diff.q==i)
-    
-    # collect treatment effect from regression
-    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
-    
-    # calculate confidence intervals
-    confint_all <- confint(models[[i]], levels=0.95)
-    
-    # collect lower bound CI
-    lower.obs <- append(lower.obs,confint_all[2,1])
-    
-    # collect upper bound CI
-    upper.obs <- append(upper.obs,confint_all[2,2])
-
-  }
-  
-  
-  # join treatment effects for deciles in a data.frame
-  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
-    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
-  
-  # returned list with fitted propensity model + decile treatment effects  
-  t <- list(prop_model = prop_model, effects = effects)
-  
-  return(t)
-}
-
-
-calc_ATE_validation_weight <- function(data, seed = NULL) {
-  ##### Input variables
-  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # variable - variable with y values
   
   # calculate propensity score
   prop_model <- calc_ATE_prop_score(data, seed)
@@ -1217,10 +995,13 @@ calc_ATE_validation_weight <- function(data, seed = NULL) {
   data.new <- data %>%
     cbind(prop_score)
   
+  # formula
+  formula <- paste0(variable, " ~ factor(drugclass) + prop_score")
+  
   # iterate through deciles
   for (i in mnumber) {
     # fit linear regression for decile
-    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass) + prop_score),data=data.new,subset=hba1c_diff.q==i)
+    models[[i]] <- lm(as.formula(formula),data=data.new,subset=hba1c_diff.q==i)
     
     # collect treatment effect from regression
     hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
@@ -1278,9 +1059,10 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
 
 ### prop matching
 
-calc_ATE_validation_prop_matching <- function(data, seed = NULL) {
+calc_ATE_validation_prop_matching <- function(data, variable, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # variable - variable with y values
   
   # calculate propensity score
   prop_model <- calc_ATE_prop_score(data, seed)
@@ -1306,6 +1088,8 @@ calc_ATE_validation_prop_matching <- function(data, seed = NULL) {
   data.new <- data %>%
     cbind(prop_score)
   
+  # formula
+  formula <- paste0(variable, " ~ factor(drugclass)")
   # iterate through deciles
   for (i in mnumber) {
     
@@ -1350,108 +1134,7 @@ calc_ATE_validation_prop_matching <- function(data, seed = NULL) {
     rows.glp1 <- rows.glp1[not.na.rows]
     
     # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
-    
-    # collect treatment effect from regression
-    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
-    
-    # calculate confidence intervals
-    confint_all <- confint(models[[i]], levels=0.95)
-    
-    # collect lower bound CI
-    lower.obs <- append(lower.obs,confint_all[2,1])
-    
-    # collect upper bound CI
-    upper.obs <- append(upper.obs,confint_all[2,2])
-    
-  }
-  
-  # join treatment effects for deciles in a data.frame
-  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
-    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
-  
-  # returned list with fitted propensity model + decile treatment effects  
-  t <- list(prop_model = prop_model, effects = effects)
-  
-  return(t)
-}
-
-
-### prop matching
-
-calc_ATE_validation_prop_matching_weight <- function(data, seed = NULL) {
-  ##### Input variables
-  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-  prop_score <- 1 - prop_model$p_hat_train
-  
-  # split predicted treatment effects into deciles
-  predicted_treatment_effect <- data %>%
-    plyr::ddply("hba1c_diff.q", dplyr::summarise,
-                N = length(hba1c_diff),
-                hba1c_diff.pred = mean(hba1c_diff))
-  
-  # maximum number of deciles being tested
-  quantiles <- max(data$hba1c_diff.q)
-  
-  # create lists with results
-  mnumber = c(1:quantiles)
-  models  <- as.list(1:quantiles)
-  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
-  
-  # join dataset and propensity score
-  data.new <- data %>%
-    cbind(prop_score)
-  
-  # iterate through deciles
-  for (i in mnumber) {
-    
-    # dataset individuals in decile that had GLP1
-    rows.glp1 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "GLP1")
-    
-    # dataset individuals in decile that had SGLT2
-    rows.sglt2 <- which(data.new$hba1c_diff.q == i & data.new$drugclass == "SGLT2")
-    
-    # list of matched SGLT2 rows to GLP1 
-    matched.glp1 <- vector(mode = "numeric", length = length(rows.glp1))
-    
-    # iterate through rows of GLP1
-    for (l in 1:length(rows.glp1)) {
-      # closest SGLT2 row to GLP1
-      chosen.row <- which.min(abs(prop_score[rows.sglt2] - prop_score[rows.glp1[l]]))
-      
-      # check if distance is less than 0.05 (caliper distance)
-      if (prop_score[rows.sglt2[chosen.row]] - prop_score[rows.glp1[l]] < 0.05) {
-        # if chosen row is within caliper distance
-        
-        # update list of matched rows
-        matched.glp1[l] <- rows.sglt2[chosen.row]
-        
-        # remove row from being matched again
-        rows.sglt2 <- rows.sglt2[-chosen.row]
-        
-      } else {
-        # if chosen row is outside caliper distance
-        
-        # update list of matched rows with NA
-        matched.glp1[l] <- NA
-        
-      }
-    }
-    
-    # rows without NA in list of SGLT2 rows matched
-    not.na.rows <- !is.na(matched.glp1)
-    
-    # only keep rows with matched entries
-    matched.glp1 <- matched.glp1[not.na.rows]
-    rows.glp1 <- rows.glp1[not.na.rows]
-    
-    # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass)),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
+    models[[i]] <- lm(as.formula(formula),data=data.new[c(rows.glp1, matched.glp1),],subset=hba1c_diff.q==i)
     
     # collect treatment effect from regression
     hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
@@ -1480,9 +1163,10 @@ calc_ATE_validation_prop_matching_weight <- function(data, seed = NULL) {
 
 ### inverse propensity score weighting 
 
-calc_ATE_validation_inverse_prop_weighting <- function(data, seed = NULL) {
+calc_ATE_validation_inverse_prop_weighting <- function(data, variable, seed = NULL) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # variable - variable with y values
   
   # calculate propensity score
   prop_model <- calc_ATE_prop_score(data, seed)
@@ -1520,82 +1204,13 @@ calc_ATE_validation_inverse_prop_weighting <- function(data, seed = NULL) {
   
   data.new <- rbind(sglt2.data, glp1.data)
   
-  # iterate through deciles
-  for (i in mnumber) {
-    # fit linear regression for decile
-    models[[i]] <- lm(as.formula(posthba1c_final ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = calc_prop)
-    
-    # collect treatment effect from regression
-    hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
-    
-    # calculate confidence intervals
-    confint_all <- confint(models[[i]], levels=0.95)
-    
-    # collect lower bound CI
-    lower.obs <- append(lower.obs,confint_all[2,1])
-    
-    # collect upper bound CI
-    upper.obs <- append(upper.obs,confint_all[2,2])
-    
-  }
-  
-  # join treatment effects for deciles in a data.frame
-  effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
-    dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
-  
-  # returned list with fitted propensity model + decile treatment effects  
-  t <- list(prop_model = prop_model, effects = effects)
-  
-  return(t)
-}
-
-
-### inverse propensity score weighting 
-
-calc_ATE_validation_inverse_prop_weighting_weight <- function(data, seed = NULL) {
-  ##### Input variables
-  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-  prop_score <- 1 - prop_model$p_hat_train
-  
-  # split predicted treatment effects into deciles
-  predicted_treatment_effect <- data %>%
-    plyr::ddply("hba1c_diff.q", dplyr::summarise,
-                N = length(hba1c_diff),
-                hba1c_diff.pred = mean(hba1c_diff))
-  
-  # maximum number of deciles being tested
-  quantiles <- max(data$hba1c_diff.q)
-  
-  # create lists with results
-  mnumber = c(1:quantiles)
-  models  <- as.list(1:quantiles)
-  hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector();
-  
-  # join dataset and propensity score
-  data.new <- data %>%
-    cbind(prop_score)
-  
-  # weights for SGLT2 Z = 1
-  sglt2.data <- data.new %>%
-    filter(drugclass == "SGLT2") %>%
-    mutate(prop_score = 1/(prop_score))
-  
-  # weights for GLP1 Z = 0
-  glp1.data <- data.new %>%
-    filter(drugclass == "GLP1") %>%
-    mutate(prop_score = 1/(1-prop_score))
-  
-  data.new <- rbind(sglt2.data, glp1.data)
+  # formula
+  formula <- paste0(variable, " ~ factor(drugclass)")
   
   # iterate through deciles
   for (i in mnumber) {
     # fit linear regression for decile
-    models[[i]] <- lm(as.formula(postweight6m ~ factor(drugclass)),data=data.new,subset=hba1c_diff.q==i, weights = prop_score)
+    models[[i]] <- lm(as.formula(formula),data=data.new,subset=hba1c_diff.q==i, weights = calc_prop)
     
     # collect treatment effect from regression
     hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
@@ -1755,5 +1370,4 @@ toc_function <- function(data, tau, W.hat, Y.hat, R = 200, q = seq(0.1, 1, by = 
   return(output)
   
 }
-
 

@@ -97,7 +97,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  comp_routine_no_prop_cred_pred_dev <- calc_resid(data_complete_routine_dev, posteriors_comp_routine_no_prop_dev)
+  comp_routine_no_prop_cred_pred_dev <- calc_resid(data_complete_routine_dev, posteriors_comp_routine_no_prop_dev, "posthba1c_final")
   
   saveRDS(comp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_dev.rds"))
   
@@ -180,7 +180,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  comp_routine_no_prop_cred_pred_val <- calc_resid(data_complete_routine_val, posteriors_comp_routine_no_prop_val)
+  comp_routine_no_prop_cred_pred_val <- calc_resid(data_complete_routine_val, posteriors_comp_routine_no_prop_val, "posthba1c_final")
   
   saveRDS(comp_routine_no_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_val.rds"))
   
@@ -287,9 +287,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_complete_routine_dev, posteriors_comp_routine_no_prop_dev)
+  assessment_values_dev <- calc_assessment(data_complete_routine_dev, posteriors_comp_routine_no_prop_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_complete_routine_val, posteriors_comp_routine_no_prop_val)
+  assessment_values_val <- calc_assessment(data_complete_routine_val, posteriors_comp_routine_no_prop_val, "posthba1c_final")
   
   assessment_comp_routine_no_prop <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -318,7 +318,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
   
@@ -333,7 +333,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_no_prop.rds"))
   
@@ -360,7 +360,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_no_prop.rds"))
   
@@ -374,7 +374,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_no_prop.rds"))
   
@@ -401,7 +401,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
   
@@ -415,7 +415,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
   
@@ -482,7 +482,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  comp_routine_prop_cred_pred_dev <- calc_resid(data_complete_routine_prop_dev, posteriors_complete_routine_prop_dev)
+  comp_routine_prop_cred_pred_dev <- calc_resid(data_complete_routine_prop_dev, posteriors_complete_routine_prop_dev, "posthba1c_final")
   
   saveRDS(comp_routine_prop_cred_pred_dev, paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_dev.rds"))
   
@@ -587,7 +587,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  comp_routine_prop_cred_pred_val <- calc_resid(data_complete_routine_prop_val, posteriors_complete_routine_prop_val)
+  comp_routine_prop_cred_pred_val <- calc_resid(data_complete_routine_prop_val, posteriors_complete_routine_prop_val, "posthba1c_final")
   
   saveRDS(comp_routine_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_val.rds"))
   
@@ -694,9 +694,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_complete_routine_prop_dev, posteriors_complete_routine_prop_dev)
+  assessment_values_dev <- calc_assessment(data_complete_routine_prop_dev, posteriors_complete_routine_prop_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_complete_routine_prop_val, posteriors_complete_routine_prop_val)
+  assessment_values_val <- calc_assessment(data_complete_routine_prop_val, posteriors_complete_routine_prop_val, "posthba1c_final")
   
   assessment_comp_routine_prop <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -726,7 +726,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_comp_routine_prop <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_comp_routine_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_prop.rds"))
   
@@ -741,7 +741,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_comp_routine_prop <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_comp_routine_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_prop.rds"))
   
@@ -768,7 +768,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_prop.rds"))
   
@@ -782,7 +782,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_prop.rds"))
   
@@ -809,7 +809,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
   
@@ -823,7 +823,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
   
@@ -885,7 +885,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_routine_no_prop_cred_pred_dev <- calc_resid(data_incomplete_routine_dev, posteriors_incomp_routine_no_prop_dev)
+  incomp_routine_no_prop_cred_pred_dev <- calc_resid(data_incomplete_routine_dev, posteriors_incomp_routine_no_prop_dev, "posthba1c_final")
   
   saveRDS(incomp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_dev.rds"))
   
@@ -968,7 +968,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_routine_no_prop_cred_pred_val <- calc_resid(data_incomplete_routine_val, posteriors_incomp_routine_no_prop_val)
+  incomp_routine_no_prop_cred_pred_val <- calc_resid(data_incomplete_routine_val, posteriors_incomp_routine_no_prop_val, "posthba1c_final")
   
   saveRDS(incomp_routine_no_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_val.rds"))
   
@@ -1073,9 +1073,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_routine_dev, posteriors_incomp_routine_no_prop_dev)
+  assessment_values_dev <- calc_assessment(data_incomplete_routine_dev, posteriors_incomp_routine_no_prop_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_routine_val, posteriors_incomp_routine_no_prop_val)
+  assessment_values_val <- calc_assessment(data_incomplete_routine_val, posteriors_incomp_routine_no_prop_val, "posthba1c_final")
   
   assessment_incomp_routine_no_prop <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -1105,7 +1105,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
   
@@ -1120,7 +1120,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
   
@@ -1147,7 +1147,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_routine_no_prop.rds"))
   
@@ -1161,7 +1161,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_routine_no_prop.rds"))
   
@@ -1188,7 +1188,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
   
@@ -1202,7 +1202,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
   
@@ -1255,7 +1255,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_no_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_no_prop_dev)
+  incomp_no_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_no_prop_dev, "posthba1c_final")
   
   saveRDS(incomp_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_dev.rds"))
   
@@ -1330,7 +1330,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_no_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_no_prop_val)
+  incomp_no_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_no_prop_val, "posthba1c_final")
   
   saveRDS(incomp_no_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val.rds"))
   
@@ -1437,9 +1437,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_dev, posteriors_incomp_no_prop_dev)
+  assessment_values_dev <- calc_assessment(data_incomplete_dev, posteriors_incomp_no_prop_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_val, posteriors_incomp_no_prop_val)
+  assessment_values_val <- calc_assessment(data_incomplete_val, posteriors_incomp_no_prop_val, "posthba1c_final")
   
   assessment_incomp_no_prop <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -1468,7 +1468,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_no_prop <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop.rds"))
   
@@ -1483,7 +1483,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_no_prop <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop.rds"))
   
@@ -1510,7 +1510,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop.rds"))
   
@@ -1524,7 +1524,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop.rds"))
   
@@ -1551,7 +1551,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
   
@@ -1565,7 +1565,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
   
@@ -1626,7 +1626,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_no_prop_var_select_cred_pred_dev <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_no_prop_var_select_dev)
+  incomp_no_prop_var_select_cred_pred_dev <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_no_prop_var_select_dev, "posthba1c_final")
   
   saveRDS(incomp_no_prop_var_select_cred_pred_dev, paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_dev.rds"))
   
@@ -1707,7 +1707,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_no_prop_var_select_cred_pred_val <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_no_prop_var_select_val)
+  incomp_no_prop_var_select_cred_pred_val <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_no_prop_var_select_val, "posthba1c_final")
   
   saveRDS(incomp_no_prop_var_select_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
   
@@ -1813,9 +1813,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select, posteriors_incomp_no_prop_var_select_dev)
+  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select, posteriors_incomp_no_prop_var_select_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_val_var_select, posteriors_incomp_no_prop_var_select_val)
+  assessment_values_val <- calc_assessment(data_incomplete_val_var_select, posteriors_incomp_no_prop_var_select_val, "posthba1c_final")
   
   assessment_incomp_no_prop_val_select <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -1843,7 +1843,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
   
@@ -1858,7 +1858,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
   
@@ -1885,7 +1885,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop_var_select.rds"))
   
@@ -1899,7 +1899,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop_var_select.rds"))
   
@@ -1926,7 +1926,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
   
@@ -1940,7 +1940,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
   
@@ -1997,7 +1997,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_prop_dev)
+  incomp_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_prop_dev, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev.rds"))
   
@@ -2093,7 +2093,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_prop_val)
+  incomp_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_prop_val, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val.rds"))
   
@@ -2199,9 +2199,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_dev, posteriors_incomp_prop_dev)
+  assessment_values_dev <- calc_assessment(data_incomplete_dev, posteriors_incomp_prop_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_val, posteriors_incomp_prop_val)
+  assessment_values_val <- calc_assessment(data_incomplete_val, posteriors_incomp_prop_val, "posthba1c_final")
   
   assessment_incomp_prop <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -2230,7 +2230,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop.rds"))
   
@@ -2245,7 +2245,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop.rds"))
   
@@ -2272,7 +2272,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop.rds"))
   
@@ -2286,7 +2286,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop.rds"))
   
@@ -2313,7 +2313,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
   
@@ -2327,7 +2327,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop.rds"))
   
@@ -2391,7 +2391,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_dev_var_select_1 <- calc_resid(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1)
+  incomp_prop_cred_pred_dev_var_select_1 <- calc_resid(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_dev_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
   
@@ -2492,7 +2492,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_val_var_select_1 <- calc_resid(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1)
+  incomp_prop_cred_pred_val_var_select_1 <- calc_resid(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_val_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
   
@@ -2599,9 +2599,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1)
+  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1)
+  assessment_values_val <- calc_assessment(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1, "posthba1c_final")
   
   assessment_incomp_prop_var_select_1 <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -2630,7 +2630,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
   
@@ -2645,7 +2645,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
   
@@ -2672,7 +2672,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select_1.rds"))
   
@@ -2686,7 +2686,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select_1.rds"))
   
@@ -2713,7 +2713,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
   
@@ -2727,7 +2727,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
   
@@ -2788,7 +2788,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_dev_var_select <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select)
+  incomp_prop_cred_pred_dev_var_select <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_dev_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select.rds"))
   
@@ -2891,7 +2891,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  incomp_prop_cred_pred_val_var_select <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select)
+  incomp_prop_cred_pred_val_var_select <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select, "posthba1c_final")
   
   saveRDS(incomp_prop_cred_pred_val_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
   
@@ -3002,9 +3002,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select)
+  assessment_values_dev <- calc_assessment(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select)
+  assessment_values_val <- calc_assessment(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select, "posthba1c_final")
   
   assessment_incomp_prop_var_select <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -3034,7 +3034,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
   
@@ -3049,7 +3049,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select.rds"))
   
@@ -3076,7 +3076,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select.rds"))
   
@@ -3090,7 +3090,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select.rds"))
   
@@ -3117,7 +3117,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
   
@@ -3131,7 +3131,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
   

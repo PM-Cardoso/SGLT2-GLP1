@@ -241,11 +241,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  interim_dataset <- data_dev %>%
-    mutate(posthba1c_final = postweight6m) %>%
-    select(-postweight6m)
-  
-  cred_pred_dev <- calc_resid(interim_dataset, posteriors_dev)
+  cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "postweight6m")
   
   saveRDS(cred_pred_dev, paste0(output_path, "/Weight_reduction/cred_pred_dev.rds"))
   
@@ -350,7 +346,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev <- calc_ATE_validation_weight(predicted_observed_dev)
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "postweight6m")
   
   saveRDS(ATE_validation_dev, paste0(output_path, "/Weight_reduction/ATE_validation_dev.rds"))
   
@@ -365,7 +361,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val <- calc_ATE_validation_weight(predicted_observed_val)
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "postweight6m")
   
   saveRDS(ATE_validation_val, paste0(output_path, "/Weight_reduction/ATE_validation_val.rds"))
   
@@ -392,7 +388,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching_weight(predicted_observed_dev)
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "postweight6m")
   
   saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Weight_reduction/ATE_matching_validation_dev.rds"))
   
@@ -406,7 +402,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val <- calc_ATE_validation_prop_matching_weight(predicted_observed_val)
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "postweight6m")
   
   saveRDS(ATE_matching_validation_val, paste0(output_path, "/Weight_reduction/ATE_matching_validation_val.rds"))
   
@@ -433,7 +429,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting_weight(predicted_observed_dev)
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "postweight6m")
   
   saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Weight_reduction/ATE_weighting_validation_dev.rds"))
   
@@ -447,7 +443,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting_weight(predicted_observed_val)
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "postweight6m")
   
   saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Weight_reduction/ATE_weighting_validation_val.rds"))
   
@@ -465,7 +461,6 @@ plot_ATE_prop_score_weighting <- cowplot::plot_grid(
   cowplot::plot_grid(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting, ncol = 2, nrow = 1, labels = c("A", "B"))
   
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
-
 
 
 

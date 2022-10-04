@@ -389,7 +389,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  cred_pred_dev <- calc_resid(data_dev, posteriors_dev)
+  cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "posthba1c_final")
   
   saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/With_grf/Assessment/cred_pred_dev.rds"))
   
@@ -449,7 +449,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  cred_pred_val <- calc_resid(data_val, posteriors_val)
+  cred_pred_val <- calc_resid(data_val, posteriors_val, "posthba1c_final")
   
   saveRDS(cred_pred_val, paste0(output_path, "/Final_model/With_grf/Assessment/cred_pred_val.rds"))
   
@@ -464,9 +464,9 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  assessment_values_dev <- calc_assessment(data_dev, posteriors_dev)
+  assessment_values_dev <- calc_assessment(data_dev, posteriors_dev, "posthba1c_final")
   
-  assessment_values_val <- calc_assessment(data_val, posteriors_val)
+  assessment_values_val <- calc_assessment(data_val, posteriors_val, "posthba1c_final")
   
   assessment <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
@@ -607,7 +607,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev)
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_validation_dev.rds"))
   
@@ -622,7 +622,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val <- calc_ATE_validation(predicted_observed_val)
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_validation_val.rds"))
   
@@ -649,7 +649,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev)
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_matching_validation_dev.rds"))
   
@@ -663,7 +663,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val)
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_matching_validation_val, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_matching_validation_val.rds"))
   
@@ -690,7 +690,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev)
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_weighting_validation_dev.rds"))
   
@@ -704,7 +704,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val)
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
   
   saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/With_grf/Assessment/ATE_weighting_validation_val.rds"))
   
