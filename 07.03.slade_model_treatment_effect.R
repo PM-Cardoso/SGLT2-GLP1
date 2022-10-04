@@ -83,7 +83,7 @@ bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bar
 
 # load in treatment effects
 
-effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Treatment_Effects/effects_summary_dev.rds")
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_dev.rds")
 
 
 # Fit new treatment effects model
@@ -145,11 +145,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  interim_dataset <- data_dev %>%
-    mutate(posthba1c_final = effects) %>%
-    select(-effects)
-  
-  cred_pred_dev <- calc_resid(interim_dataset, posteriors_dev)
+  cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "effects")
   
   saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/cred_pred_dev.rds"))
   

@@ -241,11 +241,7 @@ if (class(try(
   
   , silent = TRUE)) == "try-error") {
   
-  interim_dataset <- data_dev %>%
-    mutate(posthba1c_final = postweight6m) %>%
-    select(-postweight6m)
-  
-  cred_pred_dev <- calc_resid(interim_dataset, posteriors_dev)
+  cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "postweight6m")
   
   saveRDS(cred_pred_dev, paste0(output_path, "/Weight_reduction/cred_pred_dev.rds"))
   
@@ -327,6 +323,146 @@ if (class(try(
   saveRDS(effects_summary_val, paste0(output_path, "/Weight_reduction/effects_summary_val.rds"))
   
 }
+
+
+## plot effects validation
+
+predicted_observed_dev <- data_dev %>%
+  cbind(hba1c_diff = effects_summary_dev$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+predicted_observed_val <- data_val %>%
+  cbind(hba1c_diff = effects_summary_val$mean) %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+
+##############
+# Validating ATE
+if (class(try(
+  
+  ATE_validation_dev <- readRDS(paste0(output_path, "/Weight_reduction/ATE_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "postweight6m")
+  
+  saveRDS(ATE_validation_dev, paste0(output_path, "/Weight_reduction/ATE_validation_dev.rds"))
+  
+}
+
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -8, 10)
+
+
+if (class(try(
+  
+  ATE_validation_val <- readRDS(paste0(output_path, "/Weight_reduction/ATE_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "postweight6m")
+  
+  saveRDS(ATE_validation_val, paste0(output_path, "/Weight_reduction/ATE_validation_val.rds"))
+  
+}
+
+plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 8)
+
+plot_ATE <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation lm(weght~drugclass+prop_score)")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+# Validation ATE prop score matching
+if (class(try(
+  
+  ATE_matching_validation_dev <- readRDS(paste0(output_path, "/Weight_reduction/ATE_matching_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "postweight6m")
+  
+  saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Weight_reduction/ATE_matching_validation_dev.rds"))
+  
+}
+
+plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10)
+
+if (class(try(
+  
+  ATE_matching_validation_val <- readRDS(paste0(output_path, "/Weight_reduction/ATE_matching_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "postweight6m")
+  
+  saveRDS(ATE_matching_validation_val, paste0(output_path, "/Weight_reduction/ATE_matching_validation_val.rds"))
+  
+}
+
+plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+
+plot_ATE_prop_score_matching <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation prop score matching")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
+
+# Validation ATE prop score inverse weighting
+if (class(try(
+  
+  ATE_weighting_validation_dev <- readRDS(paste0(output_path, "/Weight_reduction/ATE_weighting_validation_dev.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "postweight6m")
+  
+  saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Weight_reduction/ATE_weighting_validation_dev.rds"))
+  
+}
+
+plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+
+if (class(try(
+  
+  ATE_weighting_validation_val <- readRDS(paste0(output_path, "/Weight_reduction/ATE_weighting_validation_val.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "postweight6m")
+  
+  saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Weight_reduction/ATE_weighting_validation_val.rds"))
+  
+}
+
+plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 8)
+
+plot_ATE_prop_score_weighting <- cowplot::plot_grid(
+  
+  cowplot::ggdraw() +
+    cowplot::draw_label("Effects validation prop score inverse weighting")
+  
+  ,
+  
+  cowplot::plot_grid(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting, ncol = 2, nrow = 1, labels = c("A", "B"))
+  
+  , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
+
 
 
 ## Plot preference of therapy for weight change

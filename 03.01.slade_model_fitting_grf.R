@@ -192,7 +192,8 @@ predicted_observed_complete_routine_dev <- dataset_model.matrix %>%
 
 # lm(hba1c ~ drugclass + prop_score)
 ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
-                                            cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+                                            cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
+                                          "posthba1c_final")
     
 plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10)
 
@@ -213,7 +214,8 @@ predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complet
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
 
 ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_complete_routine_dev %>%
-                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
+                                                        "posthba1c_final")
 
 plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
 
@@ -231,7 +233,8 @@ plot_ATE_dev_prop_score <- cowplot::plot_grid(
 
 # Inverse Propensity score weighting 
 ATE_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_complete_routine_dev %>%
-                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]))
+                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
+                                                          "posthba1c_final")
 
 plot_ATE_dev_prop_score_weighting <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
 
