@@ -934,7 +934,7 @@ calc_ATE_prop_score <- function(dataset, seed = NULL) {
                        drugline,
                        prehba1cmmol,
                        ncurrtx,
-                       score,
+                       score.excl.mi,
                        Category), by = c("patid", "pateddrug"))
   
   # fit propensity model with the variables that influence therapy indication
@@ -946,7 +946,7 @@ calc_ATE_prop_score <- function(dataset, seed = NULL) {
                                                   drugline,
                                                   prehba1cmmol,
                                                   ncurrtx,
-                                                  score,
+                                                  score.excl.mi,
                                                   Category),
                                          y = data.new[,"drugclass"],
                                          use_missing_data = TRUE,
