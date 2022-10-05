@@ -62,16 +62,16 @@ bart_model_final <- readRDS(paste0(output_path, "/Final_model/cvd_new/bart_model
 dataset.dev <- final.dev %>%
   select(-score) %>%
   left_join(final.all.extra.vars %>%
-              select(patid, pateddrug, score.excl.mi)) %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
+              select(patid, pateddrug, score.excl.mi, preweight)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, preweight,
            colnames(bart_model_final$X)))
 
 # Val dataset
 dataset.val <- final.val %>%
   select(-score) %>%
   left_join(final.all.extra.vars %>%
-              select(patid, pateddrug, score.excl.mi)) %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
+              select(patid, pateddrug, score.excl.mi, preweight)) %>% 
+  select(c(patid, pateddrug, posthba1c_final, preweight,
            colnames(bart_model_final$X)))
 
 # treatment effects dev
