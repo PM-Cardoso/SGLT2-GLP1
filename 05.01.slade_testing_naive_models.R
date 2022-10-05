@@ -285,6 +285,7 @@ if (class(try(
   # [5] "drugline_5"     "egfr_ckdepi"    "hba1cmonth"     "ncurrtx_1"
   # [9] "ncurrtx_2"      "ncurrtx_3"      "prehba1cmmol"   "yrdrugstart"
   
+  
   saveRDS(vs_incomp_no_prop, paste0(output_path, "/Importance/vs_incomp_no_prop.rds"))
   
 }
@@ -294,18 +295,19 @@ data_incomplete_dev_var_select <- final.dev %>%
   select(c(patid,
            pateddrug,
            posthba1c_final,
-           agetx,
+           # agetx,
            drugclass, 
            drugline, 
            egfr_ckdepi, 
            hba1cmonth, 
-           malesex, 
+           # malesex, 
            ncurrtx, 
-           prealt, 
+           # prealt, 
            prehba1cmmol, 
-           score, 
-           yrdrugstart, 
-           predrug.5yrrecent.pad)
+           # score, 
+           yrdrugstart
+           # predrug.5yrrecent.pad
+           )
   )
 
 # Fit Bart model with variables selected
@@ -411,18 +413,18 @@ data_incomplete_dev_prop_var_select <- final.dev %>%
   select(c(patid,
            pateddrug,
            posthba1c_final,
-           agetx,
+           # agetx,
            drugclass, 
            drugline, 
            egfr_ckdepi, 
            hba1cmonth, 
-           malesex, 
+           # malesex, 
            ncurrtx, 
-           prealt, 
+           # prealt, 
            prehba1cmmol, 
-           score, 
-           yrdrugstart, 
-           predrug.5yrrecent.pad,
+           # score, 
+           yrdrugstart,
+           # predrug.5yrrecent.pad,
            prop_score)
   )
 
@@ -467,12 +469,13 @@ if (class(try(
                                                       num_permute_samples = 100,
                                                       num_trees_pred_cv = 100)
   
-  # [1] "Category_Active smoker" "drugclass_GLP1"         "drugclass_SGLT2"
-  # [4] "drugline_2"             "drugline_3"             "drugline_4"
-  # [7] "drugline_5"             "egfr_ckdepi"            "hba1cmonth"
-  # [10] "malesex_1"              "ncurrtx_1"              "ncurrtx_2"
-  # [13] "ncurrtx_3"              "prealt"                 "prehba1cmmol"
-  # [16] "score"                  "yrdrugstart"
+  # [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
+  # [4] "drugline_2"         "drugline_3"         "drugline_4"
+  # [7] "drugline_5"         "egfr_ckdepi"        "hba1cmonth"
+  # [10] "malesex_0"          "ncurrtx_0"          "ncurrtx_1"
+  # [13] "ncurrtx_2"          "ncurrtx_3"          "prealt"
+  # [16] "prehba1cmmol"       "score"              "yrdrugstart"
+  
   
   saveRDS(vs_incomp_prop_model, paste0(output_path, "/Importance/vs_incomp_prop_model.rds"))
   
@@ -489,18 +492,17 @@ data_incomplete_dev_prop_var_select <- final.dev %>%
   select(c(patid,
            pateddrug,
            posthba1c_final,
-           Category, 
+           Category,
            drugclass,
-           drugline, 
+           drugline,
+           egfr_ckdepi,
            hba1cmonth,
            malesex,
-           ncurrtx, 
-           prehba1cmmol, 
-           preweight, 
-           score, 
-           yrdrugstart, 
-           predrug.5yrrecent.angina, 
-           predrug.5yrrecent.hypertension,
+           ncurrtx,
+           prehba1cmmol,
+           prealt,
+           score,
+           yrdrugstart,
            prop_score)
   )
 
