@@ -637,7 +637,7 @@ group_values <- function(data, variable, breaks) {
 ### > 8 mmol
 
 # breaks
-breaks = c(-8, -5, -3, 0, 3, 5, 8)
+breaks = c(-5, -3, 0, 3, 5)
 
 ######
 ####
@@ -647,6 +647,9 @@ dataset_breakdown_dev <- data_dev %>%
   select(weight.change, drugclass) %>%
   cbind(hba1c_diff = effects_summary_dev$mean)
 
+#########
+######## # Unadjusted for indication bias
+#########
 
 dataset_intervals_dev <- group_values(data = dataset_breakdown_dev, 
                                   variable = "hba1c_diff", 
@@ -707,13 +710,321 @@ plot_weight_change_val <- dataset_intervals_val %>%
         legend.position = "bottom")
 
 
-plot_weight_change <- patchwork::wrap_plots(
+plot_weight_change_unadjusted <- patchwork::wrap_plots(
   # Development
   plot_weight_change_dev,
   # Validation
   plot_weight_change_val
 ) + patchwork::plot_annotation(tag_levels = 'A') +
   patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+
+#########
+######## # Adjusted for indication bias
+#########
+
+# dev
+
+# prop score model for indication bias
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
+# extracting selected variables for individuals in dataset
+data.new <- data_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     # prebmi,
+                     preweight,
+                     t2dmduration,
+                     prealb,
+                     egfr_ckdepi,
+                     drugline,
+                     prehba1cmmol,
+                     ncurrtx,
+                     score.excl.mi,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+prop_model <- bartMachine::bartMachine(X = data.new %>%
+                                         select(# prebmi,
+                                                preweight,
+                                                t2dmduration,
+                                                prealb,
+                                                egfr_ckdepi,
+                                                drugline,
+                                                prehba1cmmol,
+                                                ncurrtx,
+                                                score.excl.mi,
+                                                Category),
+                                       y = data.new[,"drugclass"],
+                                       use_missing_data = TRUE,
+                                       impute_missingness_with_rf_impute = FALSE,
+                                       impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                       num_trees = 200,
+                                       num_burn_in = 1000,
+                                       num_iterations_after_burn_in = 200)
+
+# keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+prop_score <- 1 - prop_model$p_hat_train
+
+
+dataset_intervals_dev <- group_values(data = dataset_breakdown_dev, 
+                                      variable = "hba1c_diff", 
+                                      breaks = breaks)
+
+# split predicted treatment effects into deciles
+predicted_treatment_effect <- dataset_intervals_dev %>%
+  plyr::ddply("intervals", dplyr::summarise,
+              N = length(hba1c_diff),
+              hba1c_diff.pred = mean(hba1c_diff),
+              weight.change.pred = mean(weight.change, na.rm = TRUE))
+
+# maximum number of deciles being tested
+quantiles <- levels(dataset_intervals_dev$intervals)
+
+# create lists with results
+mnumber = c(1:length(quantiles))
+models  <- as.list(1:length(quantiles))
+hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector(); intercept.obs <- vector(); predictions <- data.frame(NULL)
+
+# join dataset and propensity score
+data.new <- dataset_intervals_dev %>%
+  cbind(calc_prop = prop_score)
+
+# weights for SGLT2 Z = 1
+sglt2.data <- data.new %>%
+  filter(drugclass == "SGLT2") %>%
+  mutate(calc_prop = 1/(calc_prop))
+
+# weights for GLP1 Z = 0
+glp1.data <- data.new %>%
+  filter(drugclass == "GLP1") %>%
+  mutate(calc_prop = 1/(1-calc_prop))
+
+data.new <- rbind(sglt2.data, glp1.data)
+
+variable = "weight.change"
+# formula
+formula <- paste0(variable, " ~ factor(drugclass)")
+
+
+# iterate through deciles
+for (i in mnumber) {
+  # fit linear regression for decile
+  models[[i]] <- lm(as.formula(formula),data=data.new,subset=intervals==quantiles[i], weights = calc_prop)
+  
+  # collect treatment effect from regression
+  hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+  
+  # collect intercept from regression
+  intercept.obs <- append(intercept.obs,models[[i]]$coefficients[1])
+  
+  # calculate confidence intervals
+  confint_all <- confint(models[[i]], levels=0.95)
+  
+  # collect lower bound CI
+  lower.obs <- append(lower.obs,confint_all[2,1])
+  
+  # collect upper bound CI
+  upper.obs <- append(upper.obs,confint_all[2,2])
+  
+  # predictions in SGLT2
+  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  
+  predictions <- rbind(predictions, cbind(values, drugclass = "SGLT2", intervals = quantiles[i]))
+  
+  # predictions in GLP1
+  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  
+  predictions <- rbind(predictions, cbind(values, drugclass = "GLP1", intervals = quantiles[i]))
+  
+}
+
+# join treatment effects for deciles in a data.frame
+effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+  dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+
+# returned list with fitted propensity model + decile treatment effects  
+t <- list(prop_model = prop_model, effects = effects)
+
+plot_weight_benefit_dev <- t[["effects"]] %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals, y = hba1c_diff.obs, ymin = lower.obs, ymax = upper.obs)) +
+  coord_flip()
+
+plot_weight_dev <- predictions %>%
+  mutate(fit = as.numeric(fit),
+         lwr = as.numeric(lwr),
+         upr = as.numeric(upr),
+         intervals = factor(intervals, levels = quantiles)) %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
+  ylim(-6, 0) +
+  coord_flip() 
+  
+# Val
+
+# prop score model for indication bias
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
+# extracting selected variables for individuals in dataset
+data.new <- data_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     # prebmi,
+                     preweight,
+                     t2dmduration,
+                     prealb,
+                     egfr_ckdepi,
+                     drugline,
+                     prehba1cmmol,
+                     ncurrtx,
+                     score.excl.mi,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+prop_model <- bartMachine::bartMachine(X = data.new %>%
+                                         select(# prebmi,
+                                           preweight,
+                                           t2dmduration,
+                                           prealb,
+                                           egfr_ckdepi,
+                                           drugline,
+                                           prehba1cmmol,
+                                           ncurrtx,
+                                           score.excl.mi,
+                                           Category),
+                                       y = data.new[,"drugclass"],
+                                       use_missing_data = TRUE,
+                                       impute_missingness_with_rf_impute = FALSE,
+                                       impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                       num_trees = 200,
+                                       num_burn_in = 1000,
+                                       num_iterations_after_burn_in = 200)
+
+# keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+prop_score <- 1 - prop_model$p_hat_train
+
+
+dataset_intervals_val <- group_values(data = dataset_breakdown_val, 
+                                      variable = "hba1c_diff", 
+                                      breaks = breaks)
+
+# split predicted treatment effects into deciles
+predicted_treatment_effect <- dataset_intervals_val %>%
+  plyr::ddply("intervals", dplyr::summarise,
+              N = length(hba1c_diff),
+              hba1c_diff.pred = mean(hba1c_diff),
+              weight.change.pred = mean(weight.change, na.rm = TRUE))
+
+# maximum number of deciles being tested
+quantiles <- levels(dataset_intervals_val$intervals)
+
+# create lists with results
+mnumber = c(1:length(quantiles))
+models  <- as.list(1:length(quantiles))
+hba1c_diff.obs <- vector(); lower.obs <- vector(); upper.obs <- vector(); intercept.obs <- vector(); predictions <- data.frame(NULL)
+
+# join dataset and propensity score
+data.new <- dataset_intervals_val %>%
+  cbind(calc_prop = prop_score)
+
+# weights for SGLT2 Z = 1
+sglt2.data <- data.new %>%
+  filter(drugclass == "SGLT2") %>%
+  mutate(calc_prop = 1/(calc_prop))
+
+# weights for GLP1 Z = 0
+glp1.data <- data.new %>%
+  filter(drugclass == "GLP1") %>%
+  mutate(calc_prop = 1/(1-calc_prop))
+
+data.new <- rbind(sglt2.data, glp1.data)
+
+variable = "weight.change"
+# formula
+formula <- paste0(variable, " ~ factor(drugclass)")
+
+
+# iterate through deciles
+for (i in mnumber) {
+  # fit linear regression for decile
+  models[[i]] <- lm(as.formula(formula),data=data.new,subset=intervals==quantiles[i], weights = calc_prop)
+  
+  # collect treatment effect from regression
+  hba1c_diff.obs <- append(hba1c_diff.obs,models[[i]]$coefficients[2])
+  
+  # collect intercept from regression
+  intercept.obs <- append(intercept.obs,models[[i]]$coefficients[1])
+  
+  # calculate confidence intervals
+  confint_all <- confint(models[[i]], levels=0.95)
+  
+  # collect lower bound CI
+  lower.obs <- append(lower.obs,confint_all[2,1])
+  
+  # collect upper bound CI
+  upper.obs <- append(upper.obs,confint_all[2,2])
+  
+  # predictions in SGLT2
+  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  
+  predictions <- rbind(predictions, cbind(values, drugclass = "SGLT2", intervals = quantiles[i]))
+  
+  # predictions in GLP1
+  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  
+  predictions <- rbind(predictions, cbind(values, drugclass = "GLP1", intervals = quantiles[i]))
+  
+}
+
+# join treatment effects for deciles in a data.frame
+effects <- data.frame(predicted_treatment_effect,cbind(hba1c_diff.obs,lower.obs,upper.obs)) %>%
+  dplyr::mutate(obs=hba1c_diff.obs,lci=lower.obs,uci=upper.obs)
+
+# returned list with fitted propensity model + decile treatment effects  
+t <- list(prop_model = prop_model, effects = effects)
+
+plot_weight_benefit_val <- t[["effects"]] %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals, y = hba1c_diff.obs, ymin = lower.obs, ymax = upper.obs)) +
+  coord_flip()
+
+plot_weight_val <- predictions %>%
+  mutate(fit = as.numeric(fit),
+         lwr = as.numeric(lwr),
+         upr = as.numeric(upr),
+         intervals = factor(intervals, levels = quantiles)) %>%
+  ggplot() +
+  geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
+  ylim(-6, 0) +
+  coord_flip() 
+
+
+## combining plots
+
+plot_weight_change_adjusted_dev <- patchwork::wrap_plots(
+  # Development
+  plot_weight_benefit_dev,
+  # Validation
+  plot_weight_dev
+) + patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+
+
+plot_weight_change_adjusted_val <- patchwork::wrap_plots(
+  # Development
+  plot_weight_benefit_val,
+  # Validation
+  plot_weight_val
+) + patchwork::plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+
+
 
 
 
@@ -738,7 +1049,9 @@ cowplot::plot_grid(
 plot_ATE
 plot_ATE_prop_score_matching
 plot_ATE_prop_score_weighting
-plot_weight_change
+plot_weight_change_unadjusted
+plot_weight_change_adjusted_dev
+plot_weight_change_adjusted_val
 dev.off()
 
 
