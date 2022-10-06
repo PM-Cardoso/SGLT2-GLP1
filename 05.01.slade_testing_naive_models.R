@@ -530,6 +530,53 @@ if (class(try(
 }
 
 
+#############################
+### VARIABLE SELECTION 2: Incomplete data, no propensity score
+#############################
+
+
+data_incomplete_dev_no_prop_var_select_2 <- final.dev %>%
+  select(c(patid,
+           pateddrug,
+           posthba1c_final,
+           Category,
+           drugclass,
+           drugline,
+           egfr_ckdepi,
+           hba1cmonth,
+           malesex,
+           ncurrtx,
+           prehba1cmmol,
+           prealt,
+           score,
+           yrdrugstart
+           )
+  )
+
+
+
+# Fit Bart model with variables selected
+if (class(try(
+  
+  bart_incomp_no_prop_model_var_select_2 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
+  
+  
+  , silent = TRUE)) == "try-error") {
+  
+  bart_incomp_no_prop_model_var_select_2 <- bartMachine::bartMachine(X = data_incomplete_dev_no_prop_var_select_2[,-c(1,2,3)],
+                                                                y = data_incomplete_dev_no_prop_var_select_2[,3],
+                                                                use_missing_data = TRUE,
+                                                                impute_missingness_with_rf_impute = FALSE,
+                                                                impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                                                num_trees = 200,
+                                                                num_burn_in = 3000,
+                                                                num_iterations_after_burn_in = 1000,
+                                                                serialize = TRUE)
+  
+  saveRDS(bart_incomp_no_prop_model_var_select_2, paste0(output_path, "/Model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
+  
+}
+
 
 
 
