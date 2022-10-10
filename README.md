@@ -54,6 +54,7 @@ Files:
     
 - 8.0: Presentations/Slides
     - .1: MRC: 29th September London
+    - .2: SGLT2 vs GLP1 paper for publish
     
 - 9.0: Shiny App
     - .1: Model 4.4 - probability of achieving target HbA1c.
