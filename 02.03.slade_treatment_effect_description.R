@@ -161,11 +161,6 @@ plot_characteristics <- ggpairs(combination, columns = 1:(ncol(combination)-1),
   scale_colour_manual(values = c("red", "#f1a340"))
 
 
-
-
-
-
-
 #### PDF with all the plots
 
 pdf(file = "Plots/2.3.effect_characteristics.pdf", width = 20, height = 20)
@@ -173,5 +168,31 @@ plot_characteristics
 dev.off()
 
 
+########## Exploration of Female Sex with Age
 
+female_age <- combination %>%
+  select(malesex, agetx, Benefit) %>%
+  rename("Age" = "agetx",
+         "Sex" = "malesex") %>%
+  mutate(Sex = factor(Sex, labels = c("Female", "Male")),
+         Benefit = factor(Benefit)) %>%
+  relocate(Age, Sex, Benefit)
+
+plot_female_age <- ggpairs(female_age, columns = 1:(ncol(female_age)-1), 
+                                aes(color = Benefit),
+                                showStrips = TRUE,
+                                lower = list(continuous = my_dens_lower, discrete = wrap(ggally_facetbar, position = "dodge", alpha = 0.7), combo = wrap(ggally_facetdensity,alpha=0.7)),
+                                diag = list(continuous = my_dens_diagonal, discrete = wrap(ggally_barDiag, position = "dodge", alpha = 0.7)),
+                                upper = NULL,
+                                legend = 1) +
+  theme(legend.position = 'bottom',
+        panel.border = element_rect(fill = NA),
+        panel.grid.major = element_blank()) +
+  scale_fill_manual(values = c("red", "#f1a340")) +
+  scale_colour_manual(values = c("red", "#f1a340"))
+
+
+pdf(file = "Plot1.pdf")
+plot_female_age
+dev.off()
 
