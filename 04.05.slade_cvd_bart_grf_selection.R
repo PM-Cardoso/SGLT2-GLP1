@@ -424,7 +424,7 @@ plot_assessment <- assessment %>%
 
 
 
-plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 4")
+plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 5")
 
 
 
