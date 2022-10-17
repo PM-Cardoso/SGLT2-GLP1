@@ -55,7 +55,7 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
 
 # bart model
 
-bart_model_final <- readRDS(paste0(output_path, "/Final_model/cvd_new/bart_model_final.rds"))
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/model_5/bart_model_final.rds"))
 
 
 # Dev dataset
@@ -76,11 +76,11 @@ dataset.val <- final.val %>%
 
 # treatment effects dev
 
-effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_dev.rds"))
+effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/model_5/Assessment/effects_summary_dev.rds"))
 
 # treatment effects val
 
-effects_summary_val <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_val.rds"))
+effects_summary_val <- readRDS(paste0(output_path, "/Final_model/model_5/Assessment/effects_summary_val.rds"))
 
 #################
 ############ Extreme deciles characteristics
