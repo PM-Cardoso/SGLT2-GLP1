@@ -199,6 +199,10 @@ if (class(try(
   dev.off()
   
   ## Long version of the var selection
+  # [1] "yrdrugstart"         "prebmi"              "t2dmduration"
+  # [4] "prehba1cmmol"        "drugline_5"          "drugline_2"
+  # [7] "egfr_ckdepi"         "ncurrtx_3"           "drugline_3"
+  # [10] "drugline_4"          "Category_Non-smoker"
   
   saveRDS(vs_bart_ps_model_yrdrugstart, paste0(output_path, "/Final_model/ps_matching/vs_bart_ps_model_yrdrugstart.rds"))
   
@@ -220,24 +224,25 @@ if (class(try(
   bart_ps_model_final_dev <- bartMachine::bartMachine(X = dataset.dev %>%
                                                     select(
                                                       ### yrdrugstart included
-                                                      # yrdrugstart,
-                                                      # prebmi,
-                                                      # t2dmduration,
-                                                      # drugline,
-                                                      # prehba1cmmol,
-                                                      # ncurrtx,
-                                                      # Category
-                                                      ### no yrdrugstart included
+                                                      yrdrugstart,
                                                       prebmi,
                                                       t2dmduration,
-                                                      prealt,
-                                                      prehdl,
-                                                      egfr_ckdepi,
                                                       drugline,
+                                                      prehba1cmmol,
+                                                      egfr_ckdepi,
                                                       ncurrtx,
-                                                      score.excl.mi,
-                                                      Category,
-                                                      predrug.5yrrecent.neuropathy
+                                                      Category
+                                                      ### no yrdrugstart included
+                                                      # prebmi,
+                                                      # t2dmduration,
+                                                      # prealt,
+                                                      # prehdl,
+                                                      # egfr_ckdepi,
+                                                      # drugline,
+                                                      # ncurrtx,
+                                                      # score.excl.mi,
+                                                      # Category,
+                                                      # predrug.5yrrecent.neuropathy
                                                       ),
                                             y = dataset.dev[,"drugclass"],
                                             use_missing_data = TRUE,
@@ -357,10 +362,15 @@ if (class(try(
   dev.off()
   
   ## Long version of the var selection
+  # [1] "prehba1cmmol"     "drugclass_SGLT2"  "prebil"           "yrdrugstart"
+  # [5] "hba1cmonth"       "drugclass_GLP1"   "score.excl.mi"    "drugline_5"
+  # [9] "drugline_3"       "malesex_1"        "drugline_4"       "drugline_2"
+  # [13] "ncurrtx_3"        "ncurrtx_1"        "ethnicityF_Mixed"
   
   saveRDS(vs_bart_model, paste0(output_path, "/Final_model/ps_matching/vs_bart_model.rds"))
   
 }
+
 
 # Cross-validation selection
 if (class(try(
@@ -372,11 +382,18 @@ if (class(try(
   vs_bart_model_cv <- var_selection_by_permute_cv(bart_model)
   
   ## Long version of the var selection
+  # [1] "drugclass_GLP1"          "drugclass_SGLT2"
+  # [3] "drugline_2"              "drugline_3"
+  # [5] "drugline_4"              "drugline_5"
+  # [7] "egfr_ckdepi"             "hba1cmonth"
+  # [9] "malesex_0"               "ncurrtx_1"
+  # [11] "ncurrtx_3"               "predrug.5yrrecent.pad_0"
+  # [13] "prehba1cmmol"            "score.excl.mi"
+  # [15] "yrdrugstart"
   
   saveRDS(vs_bart_model_cv, paste0(output_path, "/Final_model/ps_matching/vs_bart_model_cv.rds"))
   
 }
-
 
 ########
 ### Refit BART model with selected variables
@@ -391,15 +408,16 @@ if (class(try(
 
   bart_model_final <- bartMachine::bartMachine(X = dataset.dev.matched %>%
                                            select(
-                                             prehba1cmmol,
-                                             prebil,
                                              drugclass,
-                                             yrdrugstart,
-                                             hba1cmonth,
-                                             score.excl.mi,
                                              drugline,
+                                             egfr_ckdepi,
+                                             hba1cmonth,
                                              malesex,
-                                             ncurrtx
+                                             ncurrtx,
+                                             prehba1cmmol,
+                                             score.excl.mi,
+                                             yrdrugstart,
+                                             predrug.5yrrecent.pad
                                             ),
                                          y = dataset.dev.matched[,"posthba1c_final"],
                                          use_missing_data = TRUE,
