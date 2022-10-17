@@ -126,13 +126,6 @@ table(cprd$hb_extreme)
 cprd <- cprd %>% filter(hb_extreme==0) # remove 1326
 
 ################################################
-##### Drop if postHbA1c is missing
-################################################
-
-summary(cprd$posthba1c_final)
-cprd <- cprd %>% filter(!is.na(posthba1c_final)) # remove 10657
-
-################################################
 ##### Add variable for people that had both drugs
 ################################################
 
@@ -146,7 +139,7 @@ patids <- sglt2glp1resp %>%
   dplyr::select(patid) %>% 
   mutate(bothdrugs=1) %>% distinct()
 cprd <- merge(cprd,patids,by="patid",all.x=T)
-table(cprd$bothdrugs) # 2120
+table(cprd$bothdrugs) # 5152
 
 ################################################
 ##### Drop if BMI is less than 5
@@ -154,7 +147,7 @@ table(cprd$bothdrugs) # 2120
 
 cprd$prebmi <- ifelse(cprd$prebmi<5,NA,cprd$prebmi)
 summary(cprd$prebmi)
-cprd <- cprd %>% filter(!is.na(prebmi)) # remove 325
+cprd <- cprd %>% filter(!is.na(prebmi)) # remove 590
 
 ###############################################################################
 ###############################################################################
@@ -427,11 +420,6 @@ cprd <- cprd %>%
     predrug.5yrrecent.mi = factor(predrug.5yrrecent.mi)
   )
 
-
-
-
-
-
 final.all <- cprd
 
 ###############################################################################
@@ -518,7 +506,8 @@ final.all <- final.all %>% select(
   # pretrig, pretriglog, pretrigcs, pretriglogcs, # should be fasting but CPRD probably wont be
   # pregluc, pregluccs, pregluclogcs, # NEEDS to be fasting but probably wont be. no way to know
   # sbp, sbpcs, # removed because it is used in CSV risk
-  preweight, height, prebmi, # preweightcs, preweightcslog, prebmics, prebmicslog, # removing centering and logs
+  # preweight, height, # preweightcs, preweightcslog, prebmics, prebmicslog, # removing centering and logs
+  prebmi,
   preast, prealt, # preastcs, preastlogcs, prealtcs, prealtlog, prealtlogcs, # removing centering and logs
   egfr_ckdepi, # egfr, egfr_cg, egfr_cg2, egfr_ckdepi2, egfr2, egfr45, egfr_ckdepics, egfr_ckdepicslog, # removing all variants of egfr_ckdepi
   prealb, prebil, # prealbcs, prealblogcs, prebilcs, prebillogcs, # removing centering and logs
@@ -582,13 +571,38 @@ final.all <- final.all %>% select(
 ###############################################################################
 
 ################################################
+##### Total number of individuals: 26835
+###     - Including missing posthba1c_final
+################################################
+
+final.all.ind.extra.vars <- final.all %>%
+  cbind(score.excl.mi = cprd$score.excl.mi,
+        postweight6m = cprd$postweight6m, # using 6 months due to the lack of data at 12 months
+        stopdrug6m_3mFU = cprd$stopdrug6m_3mFU)
+
+save(final.all.ind.extra.vars,file=paste0(output_path, "/cprd_19_sglt2glp1_allcohort_missing_final_hba1c.Rda"))
+
+
+
+
+################################################
+##### Drop if postHbA1c is missing
+################################################
+
+summary(final.all$posthba1c_final)
+final.all <- final.all %>% filter(!is.na(posthba1c_final)) # remove 10392
+
+################################################
 ##### Total number of individuals: 16443(9964)
 ################################################
 
 final.all.extra.vars <- final.all %>%
-  cbind(score.excl.mi = cprd$score.excl.mi,
-        postweight6m = cprd$postweight6m, # using 6 months due to the lack of data at 12 months
-        stopdrug6m_3mFU = cprd$stopdrug6m_3mFU)
+  left_join(final.all.ind.extra.vars %>%
+              select(patid, 
+                     pateddrug, 
+                     score.excl.mi, 
+                     postweight6m,  # using 6 months due to the lack of data at 12 months
+                     stopdrug6m_3mFU))
 
 save(final.all.extra.vars,file=paste0(output_path, "/cprd_19_sglt2glp1_allcohort.Rda"))
 
