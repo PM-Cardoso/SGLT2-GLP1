@@ -911,68 +911,67 @@ ATE_validation <- function(data) {
   
 }
 
-
-calc_ATE_prop_score <- function(dataset, seed = NULL) {
-  ##### Input variables
-  # bart_model: bart model used for full model in order to take variables used
-  # dataset: dataset for which we calculate propensity scores
-  
-  # load all data for range of variable values; name: final.all.extra.vars
-  load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
-
-  # extracting selected variables for individuals in dataset
-  data.new <- dataset %>%
-    select(patid, pateddrug) %>%
-    left_join(final.all.extra.vars %>%
-                select(patid, 
-                       pateddrug,
-                       drugclass,
-                       prebmi,
-                       t2dmduration,
-                       prealb,
-                       egfr_ckdepi,
-                       drugline,
-                       prehba1cmmol,
-                       ncurrtx,
-                       score.excl.mi,
-                       Category), by = c("patid", "pateddrug"))
-  
-  # fit propensity model with the variables that influence therapy indication
-  prop_model <- bartMachine::bartMachine(X = data.new %>%
-                                           select(prebmi,
-                                                  t2dmduration,
-                                                  prealb,
-                                                  egfr_ckdepi,
-                                                  drugline,
-                                                  prehba1cmmol,
-                                                  ncurrtx,
-                                                  score.excl.mi,
-                                                  Category),
-                                         y = data.new[,"drugclass"],
-                                         use_missing_data = TRUE,
-                                         impute_missingness_with_rf_impute = FALSE,
-                                         impute_missingness_with_x_j_bar_for_lm = TRUE,
-                                         num_trees = 200,
-                                         num_burn_in = 1000,
-                                         num_iterations_after_burn_in = 200,
-                                         seed = seed)
-
-  # keep propensity model
-  prop_model
-
-  return(prop_model)
-}
+# 
+# calc_ATE_prop_score <- function(dataset, seed = NULL) {
+#   ##### Input variables
+#   # bart_model: bart model used for full model in order to take variables used
+#   # dataset: dataset for which we calculate propensity scores
+#   
+#   # extracting selected variables for individuals in dataset
+#   data.new <- dataset %>%
+#     select(patid, pateddrug) %>%
+#     left_join(final.all.extra.vars %>%
+#                 select(patid, 
+#                        pateddrug,
+#                        drugclass,
+#                        yrdrugstart,
+#                        prebmi,
+#                        t2dmduration,
+#                        drugline,
+#                        prehba1cmmol,
+#                        egfr_ckdepi,
+#                        ncurrtx,
+#                        Category), by = c("patid", "pateddrug"))
+#   
+#   # fit propensity model with the variables that influence therapy indication
+#   prop_model <- bartMachine::bartMachine(X = data.new %>%
+#                                            select(yrdrugstart,
+#                                                   prebmi,
+#                                                   t2dmduration,
+#                                                   drugline,
+#                                                   prehba1cmmol,
+#                                                   egfr_ckdepi,
+#                                                   ncurrtx,
+#                                                   Category),
+#                                          y = data.new[,"drugclass"],
+#                                          use_missing_data = TRUE,
+#                                          impute_missingness_with_rf_impute = FALSE,
+#                                          impute_missingness_with_x_j_bar_for_lm = TRUE,
+#                                          num_trees = 200,
+#                                          num_burn_in = 1000,
+#                                          num_iterations_after_burn_in = 200,
+#                                          seed = seed)
+# 
+#   # keep propensity model
+#   prop_model
+# 
+#   return(prop_model)
+# }
 
 
 
-calc_ATE_validation <- function(data, variable, seed = NULL) {
+calc_ATE_validation <- function(data, variable, prop_model) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
+  # prop_model - propensity score model
   
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
+  # # load all data for range of variable values; name: final.all.extra.vars
+  # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+  # 
+  # # calculate propensity score
+  # prop_model <- calc_ATE_prop_score(data, seed)
+  # 
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2,
   #   should be the way around)
   prop_score <- 1 - prop_model$p_hat_train
@@ -1059,14 +1058,18 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
 
 ### prop matching
 
-calc_ATE_validation_prop_matching <- function(data, variable, seed = NULL) {
+calc_ATE_validation_prop_matching <- function(data, variable, prop_score) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
+  # prop_score - vector of propensity scores
   
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
+  # # load all data for range of variable values; name: final.all.extra.vars
+  # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+  # 
+  # # calculate propensity score
+  # prop_model <- calc_ATE_prop_score(data, seed)
+  # 
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_model$p_hat_train
   
@@ -1163,14 +1166,18 @@ calc_ATE_validation_prop_matching <- function(data, variable, seed = NULL) {
 
 ### inverse propensity score weighting 
 
-calc_ATE_validation_inverse_prop_weighting <- function(data, variable, seed = NULL) {
+calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_score) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
+  # prop_score - vector of propensity scores
   
-  # calculate propensity score
-  prop_model <- calc_ATE_prop_score(data, seed)
-  
+  # # load all data for range of variable values; name: final.all.extra.vars
+  # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+  # 
+  # # calculate propensity score
+  # prop_model <- calc_ATE_prop_score(data, seed)
+  # 
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_model$p_hat_train
   
