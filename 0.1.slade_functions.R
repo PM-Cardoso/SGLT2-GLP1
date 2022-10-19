@@ -804,7 +804,7 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
       ggplot() +
       stat_smooth(aes(x = ntile.value, y = mean, colour = key)) +
       scale_colour_manual(values=c("red","#f1a340")) +
-      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + theme(legend.position = "none")
+      xlab(xtitle) + ylab("Predicted HbA1c change (mmol/mol)") + theme(legend.position = "none")
     
     
     # some variables require logging the x-axis due to extreme values
@@ -835,7 +835,7 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
       ggplot() +
       geom_pointrange(aes(y = mean, ymin = `5%`, ymax = `95%`, x = ntile, colour = key), position = position_dodge2(width=0.5)) +
       scale_colour_manual(values=c("red","#f1a340")) +
-      xlab(xtitle) + ylab("HbA1c response (mmol/mol)") + 
+      xlab(xtitle) + ylab("Predicted HbA1c change (mmol/mol)") + 
       theme(legend.position = "none") +
       scale_x_continuous(labels = levels(final.all.extra.vars[, variable]), breaks = 1:length(levels(final.all.extra.vars[,variable])))
     
@@ -1038,6 +1038,13 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
   # obsupperci: upper bound of CI for prediction
   # dataset.type: type of dataset to choose axis: "Development" or "Validation"
   
+  if (missing(ymin)) {
+    ymin <- plyr::round_any(floor(min(data[obslowerci])), 2, f = floor)
+  }
+  if (missing(ymax)) {
+    ymax <- plyr::round_any(ceiling(max(data[obsupperci])), 2, f = ceiling)
+  }
+  
   # Plot predicted treatment effects vs observed treatment effects
   plot <- ggplot(data = data,aes_string(x = pred,y = obs)) +
     geom_point(alpha = 1) + 
@@ -1058,11 +1065,11 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
 
 ### prop matching
 
-calc_ATE_validation_prop_matching <- function(data, variable, prop_score) {
+calc_ATE_validation_prop_matching <- function(data, variable, prop_model) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
-  # prop_score - vector of propensity scores
+  # prop_model - propensity score model
   
   # # load all data for range of variable values; name: final.all.extra.vars
   # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
@@ -1166,11 +1173,11 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_score) {
 
 ### inverse propensity score weighting 
 
-calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_score) {
+calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_model) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
-  # prop_score - vector of propensity scores
+  # prop_model - propensity score model
   
   # # load all data for range of variable values; name: final.all.extra.vars
   # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
