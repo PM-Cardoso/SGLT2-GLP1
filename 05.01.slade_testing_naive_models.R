@@ -29,10 +29,13 @@ output_path <- "Samples/SGLT2-GLP1"
 dir.create(output_path)
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Importance"))
+dir.create(paste0(output_path, "/Naive"))
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Model_fit"))
+dir.create(paste0(output_path, "/Naive/var_selection"))
+
+## make directory for outputs
+dir.create(paste0(output_path, "/Naive/model_fit"))
 
 
 ###############################################################################
@@ -86,7 +89,7 @@ data_complete_routine_dev <- final.dev %>%
 
 if (class(try(
   
-  bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_no_prop.rds"))
+  bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -100,7 +103,7 @@ if (class(try(
                                                         num_iterations_after_burn_in = 1000,
                                                         serialize = TRUE)
   
-  saveRDS(bart_comp_routine_no_prop, paste0(output_path, "/Model_fit/bart_comp_routine_no_prop.rds"))
+  saveRDS(bart_comp_routine_no_prop, paste0(output_path, "/Naive/model_fit/bart_comp_routine_no_prop.rds"))
   
 }
 
@@ -136,7 +139,7 @@ data_complete_routine_prop_dev <- final.dev %>%
 ## Fit a propensity model with all the variables
 if (class(try(
   
-  bart_comp_routine_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop.rds"))
+  bart_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -151,7 +154,7 @@ if (class(try(
                                                      num_iterations_after_burn_in = 1000,
                                                      serialize = TRUE)
   
-  saveRDS(bart_comp_routine_prop, paste0(output_path, "/Model_fit/bart_comp_routine_prop.rds"))
+  saveRDS(bart_comp_routine_prop, paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop.rds"))
 
   }
 
@@ -165,7 +168,7 @@ data_complete_routine_prop_dev_prop <- data_complete_routine_prop_dev %>%
 
 if (class(try(
   
-  bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop_model.rds"))
+  bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop_model.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -179,7 +182,7 @@ if (class(try(
                                                            num_iterations_after_burn_in = 1000,
                                                            serialize = TRUE)
   
-  saveRDS(bart_comp_routine_prop_model, paste0(output_path, "/Model_fit/bart_comp_routine_prop_model.rds"))
+  saveRDS(bart_comp_routine_prop_model, paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop_model.rds"))
   
 }
 
@@ -214,7 +217,7 @@ data_incomplete_routine_dev <- final.dev %>%
 
 if (class(try(
   
-  bart_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_routine_no_prop.rds"))
+  bart_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -228,7 +231,7 @@ if (class(try(
                                                           num_iterations_after_burn_in = 1000,
                                                           serialize = TRUE)
   
-  saveRDS(bart_incomp_routine_no_prop, paste0(output_path, "/Model_fit/bart_incomp_routine_no_prop.rds"))
+  saveRDS(bart_incomp_routine_no_prop, paste0(output_path, "/Naive/model_fit/bart_incomp_routine_no_prop.rds"))
   
 }
 
@@ -244,7 +247,7 @@ data_incomplete_dev <- final.dev
 
 if (class(try(
   
-  bart_incomp_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop.rds"))
+  bart_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -258,7 +261,7 @@ if (class(try(
                                                   num_iterations_after_burn_in = 1000,
                                                   serialize = TRUE)
   
-  saveRDS(bart_incomp_no_prop, paste0(output_path, "/Model_fit/bart_incomp_no_prop.rds"))
+  saveRDS(bart_incomp_no_prop, paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop.rds"))
   
 }
 
@@ -271,22 +274,20 @@ if (class(try(
 
 if (class(try(
   
-  vs_incomp_no_prop <- readRDS(paste0(output_path, "/Importance/vs_incomp_no_prop.rds"))
+  vs_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/var_selection/vs_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  vs_incomp_no_prop <- var_selection_by_permute_cv(bart_incomp_no_prop,
-                                                   k_folds = 15,
-                                                   num_permute_samples = 100,
-                                                   num_trees_pred_cv = 100)
+  vs_incomp_no_prop <- var_selection_by_permute_cv(bart_incomp_no_prop)
   
-  ## Long version of the var selection
-  # [1] "drugclass_GLP1" "drugline_2"     "drugline_3"     "drugline_4"
-  # [5] "drugline_5"     "egfr_ckdepi"    "hba1cmonth"     "ncurrtx_1"
-  # [9] "ncurrtx_2"      "ncurrtx_3"      "prehba1cmmol"   "yrdrugstart"
+  ## Long version of the var selection 
+  # [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
+  # [4] "drugline_2"         "drugline_3"         "drugline_4"
+  # [7] "drugline_5"         "egfr_ckdepi"        "hba1cmonth"
+  # [10] "malesex_1"          "ncurrtx_2"          "ncurrtx_3"
+  # [13] "prehba1cmmol"       "yrdrugstart"
   
-  
-  saveRDS(vs_incomp_no_prop, paste0(output_path, "/Importance/vs_incomp_no_prop.rds"))
+  saveRDS(vs_incomp_no_prop, paste0(output_path, "/Naive/var_selection/vs_incomp_no_prop.rds"))
   
 }
 
@@ -295,30 +296,27 @@ data_incomplete_dev_var_select <- final.dev %>%
   select(c(patid,
            pateddrug,
            posthba1c_final,
-           # agetx,
-           drugclass, 
-           drugline, 
-           egfr_ckdepi, 
-           hba1cmonth, 
-           # malesex, 
-           ncurrtx, 
-           # prealt, 
-           prehba1cmmol, 
-           # score, 
+           Category,
+           drugclass,
+           drugline,
+           egfr_ckdepi,
+           hba1cmonth,
+           malesex,
+           ncurrtx,
+           prehba1cmmol,
            yrdrugstart
-           # predrug.5yrrecent.pad
            )
   )
 
 # Fit Bart model with variables selected
 
 if (class(try(
-  
-  bart_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop_var_select.rds"))
-  
-  
+
+  bart_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_var_select.rds"))
+
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_incomp_no_prop_var_select <- bartMachine::bartMachine(X = data_incomplete_dev_var_select[,-c(1,2,3)],
                                                              y = data_incomplete_dev_var_select[,3],
                                                              use_missing_data = TRUE,
@@ -328,9 +326,9 @@ if (class(try(
                                                              num_burn_in = 3000,
                                                              num_iterations_after_burn_in = 1000,
                                                              serialize = TRUE)
-  
-  saveRDS(bart_incomp_no_prop_var_select, paste0(output_path, "/Model_fit/bart_incomp_no_prop_var_select.rds"))
-  
+
+  saveRDS(bart_incomp_no_prop_var_select, paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_var_select.rds"))
+
 }
 
 
@@ -345,13 +343,13 @@ data_incomplete_dev <- final.dev
 
 ## Fit a propensity model with all the variables
 if (class(try(
-  
-  bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
-  
+
+  bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   # GLP1 is considered target so all the probabilities should be 1-prob
-  bart_incomp_prop <- bartMachine::bartMachine(X = data_incomplete_dev[,-c(1,2,3,4,5,8,9,10)],
+  bart_incomp_prop <- bartMachine::bartMachine(X = data_incomplete_dev[,-c(1,2,3,4,5,9,10)],
                                                y = data_incomplete_dev[,5],
                                                use_missing_data = TRUE,
                                                impute_missingness_with_rf_impute = FALSE,
@@ -360,26 +358,26 @@ if (class(try(
                                                num_burn_in = 3000,
                                                num_iterations_after_burn_in = 1000,
                                                serialize = TRUE)
-  
-  saveRDS(bart_incomp_prop, paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
-  
+
+  saveRDS(bart_incomp_prop, paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
+
 }
 
 
 ## Add propensity score to dataset
 
-data_incomplete_dev_prop <- final.dev %>% 
+data_incomplete_dev_prop <- final.dev %>%
   cbind(prop_score = bart_incomp_prop$p_hat_train)
 
 
 # Fit Bart model with variables selected
 if (class(try(
-  
-  bart_incomp_prop_model <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model.rds"))
-  
-  
+
+  bart_incomp_prop_model <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model.rds"))
+
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_incomp_prop_model <- bartMachine::bartMachine(X = data_incomplete_dev_prop[,-c(1,2,3,4,9,10)],
                                                      y = data_incomplete_dev_prop[,4],
                                                      use_missing_data = TRUE,
@@ -389,9 +387,9 @@ if (class(try(
                                                      num_burn_in = 3000,
                                                      num_iterations_after_burn_in = 1000,
                                                      serialize = TRUE)
-  
-  saveRDS(bart_incomp_prop_model, paste0(output_path, "/Model_fit/bart_incomp_prop_model.rds"))
-  
+
+  saveRDS(bart_incomp_prop_model, paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model.rds"))
+
 }
 
 
@@ -401,10 +399,10 @@ if (class(try(
 
 # Variable selection from Incomplete no propensity model
 
-vs_incomp_no_prop <- readRDS(paste0(output_path, "/Importance/vs_incomp_no_prop.rds"))
-  
+vs_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/var_selection/vs_incomp_no_prop.rds"))
 
-bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+
+bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
 
 
 ## Add propensity score to dataset
@@ -413,29 +411,26 @@ data_incomplete_dev_prop_var_select <- final.dev %>%
   select(c(patid,
            pateddrug,
            posthba1c_final,
-           # agetx,
-           drugclass, 
-           drugline, 
-           egfr_ckdepi, 
-           hba1cmonth, 
-           # malesex, 
-           ncurrtx, 
-           # prealt, 
-           prehba1cmmol, 
-           # score, 
+           Category,
+           drugclass,
+           drugline,
+           egfr_ckdepi,
+           hba1cmonth,
+           malesex,
+           ncurrtx,
+           prehba1cmmol,
            yrdrugstart,
-           # predrug.5yrrecent.pad,
            prop_score)
   )
 
 # Fit Bart model with variables selected
 if (class(try(
-  
-  bart_incomp_prop_model_var_select_1 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select_1.rds"))
-  
-  
+
+  bart_incomp_prop_model_var_select_1 <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select_1.rds"))
+
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_incomp_prop_model_var_select_1 <- bartMachine::bartMachine(X = data_incomplete_dev_prop_var_select[,-c(1,2,3)],
                                                                   y = data_incomplete_dev_prop_var_select[,3],
                                                                   use_missing_data = TRUE,
@@ -445,9 +440,9 @@ if (class(try(
                                                                   num_burn_in = 3000,
                                                                   num_iterations_after_burn_in = 1000,
                                                                   serialize = TRUE)
-  
-  saveRDS(bart_incomp_prop_model_var_select_1, paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select_1.rds"))
-  
+
+  saveRDS(bart_incomp_prop_model_var_select_1, paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select_1.rds"))
+
 }
 
 
@@ -459,30 +454,26 @@ if (class(try(
 # Variable selection from Incomplete no propensity model
 
 if (class(try(
-  
-  vs_incomp_prop_model <- readRDS(paste0(output_path, "/Importance/vs_incomp_prop_model.rds"))
-  
+
+  vs_incomp_prop_model <- readRDS(paste0(output_path, "/Naive/var_selection/vs_incomp_prop_model.rds"))
+
   , silent = TRUE)) == "try-error") {
+
+  vs_incomp_prop_model <- var_selection_by_permute_cv(bart_incomp_prop_model)
   
-  vs_incomp_prop_model <- var_selection_by_permute_cv(bart_incomp_prop_model,
-                                                      k_folds = 15,
-                                                      num_permute_samples = 100,
-                                                      num_trees_pred_cv = 100)
+  # [1] "Category_Active smoker" "Category_Ex-smoker"     "drugclass_GLP1"
+  # [4] "drugclass_SGLT2"        "drugline_2"             "drugline_3"
+  # [7] "drugline_4"             "drugline_5"             "egfr_ckdepi"
+  # [10] "hba1cmonth"             "malesex_0"              "malesex_1"
+  # [13] "ncurrtx_1"              "ncurrtx_2"              "ncurrtx_3"
+  # [16] "prehba1cmmol"           "prop_score"
   
-  # [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
-  # [4] "drugline_2"         "drugline_3"         "drugline_4"
-  # [7] "drugline_5"         "egfr_ckdepi"        "hba1cmonth"
-  # [10] "malesex_0"          "ncurrtx_0"          "ncurrtx_1"
-  # [13] "ncurrtx_2"          "ncurrtx_3"          "prealt"
-  # [16] "prehba1cmmol"       "score"              "yrdrugstart"
-  
-  
-  saveRDS(vs_incomp_prop_model, paste0(output_path, "/Importance/vs_incomp_prop_model.rds"))
-  
+  saveRDS(vs_incomp_prop_model, paste0(output_path, "/Naive/var_selection/vs_incomp_prop_model.rds"))
+
 }
 
 
-bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
 
 
 ## Add propensity score to dataset
@@ -500,21 +491,18 @@ data_incomplete_dev_prop_var_select <- final.dev %>%
            malesex,
            ncurrtx,
            prehba1cmmol,
-           prealt,
-           score,
-           yrdrugstart,
            prop_score)
   )
 
 
 # Fit Bart model with variables selected
 if (class(try(
-  
-  bart_incomp_prop_model_var_select <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select.rds"))
-  
-  
+
+  bart_incomp_prop_model_var_select <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select.rds"))
+
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_incomp_prop_model_var_select <- bartMachine::bartMachine(X = data_incomplete_dev_prop_var_select[,-c(1,2,3)],
                                                                 y = data_incomplete_dev_prop_var_select[,3],
                                                                 use_missing_data = TRUE,
@@ -524,9 +512,9 @@ if (class(try(
                                                                 num_burn_in = 3000,
                                                                 num_iterations_after_burn_in = 1000,
                                                                 serialize = TRUE)
-  
-  saveRDS(bart_incomp_prop_model_var_select, paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select.rds"))
-  
+
+  saveRDS(bart_incomp_prop_model_var_select, paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select.rds"))
+
 }
 
 
@@ -546,10 +534,7 @@ data_incomplete_dev_no_prop_var_select_2 <- final.dev %>%
            hba1cmonth,
            malesex,
            ncurrtx,
-           prehba1cmmol,
-           prealt,
-           score,
-           yrdrugstart
+           prehba1cmmol
            )
   )
 
@@ -557,12 +542,12 @@ data_incomplete_dev_no_prop_var_select_2 <- final.dev %>%
 
 # Fit Bart model with variables selected
 if (class(try(
-  
-  bart_incomp_no_prop_model_var_select_2 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
-  
-  
+
+  bart_incomp_no_prop_model_var_select_2 <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
+
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_incomp_no_prop_model_var_select_2 <- bartMachine::bartMachine(X = data_incomplete_dev_no_prop_var_select_2[,-c(1,2,3)],
                                                                 y = data_incomplete_dev_no_prop_var_select_2[,3],
                                                                 use_missing_data = TRUE,
@@ -572,9 +557,9 @@ if (class(try(
                                                                 num_burn_in = 3000,
                                                                 num_iterations_after_burn_in = 1000,
                                                                 serialize = TRUE)
-  
-  saveRDS(bart_incomp_no_prop_model_var_select_2, paste0(output_path, "/Model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
-  
+
+  saveRDS(bart_incomp_no_prop_model_var_select_2, paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
+
 }
 
 

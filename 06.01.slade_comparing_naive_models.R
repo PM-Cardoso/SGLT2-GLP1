@@ -29,7 +29,7 @@ dir.create(output_path)
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Assessment"))
+dir.create(paste0(output_path, "/Naive/assessment"))
 
 ## make directory for outputs
 dir.create("Plots")
@@ -46,6 +46,11 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_devcohort.Rda"))
 # name: final.val
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
 
+
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
+
 ###############################################################################
 ###############################################################################
 ################################ FUNCTIONS ####################################
@@ -59,7 +64,7 @@ source("0.1.slade_functions.R")
 ### Complete model of only routine data, no propensity score (n: 8564(4542))
 #############################
 
-bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_no_prop.rds"))
+bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_no_prop.rds"))
 
 
 # Dev
@@ -76,7 +81,7 @@ data_complete_routine_dev <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_comp_routine_no_prop_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_comp_routine_no_prop_dev.rds"))
+  posteriors_comp_routine_no_prop_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_comp_routine_no_prop_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -85,7 +90,7 @@ if (class(try(
                                                                 colnames(bart_comp_routine_no_prop$X)
                                                               ))
   
-  saveRDS(posteriors_comp_routine_no_prop_dev, paste0(output_path, "/Assessment/posteriors_comp_routine_no_prop_dev.rds"))
+  saveRDS(posteriors_comp_routine_no_prop_dev, paste0(output_path, "/Naive/assessment/posteriors_comp_routine_no_prop_dev.rds"))
   
   
 }
@@ -93,26 +98,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  comp_routine_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_dev.rds"))
+  comp_routine_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_no_prop_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_no_prop_cred_pred_dev <- calc_resid(data_complete_routine_dev, posteriors_comp_routine_no_prop_dev, "posthba1c_final")
   
-  saveRDS(comp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_dev.rds"))
+  saveRDS(comp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Naive/assessment/comp_routine_no_prop_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  comp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/comp_routine_no_prop_effects_summary_dev.rds"))
+  comp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_no_prop_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_no_prop_effects_summary_dev <- calc_effect_summary(bart_comp_routine_no_prop, data_complete_routine_dev)
   
-  saveRDS(comp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Assessment/comp_routine_no_prop_effects_summary_dev.rds"))
+  saveRDS(comp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Naive/assessment/comp_routine_no_prop_effects_summary_dev.rds"))
   
 }
 
@@ -159,7 +164,7 @@ data_complete_routine_val <- final.val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_comp_routine_no_prop_val <- readRDS(paste0(output_path, "/Assessment/posteriors_comp_routine_no_prop_val.rds"))
+  posteriors_comp_routine_no_prop_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_comp_routine_no_prop_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -168,7 +173,7 @@ if (class(try(
                                                                                      colnames(bart_comp_routine_no_prop$X)
                                                                                    ))
   
-  saveRDS(posteriors_comp_routine_no_prop_val, paste0(output_path, "/Assessment/posteriors_comp_routine_no_prop_val.rds"))
+  saveRDS(posteriors_comp_routine_no_prop_val, paste0(output_path, "/Naive/assessment/posteriors_comp_routine_no_prop_val.rds"))
   
   
 }
@@ -176,26 +181,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  comp_routine_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_val.rds"))
+  comp_routine_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_no_prop_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_no_prop_cred_pred_val <- calc_resid(data_complete_routine_val, posteriors_comp_routine_no_prop_val, "posthba1c_final")
   
-  saveRDS(comp_routine_no_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_no_prop_cred_pred_val.rds"))
+  saveRDS(comp_routine_no_prop_cred_pred_val, paste0(output_path, "/Naive/assessment/comp_routine_no_prop_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  comp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/comp_routine_no_prop_effects_summary_val.rds"))
+  comp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_no_prop_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_no_prop_effects_summary_val <- calc_effect_summary(bart_comp_routine_no_prop, data_complete_routine_val)
   
-  saveRDS(comp_routine_no_prop_effects_summary_val, paste0(output_path, "/Assessment/comp_routine_no_prop_effects_summary_val.rds"))
+  saveRDS(comp_routine_no_prop_effects_summary_val, paste0(output_path, "/Naive/assessment/comp_routine_no_prop_effects_summary_val.rds"))
   
 }
 
@@ -212,7 +217,7 @@ predicted_observed_val <- data_complete_routine_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_comp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_no_prop)
+# plot_comp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_no_prop)
 
 
 ## plot histogram of effect
@@ -283,7 +288,7 @@ plot_comp_routine_no_prop_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/assessment_comp_routine_no_prop.rds"))
+  assessment_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/assessment_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -300,7 +305,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_comp_routine_no_prop, paste0(output_path, "/Assessment/assessment_comp_routine_no_prop.rds"))
+  saveRDS(assessment_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/assessment_comp_routine_no_prop.rds"))
   
 }
 
@@ -311,35 +316,111 @@ plot_comp_routine_no_prop <- resid_plot(comp_routine_no_prop_cred_pred_dev,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
+  ATE_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
+  saveRDS(ATE_validation_dev_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_dev_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_comp_routine_no_prop <- ATE_plot(ATE_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_comp_routine_no_prop <- ATE_plot(ATE_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_no_prop.rds"))
+  ATE_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_comp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_no_prop.rds"))
+  saveRDS(ATE_validation_val_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_val_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_comp_routine_no_prop <- ATE_plot(ATE_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_comp_routine_no_prop <- ATE_plot(ATE_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_comp_routine_no_prop <- cowplot::plot_grid(
   
@@ -356,31 +437,31 @@ plot_ATE_comp_routine_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_no_prop.rds"))
+  ATE_matching_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_no_prop.rds"))
+  saveRDS(ATE_matching_validation_dev_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_comp_routine_no_prop <- ATE_plot(ATE_matching_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_comp_routine_no_prop <- ATE_plot(ATE_matching_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_no_prop.rds"))
+  ATE_matching_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_comp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_no_prop.rds"))
+  saveRDS(ATE_matching_validation_val_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_comp_routine_no_prop <- ATE_plot(ATE_matching_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_comp_routine_no_prop <- ATE_plot(ATE_matching_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_comp_routine_no_prop <- cowplot::plot_grid(
   
@@ -397,31 +478,31 @@ plot_ATE_prop_score_matching_comp_routine_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
+  ATE_weighting_validation_dev_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_dev_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_comp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_comp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_dev_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
+  ATE_weighting_validation_val_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_comp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_comp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_val_comp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_comp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_comp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_comp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_val_comp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_comp_routine_no_prop <- cowplot::plot_grid(
   
@@ -441,9 +522,9 @@ plot_ATE_prop_score_weighting_comp_routine_no_prop <- cowplot::plot_grid(
 ### Complete model of only routine data, propensity score (n: 8564(4542))
 #############################
 
-bart_comp_routine_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop.rds"))
+bart_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop.rds"))
 
-bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop_model.rds"))
+bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop_model.rds"))
 
 
 # Dev
@@ -461,7 +542,7 @@ data_complete_routine_prop_dev <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_complete_routine_prop_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_complete_routine_prop_dev.rds"))
+  posteriors_complete_routine_prop_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_complete_routine_prop_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -470,7 +551,7 @@ if (class(try(
                                                                                      colnames(bart_comp_routine_prop_model$X)
                                                                                    ))
   
-  saveRDS(posteriors_complete_routine_prop_dev, paste0(output_path, "/Assessment/posteriors_complete_routine_prop_dev.rds"))
+  saveRDS(posteriors_complete_routine_prop_dev, paste0(output_path, "/Naive/assessment/posteriors_complete_routine_prop_dev.rds"))
   
   
 }
@@ -478,26 +559,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  comp_routine_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_dev.rds"))
+  comp_routine_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_prop_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_prop_cred_pred_dev <- calc_resid(data_complete_routine_prop_dev, posteriors_complete_routine_prop_dev, "posthba1c_final")
   
-  saveRDS(comp_routine_prop_cred_pred_dev, paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_dev.rds"))
+  saveRDS(comp_routine_prop_cred_pred_dev, paste0(output_path, "/Naive/assessment/comp_routine_prop_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  comp_routine_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/comp_routine_prop_effects_summary_dev.rds"))
+  comp_routine_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_prop_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_prop_effects_summary_dev <- calc_effect_summary(bart_comp_routine_prop_model, data_complete_routine_prop_dev)
   
-  saveRDS(comp_routine_prop_effects_summary_dev, paste0(output_path, "/Assessment/comp_routine_prop_effects_summary_dev.rds"))
+  saveRDS(comp_routine_prop_effects_summary_dev, paste0(output_path, "/Naive/assessment/comp_routine_prop_effects_summary_dev.rds"))
   
 }
 
@@ -545,7 +626,7 @@ data_complete_routine_prop_val <- final.val %>%
 ## calculate propensity score
 if (class(try(
   
-  prop_score_complete_routine_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_complete_routine_prop.rds"))
+  prop_score_complete_routine_prop <- readRDS(paste0(output_path,"/Naive/assessment/prop_score_complete_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -554,7 +635,7 @@ if (class(try(
                                                   colnames(bart_comp_routine_prop$X)
                                                 ))
   
-  saveRDS(prop_score_complete_routine_prop, paste0(output_path, "/Assessment/prop_score_complete_routine_prop.rds"))
+  saveRDS(prop_score_complete_routine_prop, paste0(output_path, "/Naive/assessment/prop_score_complete_routine_prop.rds"))
   
 }
 
@@ -566,7 +647,7 @@ data_complete_routine_prop_val <- data_complete_routine_prop_val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_complete_routine_prop_val <- readRDS(paste0(output_path, "/Assessment/posteriors_complete_routine_prop_val.rds"))
+  posteriors_complete_routine_prop_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_complete_routine_prop_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -575,7 +656,7 @@ if (class(try(
                                                                                       colnames(bart_comp_routine_prop_model$X)
                                                                                     ))
   
-  saveRDS(posteriors_complete_routine_prop_val, paste0(output_path, "/Assessment/posteriors_complete_routine_prop_val.rds"))
+  saveRDS(posteriors_complete_routine_prop_val, paste0(output_path, "/Naive/assessment/posteriors_complete_routine_prop_val.rds"))
   
   
 }
@@ -583,26 +664,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  comp_routine_prop_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_val.rds"))
+  comp_routine_prop_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_prop_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_prop_cred_pred_val <- calc_resid(data_complete_routine_prop_val, posteriors_complete_routine_prop_val, "posthba1c_final")
   
-  saveRDS(comp_routine_prop_cred_pred_val, paste0(output_path, "/Assessment/comp_routine_prop_cred_pred_val.rds"))
+  saveRDS(comp_routine_prop_cred_pred_val, paste0(output_path, "/Naive/assessment/comp_routine_prop_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  comp_routine_prop_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/comp_routine_prop_effects_summary_val.rds"))
+  comp_routine_prop_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_prop_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   comp_routine_prop_effects_summary_val <- calc_effect_summary(bart_comp_routine_prop_model, data_complete_routine_prop_val)
   
-  saveRDS(comp_routine_prop_effects_summary_val, paste0(output_path, "/Assessment/comp_routine_prop_effects_summary_val.rds"))
+  saveRDS(comp_routine_prop_effects_summary_val, paste0(output_path, "/Naive/assessment/comp_routine_prop_effects_summary_val.rds"))
   
 }
 
@@ -619,7 +700,7 @@ predicted_observed_val <- data_complete_routine_prop_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_comp_routine_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_prop_model)
+# plot_comp_routine_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_comp_routine_prop_model)
 
 
 ## plot histogram of effect
@@ -690,7 +771,7 @@ plot_comp_routine_prop_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/assessment_comp_routine_prop.rds"))
+  assessment_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/assessment_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -707,7 +788,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_comp_routine_prop, paste0(output_path, "/Assessment/assessment_comp_routine_prop.rds"))
+  saveRDS(assessment_comp_routine_prop, paste0(output_path, "/Naive/assessment/assessment_comp_routine_prop.rds"))
   
 }
 
@@ -719,35 +800,113 @@ plot_comp_routine_prop <- resid_plot(comp_routine_prop_cred_pred_dev,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_prop.rds"))
+  ATE_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_comp_routine_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_comp_routine_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_dev_comp_routine_prop.rds"))
+  saveRDS(ATE_validation_dev_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_validation_dev_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_dev_comp_routine_prop <- ATE_plot(ATE_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_comp_routine_prop <- ATE_plot(ATE_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_prop.rds"))
+  ATE_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_comp_routine_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_comp_routine_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_validation_val_comp_routine_prop.rds"))
+  saveRDS(ATE_validation_val_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_validation_val_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_val_comp_routine_prop <- ATE_plot(ATE_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_comp_routine_prop <- ATE_plot(ATE_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_comp_routine_prop <- cowplot::plot_grid(
   
@@ -764,31 +923,31 @@ plot_ATE_comp_routine_prop <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_prop.rds"))
+  ATE_matching_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_comp_routine_prop.rds"))
+  saveRDS(ATE_matching_validation_dev_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_comp_routine_prop <- ATE_plot(ATE_matching_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_comp_routine_prop <- ATE_plot(ATE_matching_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_prop.rds"))
+  ATE_matching_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_comp_routine_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_comp_routine_prop.rds"))
+  saveRDS(ATE_matching_validation_val_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_comp_routine_prop <- ATE_plot(ATE_matching_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_comp_routine_prop <- ATE_plot(ATE_matching_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_comp_routine_prop <- cowplot::plot_grid(
   
@@ -805,31 +964,31 @@ plot_ATE_prop_score_matching_comp_routine_prop <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
+  ATE_weighting_validation_dev_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
+  saveRDS(ATE_weighting_validation_dev_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_comp_routine_prop  <- ATE_plot(ATE_weighting_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_comp_routine_prop  <- ATE_plot(ATE_weighting_validation_dev_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
+  ATE_weighting_validation_val_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_comp_routine_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_comp_routine_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
+  saveRDS(ATE_weighting_validation_val_comp_routine_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_comp_routine_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_comp_routine_prop  <- ATE_plot(ATE_weighting_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_comp_routine_prop  <- ATE_plot(ATE_weighting_validation_val_comp_routine_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_comp_routine_prop <- cowplot::plot_grid(
   
@@ -848,7 +1007,7 @@ plot_ATE_prop_score_weighting_comp_routine_prop <- cowplot::plot_grid(
 #############################
 
 
-bart_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_routine_no_prop.rds"))
+bart_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_routine_no_prop.rds"))
 
 # Dev
 data_incomplete_routine_dev <- final.dev %>%
@@ -863,7 +1022,7 @@ data_incomplete_routine_dev <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_routine_no_prop_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_routine_no_prop_dev.rds"))
+  posteriors_incomp_routine_no_prop_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_routine_no_prop_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -872,7 +1031,7 @@ if (class(try(
                                                                                      colnames(bart_incomp_routine_no_prop$X)
                                                                                    ))
   
-  saveRDS(posteriors_incomp_routine_no_prop_dev, paste0(output_path, "/Assessment/posteriors_incomp_routine_no_prop_dev.rds"))
+  saveRDS(posteriors_incomp_routine_no_prop_dev, paste0(output_path, "/Naive/assessment/posteriors_incomp_routine_no_prop_dev.rds"))
   
   
 }
@@ -881,26 +1040,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_routine_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_dev.rds"))
+  incomp_routine_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_routine_no_prop_cred_pred_dev <- calc_resid(data_incomplete_routine_dev, posteriors_incomp_routine_no_prop_dev, "posthba1c_final")
   
-  saveRDS(incomp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_dev.rds"))
+  saveRDS(incomp_routine_no_prop_cred_pred_dev, paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
+  incomp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_routine_no_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_routine_no_prop, data_incomplete_routine_dev)
   
-  saveRDS(incomp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
+  saveRDS(incomp_routine_no_prop_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_effects_summary_dev.rds"))
   
 }
 
@@ -946,7 +1105,7 @@ data_incomplete_routine_val <- final.val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_routine_no_prop_val <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_routine_no_prop_val.rds"))
+  posteriors_incomp_routine_no_prop_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_routine_no_prop_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -955,7 +1114,7 @@ if (class(try(
                                                                                        colnames(bart_incomp_routine_no_prop$X)
                                                                                      ))
   
-  saveRDS(posteriors_incomp_routine_no_prop_val, paste0(output_path, "/Assessment/posteriors_incomp_routine_no_prop_val.rds"))
+  saveRDS(posteriors_incomp_routine_no_prop_val, paste0(output_path, "/Naive/assessment/posteriors_incomp_routine_no_prop_val.rds"))
   
   
 }
@@ -964,26 +1123,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_routine_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_val.rds"))
+  incomp_routine_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_routine_no_prop_cred_pred_val <- calc_resid(data_incomplete_routine_val, posteriors_incomp_routine_no_prop_val, "posthba1c_final")
   
-  saveRDS(incomp_routine_no_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_routine_no_prop_cred_pred_val.rds"))
+  saveRDS(incomp_routine_no_prop_cred_pred_val, paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_routine_no_prop_effects_summary_val.rds"))
+  incomp_routine_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_routine_no_prop_effects_summary_val <- calc_effect_summary(bart_incomp_routine_no_prop, data_incomplete_routine_val)
   
-  saveRDS(incomp_routine_no_prop_effects_summary_val, paste0(output_path, "/Assessment/incomp_routine_no_prop_effects_summary_val.rds"))
+  saveRDS(incomp_routine_no_prop_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_routine_no_prop_effects_summary_val.rds"))
   
 }
 
@@ -1001,7 +1160,7 @@ predicted_observed_val <- data_incomplete_routine_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_routine_no_prop)
+# plot_incomp_routine_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_routine_no_prop)
 
 ## plot histogram of effect
 
@@ -1069,7 +1228,7 @@ plot_incomp_routine_no_prop_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_routine_no_prop.rds"))
+  assessment_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1086,7 +1245,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_routine_no_prop, paste0(output_path, "/Assessment/assessment_incomp_routine_no_prop.rds"))
+  saveRDS(assessment_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/assessment_incomp_routine_no_prop.rds"))
   
 }
 
@@ -1098,35 +1257,111 @@ plot_incomp_routine_no_prop <- resid_plot(incomp_routine_no_prop_cred_pred_dev,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
+  ATE_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_incomp_routine_no_prop <- ATE_plot(ATE_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_routine_no_prop <- ATE_plot(ATE_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
+  ATE_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_routine_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_validation_val_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_incomp_routine_no_prop <- ATE_plot(ATE_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_routine_no_prop <- ATE_plot(ATE_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_routine_no_prop <- cowplot::plot_grid(
   
@@ -1143,31 +1378,31 @@ plot_ATE_incomp_routine_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_routine_no_prop.rds"))
+  ATE_matching_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_routine_no_prop <- ATE_plot(ATE_matching_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_routine_no_prop <- ATE_plot(ATE_matching_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_routine_no_prop.rds"))
+  ATE_matching_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_routine_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_routine_no_prop <- ATE_plot(ATE_matching_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_routine_no_prop <- ATE_plot(ATE_matching_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_routine_no_prop <- cowplot::plot_grid(
   
@@ -1184,31 +1419,31 @@ plot_ATE_prop_score_matching_incomp_routine_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
+  ATE_weighting_validation_dev_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
+  ATE_weighting_validation_val_incomp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_routine_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_routine_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_routine_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_routine_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_routine_no_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_routine_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_routine_no_prop <- cowplot::plot_grid(
   
@@ -1226,7 +1461,7 @@ plot_ATE_prop_score_weighting_incomp_routine_no_prop <- cowplot::plot_grid(
 ### Incomplete model of all data, no propensity score (n: 9866(5978))
 #############################
 
-bart_incomp_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop.rds"))
+bart_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop.rds"))
 
 # Dev
 data_incomplete_dev <- final.dev
@@ -1234,7 +1469,7 @@ data_incomplete_dev <- final.dev
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_dev.rds"))
+  posteriors_incomp_no_prop_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1243,7 +1478,7 @@ if (class(try(
                                                                                        colnames(bart_incomp_no_prop$X)
                                                                                      ))
   
-  saveRDS(posteriors_incomp_no_prop_dev, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_dev.rds"))
+  saveRDS(posteriors_incomp_no_prop_dev, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_dev.rds"))
   
   
 }
@@ -1251,26 +1486,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_dev.rds"))
+  incomp_no_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_no_prop_dev, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_dev.rds"))
+  saveRDS(incomp_no_prop_cred_pred_dev, paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_effects_summary_dev.rds"))
+  incomp_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_no_prop, data_incomplete_dev)
   
-  saveRDS(incomp_no_prop_effects_summary_dev, paste0(output_path, "/Assessment/incomp_no_prop_effects_summary_dev.rds"))
+  saveRDS(incomp_no_prop_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_no_prop_effects_summary_dev.rds"))
   
 }
 
@@ -1309,7 +1544,7 @@ data_incomplete_val <- final.val
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_val <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_val.rds"))
+  posteriors_incomp_no_prop_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1318,7 +1553,7 @@ if (class(try(
                                                                                colnames(bart_incomp_no_prop$X)
                                                                              ))
   
-  saveRDS(posteriors_incomp_no_prop_val, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_val.rds"))
+  saveRDS(posteriors_incomp_no_prop_val, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_val.rds"))
   
   
 }
@@ -1326,26 +1561,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val.rds"))
+  incomp_no_prop_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_no_prop_val, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val.rds"))
+  saveRDS(incomp_no_prop_cred_pred_val, paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_effects_summary_val.rds"))
+  incomp_no_prop_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_effects_summary_val <- calc_effect_summary(bart_incomp_no_prop, data_incomplete_val)
   
-  saveRDS(incomp_no_prop_effects_summary_val, paste0(output_path, "/Assessment/incomp_no_prop_effects_summary_val.rds"))
+  saveRDS(incomp_no_prop_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_no_prop_effects_summary_val.rds"))
   
 }
 
@@ -1363,7 +1598,7 @@ predicted_observed_val <- data_incomplete_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop)
+# plot_incomp_no_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop)
 
 ## plot histogram of effect
 
@@ -1433,7 +1668,7 @@ plot_incomp_no_prop_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_no_prop.rds"))
+  assessment_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1450,7 +1685,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_no_prop, paste0(output_path, "/Assessment/assessment_incomp_no_prop.rds"))
+  saveRDS(assessment_incomp_no_prop, paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop.rds"))
   
 }
 
@@ -1461,35 +1696,111 @@ plot_incomp_no_prop <- resid_plot(incomp_no_prop_cred_pred_dev,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop.rds"))
+  ATE_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_no_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop.rds"))
+  saveRDS(ATE_validation_dev_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_dev_incomp_no_prop <- ATE_plot(ATE_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_no_prop <- ATE_plot(ATE_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop.rds"))
+  ATE_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_no_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop.rds"))
+  saveRDS(ATE_validation_val_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_val_incomp_no_prop <- ATE_plot(ATE_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_no_prop <- ATE_plot(ATE_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_no_prop <- cowplot::plot_grid(
   
@@ -1506,31 +1817,31 @@ plot_ATE_incomp_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop.rds"))
+  ATE_matching_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_no_prop <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_no_prop <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop.rds"))
+  ATE_matching_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_no_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_no_prop <- ATE_plot(ATE_matching_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_no_prop <- ATE_plot(ATE_matching_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_no_prop <- cowplot::plot_grid(
   
@@ -1547,31 +1858,31 @@ plot_ATE_prop_score_matching_incomp_no_prop <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
+  ATE_weighting_validation_dev_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_no_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_no_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
+  ATE_weighting_validation_val_incomp_no_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_no_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_no_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_no_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_no_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_no_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_no_prop <- cowplot::plot_grid(
   
@@ -1590,7 +1901,7 @@ plot_ATE_prop_score_weighting_incomp_no_prop <- cowplot::plot_grid(
 ### VARIABLE SELECTION: Incomplete model of all data, no propensity score (n: 9866(5978))
 #############################
 
-bart_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop_var_select.rds"))
+bart_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_var_select.rds"))
 
 # Dev
 data_incomplete_dev_var_select <- final.dev %>%
@@ -1605,7 +1916,7 @@ data_incomplete_dev_var_select <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_var_select_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_var_select_dev.rds"))
+  posteriors_incomp_no_prop_var_select_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_var_select_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1614,7 +1925,7 @@ if (class(try(
                                                                                colnames(bart_incomp_no_prop_var_select$X)
                                                                              ))
   
-  saveRDS(posteriors_incomp_no_prop_var_select_dev, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_var_select_dev.rds"))
+  saveRDS(posteriors_incomp_no_prop_var_select_dev, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_var_select_dev.rds"))
   
   
 }
@@ -1622,26 +1933,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_var_select_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_dev.rds"))
+  incomp_no_prop_var_select_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_cred_pred_dev <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_no_prop_var_select_dev, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_var_select_cred_pred_dev, paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_dev.rds"))
+  saveRDS(incomp_no_prop_var_select_cred_pred_dev, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
+  incomp_no_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_effects_summary_dev <- calc_effect_summary(bart_incomp_no_prop_var_select, data_incomplete_dev_var_select)
   
-  saveRDS(incomp_no_prop_var_select_effects_summary_dev, paste0(output_path, "/Assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
+  saveRDS(incomp_no_prop_var_select_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_effects_summary_dev.rds"))
   
 }
 
@@ -1686,7 +1997,7 @@ data_incomplete_val_var_select <- final.val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_var_select_val <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_var_select_val.rds"))
+  posteriors_incomp_no_prop_var_select_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_var_select_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1695,7 +2006,7 @@ if (class(try(
                                                                                           colnames(bart_incomp_no_prop_var_select$X)
                                                                                         ))
   
-  saveRDS(posteriors_incomp_no_prop_var_select_val, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_var_select_val.rds"))
+  saveRDS(posteriors_incomp_no_prop_var_select_val, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_var_select_val.rds"))
   
   
 }
@@ -1703,26 +2014,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_var_select_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
+  incomp_no_prop_var_select_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_cred_pred_val <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_no_prop_var_select_val, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_var_select_cred_pred_val, paste0(output_path, "/Assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
+  saveRDS(incomp_no_prop_var_select_cred_pred_val, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
+  incomp_no_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_effects_summary_val <- calc_effect_summary(bart_incomp_no_prop_var_select, data_incomplete_val_var_select)
   
-  saveRDS(incomp_no_prop_var_select_effects_summary_val, paste0(output_path, "/Assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
+  saveRDS(incomp_no_prop_var_select_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_effects_summary_val.rds"))
   
 }
 
@@ -1739,7 +2050,7 @@ predicted_observed_val <- data_incomplete_val_var_select %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_no_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop_var_select)
+# plot_incomp_no_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop_var_select)
 
 
 ## plot histogram of effect
@@ -1809,7 +2120,7 @@ plot_incomp_no_prop_var_select_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_no_prop_val_select <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_no_prop_val_select.rds"))
+  assessment_incomp_no_prop_val_select <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop_val_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1826,7 +2137,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_no_prop_val_select, paste0(output_path, "/Assessment/assessment_incomp_no_prop_val_select.rds"))
+  saveRDS(assessment_incomp_no_prop_val_select, paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop_val_select.rds"))
   
 }
 
@@ -1836,35 +2147,111 @@ plot_incomp_no_prop_var_select <- resid_plot(incomp_no_prop_var_select_cred_pred
                                              "Model fitting: Variable Selection 1, Incomplete data (No propensity score)")
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
+  ATE_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_incomp_no_prop_var_select <- ATE_plot(ATE_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_no_prop_var_select <- ATE_plot(ATE_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
+  ATE_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_no_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_incomp_no_prop_var_select <- ATE_plot(ATE_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_no_prop_var_select <- ATE_plot(ATE_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_no_prop_var_select <- cowplot::plot_grid(
   
@@ -1881,31 +2268,31 @@ plot_ATE_incomp_no_prop_var_select <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop_var_select.rds"))
+  ATE_matching_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_no_prop_var_select <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_no_prop_var_select <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop_var_select.rds"))
+  ATE_matching_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_no_prop_var_select <- ATE_plot(ATE_matching_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_no_prop_var_select <- ATE_plot(ATE_matching_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_no_prop_var_select <- cowplot::plot_grid(
   
@@ -1922,31 +2309,31 @@ plot_ATE_prop_score_matching_incomp_no_prop_var_select <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
+  ATE_weighting_validation_dev_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_no_prop_var_select  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_no_prop_var_select  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
+  ATE_weighting_validation_val_incomp_no_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_no_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_no_prop_var_select  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_no_prop_var_select  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_no_prop_var_select <- cowplot::plot_grid(
   
@@ -1964,9 +2351,9 @@ plot_ATE_prop_score_weighting_incomp_no_prop_var_select <- cowplot::plot_grid(
 ### Incomplete model of all data, with propensity score
 #############################
 
-bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
 
-bart_incomp_prop_model <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model.rds"))
+bart_incomp_prop_model <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model.rds"))
 
 
 # Dev
@@ -1976,7 +2363,7 @@ data_incomplete_dev <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_dev <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_dev.rds"))
+  posteriors_incomp_prop_dev <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -1985,7 +2372,7 @@ if (class(try(
                                                                                       colnames(bart_incomp_prop_model$X)
                                                                                     ))
   
-  saveRDS(posteriors_incomp_prop_dev, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev.rds"))
+  saveRDS(posteriors_incomp_prop_dev, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev.rds"))
   
   
 }
@@ -1993,26 +2380,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev.rds"))
+  incomp_prop_cred_pred_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_dev <- calc_resid(data_incomplete_dev, posteriors_incomp_prop_dev, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_dev, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev.rds"))
+  saveRDS(incomp_prop_cred_pred_dev, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_prop_effects_summary_dev.rds"))
+  incomp_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model, data_incomplete_dev)
   
-  saveRDS(incomp_prop_effects_summary_dev, paste0(output_path, "/Assessment/incomp_prop_effects_summary_dev.rds"))
+  saveRDS(incomp_prop_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_prop_effects_summary_dev.rds"))
   
 }
 
@@ -2052,7 +2439,7 @@ data_incomplete_val <- final.val
 ## calculate propensity score
 if (class(try(
   
-  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_incomplete_prop.rds"))
+  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Naive/assessment/prop_score_incomplete_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2061,7 +2448,7 @@ if (class(try(
                                                   colnames(bart_incomp_prop$X)
                                                 ))
   
-  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Assessment/prop_score_incomplete_prop.rds"))
+  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Naive/assessment/prop_score_incomplete_prop.rds"))
   
 }
 
@@ -2072,7 +2459,7 @@ data_incomplete_val <- data_incomplete_val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_val <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_val.rds"))
+  posteriors_incomp_prop_val <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2081,7 +2468,7 @@ if (class(try(
                                                                             colnames(bart_incomp_prop_model$X)
                                                                           ))
   
-  saveRDS(posteriors_incomp_prop_val, paste0(output_path, "/Assessment/posteriors_incomp_prop_val.rds"))
+  saveRDS(posteriors_incomp_prop_val, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val.rds"))
   
   
 }
@@ -2089,26 +2476,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_val <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_val.rds"))
+  incomp_prop_cred_pred_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_val <- calc_resid(data_incomplete_val, posteriors_incomp_prop_val, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_val, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val.rds"))
+  saveRDS(incomp_prop_cred_pred_val, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_prop_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_prop_effects_summary_val.rds"))
+  incomp_prop_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model, data_incomplete_val)
   
-  saveRDS(incomp_prop_effects_summary_val, paste0(output_path, "/Assessment/incomp_prop_effects_summary_val.rds"))
+  saveRDS(incomp_prop_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_prop_effects_summary_val.rds"))
   
 }
 
@@ -2126,7 +2513,7 @@ predicted_observed_val <- data_incomplete_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model)
+# plot_incomp_prop_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model)
 
 
 ## plot histogram of effect
@@ -2195,7 +2582,7 @@ plot_incomp_prop_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_prop <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_prop.rds"))
+  assessment_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2212,7 +2599,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_prop, paste0(output_path, "/Assessment/assessment_incomp_prop.rds"))
+  saveRDS(assessment_incomp_prop, paste0(output_path, "/Naive/assessment/assessment_incomp_prop.rds"))
   
 }
 
@@ -2223,35 +2610,111 @@ plot_incomp_prop <- resid_plot(incomp_prop_cred_pred_dev,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop.rds"))
+  ATE_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_prop <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop.rds"))
+  saveRDS(ATE_validation_dev_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop.rds"))
   
 }
 
-plot_ATE_dev_incomp_prop <- ATE_plot(ATE_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_prop <- ATE_plot(ATE_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop.rds"))
+  ATE_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_prop <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop.rds"))
+  saveRDS(ATE_validation_val_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop.rds"))
   
 }
 
-plot_ATE_val_incomp_prop <- ATE_plot(ATE_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_prop <- ATE_plot(ATE_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_prop <- cowplot::plot_grid(
   
@@ -2268,31 +2731,31 @@ plot_ATE_incomp_prop <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop.rds"))
+  ATE_matching_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_prop <- ATE_plot(ATE_matching_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_prop <- ATE_plot(ATE_matching_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop.rds"))
+  ATE_matching_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_prop <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_prop <- ATE_plot(ATE_matching_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_prop <- ATE_plot(ATE_matching_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_prop <- cowplot::plot_grid(
   
@@ -2309,31 +2772,31 @@ plot_ATE_prop_score_matching_incomp_prop <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
+  ATE_weighting_validation_dev_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_prop  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop.rds"))
+  ATE_weighting_validation_val_incomp_prop <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_prop <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_prop, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_prop, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_prop  <- ATE_plot(ATE_weighting_validation_val_incomp_prop[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_prop <- cowplot::plot_grid(
   
@@ -2351,9 +2814,9 @@ plot_ATE_prop_score_weighting_incomp_prop <- cowplot::plot_grid(
 ### VARIABLE SELECTION 1: Incomplete model of all data, with propensity score
 #############################
 
-bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
 
-bart_incomp_prop_model_var_select_1 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select_1.rds"))
+bart_incomp_prop_model_var_select_1 <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select_1.rds"))
 
 
 # Dev
@@ -2370,7 +2833,7 @@ data_incomplete_dev_var_select_1 <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_dev_var_select_1 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
+  posteriors_incomp_prop_dev_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2379,7 +2842,7 @@ if (class(try(
                                                                             colnames(bart_incomp_prop_model_var_select_1$X)
                                                                           ))
   
-  saveRDS(posteriors_incomp_prop_dev_var_select_1, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
+  saveRDS(posteriors_incomp_prop_dev_var_select_1, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev_var_select_1.rds"))
   
   
 }
@@ -2387,26 +2850,26 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_dev_var_select_1 <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
+  incomp_prop_cred_pred_dev_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_dev_var_select_1 <- calc_resid(data_incomplete_dev_var_select_1, posteriors_incomp_prop_dev_var_select_1, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_dev_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
+  saveRDS(incomp_prop_cred_pred_dev_var_select_1, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev_var_select_1.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_prop_var_select_1_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
+  incomp_prop_var_select_1_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_var_select_1_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model_var_select_1, data_incomplete_dev_var_select_1)
   
-  saveRDS(incomp_prop_var_select_1_effects_summary_dev, paste0(output_path, "/Assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
+  saveRDS(incomp_prop_var_select_1_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_prop_var_select_1_effects_summary_dev.rds"))
   
 }
 
@@ -2446,7 +2909,7 @@ data_incomplete_val_var_select_1 <- final.val
 ## calculate propensity score
 if (class(try(
   
-  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_incomplete_prop.rds"))
+  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Naive/assessment/prop_score_incomplete_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2455,7 +2918,7 @@ if (class(try(
                                             colnames(bart_incomp_prop$X)
                                           ))
   
-  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Assessment/prop_score_incomplete_prop.rds"))
+  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Naive/assessment/prop_score_incomplete_prop.rds"))
   
 }
 
@@ -2472,7 +2935,7 @@ data_incomplete_val_var_select_1 <- data_incomplete_val_var_select_1 %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_val_var_select_1 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select_1.rds"))
+  posteriors_incomp_prop_val_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2481,33 +2944,33 @@ if (class(try(
                                                                                          colnames(bart_incomp_prop_model_var_select_1$X)
                                                                                        ))
   
-  saveRDS(posteriors_incomp_prop_val_var_select_1, paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select_1.rds"))
+  saveRDS(posteriors_incomp_prop_val_var_select_1, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val_var_select_1.rds"))
   
 }
 
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_val_var_select_1 <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
+  incomp_prop_cred_pred_val_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_val_var_select_1 <- calc_resid(data_incomplete_val_var_select_1, posteriors_incomp_prop_val_var_select_1, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_val_var_select_1, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
+  saveRDS(incomp_prop_cred_pred_val_var_select_1, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val_var_select_1.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_prop_var_select_1_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
+  incomp_prop_var_select_1_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_var_select_1_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model_var_select_1, data_incomplete_val_var_select_1)
   
-  saveRDS(incomp_prop_var_select_1_effects_summary_val, paste0(output_path, "/Assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
+  saveRDS(incomp_prop_var_select_1_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_prop_var_select_1_effects_summary_val.rds"))
   
 }
 
@@ -2525,7 +2988,7 @@ predicted_observed_val <- data_incomplete_val_var_select_1 %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_var_select_1_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select_1)
+# plot_incomp_prop_var_select_1_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select_1)
 
 ## plot histogram of effect
 
@@ -2595,7 +3058,7 @@ plot_incomp_prop_var_select_1_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_prop_var_select_1.rds"))
+  assessment_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2612,7 +3075,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_prop_var_select_1, paste0(output_path, "/Assessment/assessment_incomp_prop_var_select_1.rds"))
+  saveRDS(assessment_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/assessment_incomp_prop_var_select_1.rds"))
   
 }
 
@@ -2623,35 +3086,111 @@ plot_incomp_prop_var_select_1 <- resid_plot(incomp_prop_cred_pred_dev_var_select
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
+  ATE_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_dev_incomp_prop_var_select_1 <- ATE_plot(ATE_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_prop_var_select_1 <- ATE_plot(ATE_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
+  ATE_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_val_incomp_prop_var_select_1 <- ATE_plot(ATE_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_prop_var_select_1 <- ATE_plot(ATE_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_prop_var_select_1 <- cowplot::plot_grid(
   
@@ -2668,31 +3207,31 @@ plot_ATE_incomp_prop_var_select_1 <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select_1.rds"))
+  ATE_matching_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_prop_var_select_1 <- ATE_plot(ATE_matching_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_prop_var_select_1 <- ATE_plot(ATE_matching_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select_1.rds"))
+  ATE_matching_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_prop_var_select_1 <- ATE_plot(ATE_matching_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_prop_var_select_1 <- ATE_plot(ATE_matching_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_prop_var_select_1 <- cowplot::plot_grid(
   
@@ -2709,31 +3248,31 @@ plot_ATE_prop_score_matching_incomp_prop_var_select_1 <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
+  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_prop_var_select_1  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_prop_var_select_1  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
+  ATE_weighting_validation_val_incomp_prop_var_select_1 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_prop_var_select_1 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_prop_var_select_1, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop_var_select_1.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_prop_var_select_1  <- ATE_plot(ATE_weighting_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_prop_var_select_1  <- ATE_plot(ATE_weighting_validation_val_incomp_prop_var_select_1[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_prop_var_select_1 <- cowplot::plot_grid(
   
@@ -2751,9 +3290,9 @@ plot_ATE_prop_score_weighting_incomp_prop_var_select_1 <- cowplot::plot_grid(
 ### VARIABLE SELECTION 2: Incomplete model of all data, with propensity score
 #############################
 
-bart_incomp_prop <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop.rds"))
+bart_incomp_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop.rds"))
 
-bart_incomp_prop_model_var_select <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_prop_model_var_select.rds"))
+bart_incomp_prop_model_var_select <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_prop_model_var_select.rds"))
 
 # Dev
 data_incomplete_dev_var_select <- final.dev %>%
@@ -2768,7 +3307,7 @@ data_incomplete_dev_var_select <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_dev_var_select <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select.rds"))
+  posteriors_incomp_prop_dev_var_select <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2777,33 +3316,33 @@ if (class(try(
                                                                                          colnames(bart_incomp_prop_model_var_select$X)
                                                                                        ))
   
-  saveRDS(posteriors_incomp_prop_dev_var_select, paste0(output_path, "/Assessment/posteriors_incomp_prop_dev_var_select.rds"))
+  saveRDS(posteriors_incomp_prop_dev_var_select, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_dev_var_select.rds"))
   
 }
 
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_dev_var_select <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select.rds"))
+  incomp_prop_cred_pred_dev_var_select <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_dev_var_select <- calc_resid(data_incomplete_dev_var_select, posteriors_incomp_prop_dev_var_select, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_dev_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_dev_var_select.rds"))
+  saveRDS(incomp_prop_cred_pred_dev_var_select, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_dev_var_select.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_prop_var_select_effects_summary_dev.rds"))
+  incomp_prop_var_select_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_var_select_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_var_select_effects_summary_dev <- calc_effect_summary(bart_incomp_prop_model_var_select, data_incomplete_dev_var_select)
   
-  saveRDS(incomp_prop_var_select_effects_summary_dev, paste0(output_path, "/Assessment/incomp_prop_var_select_effects_summary_dev.rds"))
+  saveRDS(incomp_prop_var_select_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_prop_var_select_effects_summary_dev.rds"))
   
 }
 
@@ -2844,7 +3383,7 @@ data_incomplete_val_var_select <- final.val
 ## calculate propensity score
 if (class(try(
   
-  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Assessment/prop_score_incomplete_prop.rds"))
+  prop_score_incomplete_prop <- readRDS(paste0(output_path,"/Naive/assessment/prop_score_incomplete_prop.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2853,7 +3392,7 @@ if (class(try(
                                             colnames(bart_incomp_prop$X)
                                           ))
   
-  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Assessment/prop_score_incomplete_prop.rds"))
+  saveRDS(prop_score_incomplete_prop, paste0(output_path, "/Naive/assessment/prop_score_incomplete_prop.rds"))
   
 }
 
@@ -2871,7 +3410,7 @@ data_incomplete_val_var_select <- data_incomplete_val_var_select %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_prop_val_var_select <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select.rds"))
+  posteriors_incomp_prop_val_var_select <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -2880,20 +3419,20 @@ if (class(try(
                                                                                        colnames(bart_incomp_prop_model_var_select$X)
                                                                                      ))
   
-  saveRDS(posteriors_incomp_prop_val_var_select, paste0(output_path, "/Assessment/posteriors_incomp_prop_val_var_select.rds"))
+  saveRDS(posteriors_incomp_prop_val_var_select, paste0(output_path, "/Naive/assessment/posteriors_incomp_prop_val_var_select.rds"))
   
 }
 
 ### residuals calculation
 if (class(try(
   
-  incomp_prop_cred_pred_val_var_select <- readRDS(paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
+  incomp_prop_cred_pred_val_var_select <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_cred_pred_val_var_select <- calc_resid(data_incomplete_val_var_select, posteriors_incomp_prop_val_var_select, "posthba1c_final")
   
-  saveRDS(incomp_prop_cred_pred_val_var_select, paste0(output_path, "/Assessment/incomp_prop_cred_pred_val_var_select.rds"))
+  saveRDS(incomp_prop_cred_pred_val_var_select, paste0(output_path, "/Naive/assessment/incomp_prop_cred_pred_val_var_select.rds"))
   
 }
 
@@ -2901,13 +3440,13 @@ if (class(try(
 # calculate effects
 if (class(try(
   
-  incomp_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_prop_var_select_effects_summary_val.rds"))
+  incomp_prop_var_select_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_prop_var_select_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_prop_var_select_effects_summary_val <- calc_effect_summary(bart_incomp_prop_model_var_select, data_incomplete_val_var_select)
   
-  saveRDS(incomp_prop_var_select_effects_summary_val, paste0(output_path, "/Assessment/incomp_prop_var_select_effects_summary_val.rds"))
+  saveRDS(incomp_prop_var_select_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_prop_var_select_effects_summary_val.rds"))
   
 }
 
@@ -2925,7 +3464,7 @@ predicted_observed_val <- data_incomplete_val_var_select %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select)
+# plot_incomp_prop_var_select_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_prop_model_var_select)
 
 ## plot histogram of effect
 
@@ -2998,7 +3537,7 @@ plot_incomp_prop_var_select_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_prop_var_select.rds"))
+  assessment_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -3015,7 +3554,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_prop_var_select, paste0(output_path, "/Assessment/assessment_incomp_prop_var_select.rds"))
+  saveRDS(assessment_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/assessment_incomp_prop_var_select.rds"))
   
 }
 
@@ -3027,35 +3566,110 @@ plot_incomp_prop_var_select <- resid_plot(incomp_prop_cred_pred_dev_var_select,
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
+  ATE_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
+  saveRDS(ATE_validation_dev_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_incomp_prop_var_select <- ATE_plot(ATE_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_prop_var_select <- ATE_plot(ATE_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select.rds"))
+  ATE_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_prop_var_select <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_validation_val_incomp_prop_var_select.rds"))
+  saveRDS(ATE_validation_val_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_incomp_prop_var_select <- ATE_plot(ATE_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_prop_var_select <- ATE_plot(ATE_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_prop_var_select <- cowplot::plot_grid(
   
@@ -3072,31 +3686,31 @@ plot_ATE_incomp_prop_var_select <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select.rds"))
+  ATE_matching_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_prop_var_select.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_prop_var_select <- ATE_plot(ATE_matching_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_prop_var_select <- ATE_plot(ATE_matching_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select.rds"))
+  ATE_matching_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_prop_var_select <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_prop_var_select.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_prop_var_select <- ATE_plot(ATE_matching_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_prop_var_select <- ATE_plot(ATE_matching_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_prop_var_select <- cowplot::plot_grid(
   
@@ -3113,31 +3727,31 @@ plot_ATE_prop_score_matching_incomp_prop_var_select <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
+  ATE_weighting_validation_dev_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_prop_var_select  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_prop_var_select  <- ATE_plot(ATE_weighting_validation_dev_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
+  ATE_weighting_validation_val_incomp_prop_var_select <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_prop_var_select <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_prop_var_select, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_prop_var_select, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_prop_var_select.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_prop_var_select  <- ATE_plot(ATE_weighting_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_prop_var_select  <- ATE_plot(ATE_weighting_validation_val_incomp_prop_var_select[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_prop_var_select <- cowplot::plot_grid(
   
@@ -3156,7 +3770,7 @@ plot_ATE_prop_score_weighting_incomp_prop_var_select <- cowplot::plot_grid(
 ### VARIABLE SELECTION 2: Incomplete model of all data, with no propensity score
 #############################
 
-bart_incomp_no_prop_model_var_select_2 <- readRDS(paste0(output_path, "/Model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
+bart_incomp_no_prop_model_var_select_2 <- readRDS(paste0(output_path, "/Naive/model_fit/bart_incomp_no_prop_model_var_select_2.rds"))
 
 # Dev
 data_incomplete_dev_no_prop_var_select_2 <- final.dev %>%
@@ -3170,7 +3784,7 @@ data_incomplete_dev_no_prop_var_select_2 <- final.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_dev_var_select_2 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_dev_var_select_2.rds"))
+  posteriors_incomp_no_prop_dev_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_dev_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -3179,33 +3793,33 @@ if (class(try(
                                                                                        colnames(bart_incomp_no_prop_model_var_select_2$X)
                                                                                      ))
   
-  saveRDS(posteriors_incomp_no_prop_dev_var_select_2, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_dev_var_select_2.rds"))
+  saveRDS(posteriors_incomp_no_prop_dev_var_select_2, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_dev_var_select_2.rds"))
   
 }
 
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_cred_pred_dev_var_select_2 <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_dev_var_select_2.rds"))
+  incomp_no_prop_cred_pred_dev_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_dev_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_cred_pred_dev_var_select_2 <- calc_resid(data_incomplete_dev_no_prop_var_select_2, posteriors_incomp_no_prop_dev_var_select_2, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_cred_pred_dev_var_select_2, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_dev_var_select_2.rds"))
+  saveRDS(incomp_no_prop_cred_pred_dev_var_select_2, paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_dev_var_select_2.rds"))
   
 }
 
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_var_select_2_effects_summary_dev <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_2_effects_summary_dev.rds"))
+  incomp_no_prop_var_select_2_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_2_effects_summary_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_2_effects_summary_dev <- calc_effect_summary(bart_incomp_no_prop_model_var_select_2, data_incomplete_dev_no_prop_var_select_2)
   
-  saveRDS(incomp_no_prop_var_select_2_effects_summary_dev, paste0(output_path, "/Assessment/incomp_no_prop_var_select_2_effects_summary_dev.rds"))
+  saveRDS(incomp_no_prop_var_select_2_effects_summary_dev, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_2_effects_summary_dev.rds"))
   
 }
 
@@ -3253,7 +3867,7 @@ data_incomplete_val_no_prop_var_select_2 <- final.val %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_incomp_no_prop_val_var_select_2 <- readRDS(paste0(output_path, "/Assessment/posteriors_incomp_no_prop_val_var_select_2.rds"))
+  posteriors_incomp_no_prop_val_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_val_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -3262,20 +3876,20 @@ if (class(try(
                                                                                        colnames(bart_incomp_no_prop_model_var_select_2$X)
                                                                                      ))
   
-  saveRDS(posteriors_incomp_no_prop_val_var_select_2, paste0(output_path, "/Assessment/posteriors_incomp_no_prop_val_var_select_2.rds"))
+  saveRDS(posteriors_incomp_no_prop_val_var_select_2, paste0(output_path, "/Naive/assessment/posteriors_incomp_no_prop_val_var_select_2.rds"))
   
 }
 
 ### residuals calculation
 if (class(try(
   
-  incomp_no_prop_cred_pred_val_var_select_2 <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val_var_select_2.rds"))
+  incomp_no_prop_cred_pred_val_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_val_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_cred_pred_val_var_select_2 <- calc_resid(data_incomplete_val_no_prop_var_select_2, posteriors_incomp_no_prop_val_var_select_2, "posthba1c_final")
   
-  saveRDS(incomp_no_prop_cred_pred_val_var_select_2, paste0(output_path, "/Assessment/incomp_no_prop_cred_pred_val_var_select_2.rds"))
+  saveRDS(incomp_no_prop_cred_pred_val_var_select_2, paste0(output_path, "/Naive/assessment/incomp_no_prop_cred_pred_val_var_select_2.rds"))
   
 }
 
@@ -3283,13 +3897,13 @@ if (class(try(
 # calculate effects
 if (class(try(
   
-  incomp_no_prop_var_select_2_effects_summary_val <- readRDS(paste0(output_path, "/Assessment/incomp_no_prop_var_select_2_effects_summary_val.rds"))
+  incomp_no_prop_var_select_2_effects_summary_val <- readRDS(paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_2_effects_summary_val.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   incomp_no_prop_var_select_2_effects_summary_val <- calc_effect_summary(bart_incomp_no_prop_model_var_select_2, data_incomplete_val_no_prop_var_select_2)
   
-  saveRDS(incomp_no_prop_var_select_2_effects_summary_val, paste0(output_path, "/Assessment/incomp_no_prop_var_select_2_effects_summary_val.rds"))
+  saveRDS(incomp_no_prop_var_select_2_effects_summary_val, paste0(output_path, "/Naive/assessment/incomp_no_prop_var_select_2_effects_summary_val.rds"))
   
 }
 
@@ -3307,7 +3921,7 @@ predicted_observed_val <- data_incomplete_val_no_prop_var_select_2 %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_incomp_no_prop_var_select_2_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop_model_var_select_2)
+# plot_incomp_no_prop_var_select_2_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_incomp_no_prop_model_var_select_2)
 
 ## plot histogram of effect
 
@@ -3380,7 +3994,7 @@ plot_incomp_no_prop_var_select_2_effects_genders <- cowplot::plot_grid(
 # assessment of R2, RSS, RMSE
 if (class(try(
   
-  assessment_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/assessment_incomp_no_prop_var_select_2.rds"))
+  assessment_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -3397,7 +4011,7 @@ if (class(try(
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
   
-  saveRDS(assessment_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/assessment_incomp_no_prop_var_select_2.rds"))
+  saveRDS(assessment_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/assessment_incomp_no_prop_var_select_2.rds"))
   
 }
 
@@ -3409,35 +4023,111 @@ plot_incomp_no_prop_var_select_2 <- resid_plot(incomp_no_prop_cred_pred_dev_var_
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
   
-  ATE_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select_2.rds"))
+  ATE_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
+  ATE_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_validation_dev_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_validation_dev_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_dev_incomp_no_prop_var_select_2 <- ATE_plot(ATE_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev_incomp_no_prop_var_select_2 <- ATE_plot(ATE_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
   
-  ATE_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select_2.rds"))
+  ATE_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
+  ATE_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_validation_val_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_validation_val_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_val_incomp_no_prop_var_select_2 <- ATE_plot(ATE_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val_incomp_no_prop_var_select_2 <- ATE_plot(ATE_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_incomp_no_prop_var_select_2 <- cowplot::plot_grid(
   
@@ -3454,31 +4144,31 @@ plot_ATE_incomp_no_prop_var_select_2 <- cowplot::plot_grid(
 # Validation ATE prop score matching
 if (class(try(
   
-  ATE_matching_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop_var_select_2.rds"))
+  ATE_matching_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
+  ATE_matching_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_matching_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_matching_validation_dev_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_matching_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_matching_validation_dev_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_dev_prop_score_incomp_no_prop_var_select_2 <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_incomp_no_prop_var_select_2 <- ATE_plot(ATE_matching_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_matching_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop_var_select_2.rds"))
+  ATE_matching_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_matching_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
+  ATE_matching_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_matching_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_matching_validation_val_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_matching_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_matching_validation_val_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_val_prop_score_incomp_no_prop_var_select_2 <- ATE_plot(ATE_matching_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_incomp_no_prop_var_select_2 <- ATE_plot(ATE_matching_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching_incomp_no_prop_var_select_2 <- cowplot::plot_grid(
   
@@ -3495,31 +4185,31 @@ plot_ATE_prop_score_matching_incomp_no_prop_var_select_2 <- cowplot::plot_grid(
 # Validation ATE prop score inverse weighting
 if (class(try(
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select_2.rds"))
+  ATE_weighting_validation_dev_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
+  ATE_weighting_validation_dev_incomp_no_prop_var_select_2 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
   
-  saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_weighting_validation_dev_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_dev_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_dev_prop_score_weighting_incomp_no_prop_var_select_2  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting_incomp_no_prop_var_select_2  <- ATE_plot(ATE_weighting_validation_dev_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select_2.rds"))
+  ATE_weighting_validation_val_incomp_no_prop_var_select_2 <- readRDS(paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop_var_select_2.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  ATE_weighting_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
+  ATE_weighting_validation_val_incomp_no_prop_var_select_2 <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
   
-  saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Assessment/ATE_weighting_validation_val_incomp_no_prop_var_select_2.rds"))
+  saveRDS(ATE_weighting_validation_val_incomp_no_prop_var_select_2, paste0(output_path, "/Naive/assessment/ATE_weighting_validation_val_incomp_no_prop_var_select_2.rds"))
   
 }
 
-plot_ATE_val_prop_score_weighting_incomp_no_prop_var_select_2  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting_incomp_no_prop_var_select_2  <- ATE_plot(ATE_weighting_validation_val_incomp_no_prop_var_select_2[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting_incomp_no_prop_var_select_2 <- cowplot::plot_grid(
   
@@ -3588,55 +4278,55 @@ dev.off()
 pdf(file = "Plots/6.1.model_effects.pdf")
 plot_comp_routine_no_prop_effects
 plot_comp_routine_no_prop_effects_genders
-plot_comp_routine_no_prop_effects_validation
+# plot_comp_routine_no_prop_effects_validation
 plot_ATE_comp_routine_no_prop
 plot_ATE_prop_score_matching_comp_routine_no_prop
 plot_ATE_prop_score_weighting_comp_routine_no_prop
 plot_comp_routine_prop_effects
 plot_comp_routine_prop_effects_genders
-plot_comp_routine_prop_effects_validation
+# plot_comp_routine_prop_effects_validation
 plot_ATE_comp_routine_prop
 plot_ATE_prop_score_matching_comp_routine_prop
 plot_ATE_prop_score_weighting_comp_routine_prop
 plot_incomp_routine_no_prop_effects
 plot_incomp_routine_no_prop_effects_genders
-plot_incomp_routine_no_prop_effects_validation
+# plot_incomp_routine_no_prop_effects_validation
 plot_ATE_incomp_routine_no_prop
 plot_ATE_prop_score_matching_incomp_routine_no_prop
 plot_ATE_prop_score_weighting_incomp_routine_no_prop
 plot_incomp_no_prop_effects
 plot_incomp_no_prop_effects_genders
-plot_incomp_no_prop_effects_validation
+# plot_incomp_no_prop_effects_validation
 plot_ATE_incomp_no_prop
 plot_ATE_prop_score_matching_incomp_no_prop
 plot_ATE_prop_score_weighting_incomp_no_prop
 plot_incomp_no_prop_var_select_effects
 plot_incomp_no_prop_var_select_effects_genders
-plot_incomp_no_prop_var_select_effects_validation
+# plot_incomp_no_prop_var_select_effects_validation
 plot_ATE_incomp_no_prop_var_select
 plot_ATE_prop_score_matching_incomp_no_prop_var_select
 plot_ATE_prop_score_weighting_incomp_no_prop_var_select
 plot_incomp_prop_effects
 plot_incomp_prop_effects_genders
-plot_incomp_prop_effects_validation
+# plot_incomp_prop_effects_validation
 plot_ATE_incomp_prop
 plot_ATE_prop_score_matching_incomp_prop
 plot_ATE_prop_score_weighting_incomp_prop
 plot_incomp_prop_var_select_1_effects
 plot_incomp_prop_var_select_1_effects_genders
-plot_incomp_prop_var_select_1_effects_validation
+# plot_incomp_prop_var_select_1_effects_validation
 plot_ATE_incomp_prop_var_select_1
 plot_ATE_prop_score_matching_incomp_prop_var_select_1
 plot_ATE_prop_score_weighting_incomp_prop_var_select_1
 plot_incomp_prop_var_select_effects
 plot_incomp_prop_var_select_effects_genders
-plot_incomp_prop_var_select_effects_validation
+# plot_incomp_prop_var_select_effects_validation
 plot_ATE_incomp_prop_var_select
 plot_ATE_prop_score_matching_incomp_prop_var_select
 plot_ATE_prop_score_weighting_incomp_prop_var_select
 plot_incomp_no_prop_var_select_2_effects
 plot_incomp_no_prop_var_select_2_effects_genders
-plot_incomp_no_prop_var_select_2_effects_validation
+# plot_incomp_no_prop_var_select_2_effects_validation
 plot_ATE_incomp_no_prop_var_select_2
 plot_ATE_prop_score_matching_incomp_no_prop_var_select_2
 plot_ATE_prop_score_weighting_incomp_no_prop_var_select_2

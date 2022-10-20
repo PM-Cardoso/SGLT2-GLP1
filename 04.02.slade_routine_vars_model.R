@@ -33,11 +33,11 @@ dir.create(paste0(output_path, "/Final_model"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/John_idea"))
+dir.create(paste0(output_path, "/Final_model/model_2"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/John_idea/Assessment"))
+dir.create(paste0(output_path, "/Final_model/model_2/Assessment"))
 
 ## make directory for outputs
 dir.create("Plots")
@@ -54,6 +54,10 @@ dir.create("Plots")
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_devcohort.Rda"))
 
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
+
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
 
 ###############################################################################
 ###############################################################################
@@ -81,7 +85,7 @@ dataset.dev <- final.dev
 
 if (class(try(
   
-  prop_model <- readRDS(paste0(output_path, "/Final_model/John_idea/prop_model.rds"))
+  prop_model <- readRDS(paste0(output_path, "/Final_model/model_2/prop_model.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -101,7 +105,7 @@ if (class(try(
                                          num_iterations_after_burn_in = 1000,
                                          serialize = TRUE)
   
-  saveRDS(prop_model, paste0(output_path, "/Final_model/John_idea/prop_model.rds"))
+  saveRDS(prop_model, paste0(output_path, "/Final_model/model_2/prop_model.rds"))
 }
 
 # ggplot() +
@@ -123,7 +127,7 @@ dataset.dev <- dataset.dev %>%
 
 if (class(try(
   
-  bart_model <- readRDS(paste0(output_path, "/Final_model/John_idea/bart_model.rds"))
+  bart_model <- readRDS(paste0(output_path, "/Final_model/model_2/bart_model.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -148,7 +152,7 @@ if (class(try(
                                          num_iterations_after_burn_in = 1000,
                                          serialize = TRUE)
   
-  saveRDS(bart_model, paste0(output_path, "/Final_model/John_idea/bart_model.rds"))
+  saveRDS(bart_model, paste0(output_path, "/Final_model/model_2/bart_model.rds"))
   
 }
 
@@ -157,51 +161,43 @@ if (class(try(
 
 if (class(try(
   
-  bart_var_selection <- readRDS(paste0(output_path, "/Final_model/John_idea/bart_var_selection.rds"))
+  bart_var_selection <- readRDS(paste0(output_path, "/Final_model/model_2/bart_var_selection.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  bart_var_selection <- bartMachine::var_selection_by_permute(bart_machine = bart_model,
-                                                              num_reps_for_avg = 10,
-                                                              num_permute_samples = 100,
-                                                              num_trees_for_permute = 20)
+  bart_var_selection <- bartMachine::var_selection_by_permute(bart_machine = bart_model)
   
-  saveRDS(bart_var_selection, paste0(output_path, "/Final_model/John_idea/bart_var_selection.rds"))
+  saveRDS(bart_var_selection, paste0(output_path, "/Final_model/model_2/bart_var_selection.rds"))
   
 }
 
 
 # Variables selected:
-# 
-# [1] "prehba1cmmol"       "prop_score"         "yrdrugstart"
-# [4] "prealt"             "hba1cmonth"         "egfr_ckdepi"
-# [7] "drugclass_SGLT2"    "drugclass_GLP1"     "score"
+# [1] "prehba1cmmol"       "prop_score"         "prealt"
+# [4] "egfr_ckdepi"        "yrdrugstart"        "drugclass_SGLT2"
+# [7] "drugclass_GLP1"     "malesex_0"          "malesex_1"
 # [10] "Category_Ex-smoker"
+
 
 
 if (class(try(
   
-  bart_var_selection_cv <- readRDS(paste0(output_path, "/Final_model/John_idea/bart_var_selection_cv.rds"))
+  bart_var_selection_cv <- readRDS(paste0(output_path, "/Final_model/model_2/bart_var_selection_cv.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  bart_var_selection_cv <- bartMachine::var_selection_by_permute_cv(bart_machine = bart_model,
-                                                                    k_folds = 5,
-                                                                    num_reps_for_avg = 5,
-                                                                    num_permute_samples = 100,
-                                                                    num_trees_for_permute = 20,
-                                                                    num_trees_pred_cv = 50)
+  bart_var_selection_cv <- bartMachine::var_selection_by_permute_cv(bart_machine = bart_model)
   
-  saveRDS(bart_var_selection_cv, paste0(output_path, "/Final_model/John_idea/bart_var_selection_cv.rds"))
+  saveRDS(bart_var_selection_cv, paste0(output_path, "/Final_model/model_2/bart_var_selection_cv.rds"))
   
 }
 
 
 # Variables selected:
-# 
 # [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
-# [4] "egfr_ckdepi"        "hba1cmonth"         "prealt"
-# [7] "prehba1cmmol"       "prop_score"         "yrdrugstart"
+# [4] "egfr_ckdepi"        "malesex_0"          "malesex_1"
+# [7] "prealt"             "prehba1cmmol"       "prop_score"
+# [10] "score"
 
 
 
@@ -211,20 +207,21 @@ if (class(try(
 ## BART model with all the selected variables
 
 if (class(try(
-  
-  bart_model_final <- readRDS(paste0(output_path, "/Final_model/John_idea/bart_model_final.rds"))
-  
+
+  bart_model_final <- readRDS(paste0(output_path, "/Final_model/model_2/bart_model_final.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   bart_model_final <- bartMachine::bartMachine(X = dataset.dev %>%
                                                  select(
-                                                   prehba1cmmol,
-                                                   egfr_ckdepi,
-                                                   prealt,
-                                                   yrdrugstart,
-                                                   drugclass,
                                                    Category,
-                                                   prop_score
+                                                   drugclass,
+                                                   egfr_ckdepi,
+                                                   malesex,
+                                                   prealt,
+                                                   prehba1cmmol,
+                                                   prop_score,
+                                                   score
                                                  ),
                                                y = dataset.dev[,"posthba1c_final"],
                                                use_missing_data = TRUE,
@@ -234,9 +231,9 @@ if (class(try(
                                                num_burn_in = 3000,
                                                num_iterations_after_burn_in = 1000,
                                                serialize = TRUE)
-  
-  saveRDS(bart_model_final, paste0(output_path, "/Final_model/John_idea/bart_model_final.rds"))
-  
+
+  saveRDS(bart_model_final, paste0(output_path, "/Final_model/model_2/bart_model_final.rds"))
+
 }
 
 
@@ -247,40 +244,40 @@ if (class(try(
 
 # Dev
 
-data_dev <- dataset.dev %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
-           unique(c(colnames(bart_model_final$X), 
+data_dev <- dataset.dev %>%
+  select(c(patid, pateddrug, posthba1c_final,
+           unique(c(colnames(bart_model_final$X),
                     colnames(prop_model$X)))))
 
 
 
 ## Get posteriors
 if (class(try(
-  
-  posteriors_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/posteriors_dev.rds"))
-  
+
+  posteriors_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/posteriors_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   posteriors_dev <- bartMachine::bart_machine_get_posterior(bart_model_final, data_dev %>%
                                                               select(
                                                                 colnames(bart_model_final$X)
                                                               ))
-  saveRDS(posteriors_dev, paste0(output_path, "/Final_model/John_idea/Assessment/posteriors_dev.rds"))
-  
-  
+  saveRDS(posteriors_dev, paste0(output_path, "/Final_model/model_2/Assessment/posteriors_dev.rds"))
+
+
 }
 
 ### residuals calculation
 if (class(try(
-  
-  cred_pred_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/cred_pred_dev.rds"))
-  
+
+  cred_pred_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/cred_pred_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "posthba1c_final")
-  
-  saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/John_idea/Assessment/cred_pred_dev.rds"))
-  
+
+  saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/model_2/Assessment/cred_pred_dev.rds"))
+
 }
 
 
@@ -292,70 +289,70 @@ data_val <- final.val %>%
 
 # calculate prop score
 if (class(try(
-  
-  prop_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/prop_val.rds"))
-  
+
+  prop_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/prop_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   prop_val <- predict(prop_model, data_val %>%
                         select(
                           colnames(prop_model$X)
                         ))
-  
-  saveRDS(prop_val, paste0(output_path, "/Final_model/John_idea/Assessment/prop_val.rds"))
-  
+
+  saveRDS(prop_val, paste0(output_path, "/Final_model/model_2/Assessment/prop_val.rds"))
+
 }
 
 
 data_val <- final.val %>%
-  cbind(prop_score = prop_val) %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
-           unique(c(colnames(bart_model_final$X), 
+  cbind(prop_score = prop_val) %>%
+  select(c(patid, pateddrug, posthba1c_final,
+           unique(c(colnames(bart_model_final$X),
                     colnames(prop_model$X)))))
 
 
 ### Get posteriors
 if (class(try(
-  
-  posteriors_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/posteriors_val.rds"))
-  
+
+  posteriors_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/posteriors_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   posteriors_val <- bartMachine::bart_machine_get_posterior(bart_model_final, data_val %>%
                                                               select(
                                                                 colnames(bart_model_final$X)
                                                               ))
-  saveRDS(posteriors_val, paste0(output_path, "/Final_model/John_idea/Assessment/posteriors_val.rds"))
-  
-  
+  saveRDS(posteriors_val, paste0(output_path, "/Final_model/model_2/Assessment/posteriors_val.rds"))
+
+
 }
 
 ### residuals calculation
 if (class(try(
-  
-  cred_pred_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/cred_pred_val.rds"))
-  
+
+  cred_pred_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/cred_pred_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   cred_pred_val <- calc_resid(data_val, posteriors_val, "posthba1c_final")
-  
-  saveRDS(cred_pred_val, paste0(output_path, "/Final_model/John_idea/Assessment/cred_pred_val.rds"))
-  
+
+  saveRDS(cred_pred_val, paste0(output_path, "/Final_model/model_2/Assessment/cred_pred_val.rds"))
+
 }
 
 
 
 # assessment of R2, RSS, RMSE
 if (class(try(
-  
-  assessment <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/assessment.rds"))
-  
+
+  assessment <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/assessment.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   assessment_values_dev <- calc_assessment(data_dev, posteriors_dev, "posthba1c_final")
-  
+
   assessment_values_val <- calc_assessment(data_val, posteriors_val, "posthba1c_final")
-  
+
   assessment <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
     cbind(t(assessment_values_val[["r2"]]), Dataset = "Validation", statistic = "R2 (bigger is better)"),
@@ -364,9 +361,9 @@ if (class(try(
     cbind(t(assessment_values_dev[["RMSE"]]), Dataset = "Development", statistic = "RMSE (smaller is better)"),
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
-  
-  saveRDS(assessment, paste0(output_path, "/Final_model/John_idea/Assessment/assessment.rds"))
-  
+
+  saveRDS(assessment, paste0(output_path, "/Final_model/model_2/Assessment/assessment.rds"))
+
 }
 
 
@@ -404,29 +401,29 @@ plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 2
 
 # calculate effects
 if (class(try(
-  
-  effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/effects_summary_dev.rds"))
-  
+
+  effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/effects_summary_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   effects_summary_dev <- calc_effect_summary(bart_model_final, data_dev)
-  
-  saveRDS(effects_summary_dev, paste0(output_path, "/Final_model/John_idea/Assessment/effects_summary_dev.rds"))
-  
+
+  saveRDS(effects_summary_dev, paste0(output_path, "/Final_model/model_2/Assessment/effects_summary_dev.rds"))
+
 }
 
 
 # calculate effects
 if (class(try(
-  
-  effects_summary_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/effects_summary_val.rds"))
-  
+
+  effects_summary_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/effects_summary_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
+
   effects_summary_val <- calc_effect_summary(bart_model_final, data_val)
-  
-  saveRDS(effects_summary_val, paste0(output_path, "/Final_model/John_idea/Assessment/effects_summary_val.rds"))
-  
+
+  saveRDS(effects_summary_val, paste0(output_path, "/Final_model/model_2/Assessment/effects_summary_val.rds"))
+
 }
 
 
@@ -443,7 +440,7 @@ predicted_observed_val <- data_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
+# plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
 
 
 
@@ -483,129 +480,204 @@ plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
 
 
 
-##############
+# ##############
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid,
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid,
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+# fit propensity model with the variables that influence therapy indication
+set.seed(123)
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 
 # Validating ATE
 if (class(try(
-  
-  ATE_validation_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_validation_dev.rds"))
-  
+
+  ATE_validation_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_validation_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
-  
-  saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_validation_dev.rds"))
-  
+
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
+  saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/model_2/Assessment/ATE_validation_dev.rds"))
+
 }
 
-plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
-  
-  ATE_validation_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_validation_val.rds"))
-  
+
+  ATE_validation_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_validation_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
-  
-  saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_validation_val.rds"))
-  
+
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
+
+  saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/model_2/Assessment/ATE_validation_val.rds"))
+
 }
 
-plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
+plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation lm(hba1c~drugclass+prop_score)")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 # Validation ATE prop score matching
 if (class(try(
-  
-  ATE_matching_validation_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_matching_validation_dev.rds"))
-  
+
+  ATE_matching_validation_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_matching_validation_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
-  
-  saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_matching_validation_dev.rds"))
-  
+
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
+  saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Final_model/model_2/Assessment/ATE_matching_validation_dev.rds"))
+
 }
 
-plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
-  
-  ATE_matching_validation_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_matching_validation_val.rds"))
-  
+
+  ATE_matching_validation_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_matching_validation_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
-  
-  saveRDS(ATE_matching_validation_val, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_matching_validation_val.rds"))
-  
+
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
+
+  saveRDS(ATE_matching_validation_val, paste0(output_path, "/Final_model/model_2/Assessment/ATE_matching_validation_val.rds"))
+
 }
 
-plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation prop score matching")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 # Validation ATE prop score inverse weighting
 if (class(try(
-  
-  ATE_weighting_validation_dev <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_weighting_validation_dev.rds"))
-  
+
+  ATE_weighting_validation_dev <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_weighting_validation_dev.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
-  
-  saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_weighting_validation_dev.rds"))
-  
+
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
+  saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/model_2/Assessment/ATE_weighting_validation_dev.rds"))
+
 }
 
-plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
-  
-  ATE_weighting_validation_val <- readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/ATE_weighting_validation_val.rds"))
-  
+
+  ATE_weighting_validation_val <- readRDS(paste0(output_path, "/Final_model/model_2/Assessment/ATE_weighting_validation_val.rds"))
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
-  
-  saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/John_idea/Assessment/ATE_weighting_validation_val.rds"))
-  
+
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
+
+  saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/model_2/Assessment/ATE_weighting_validation_val.rds"))
+
 }
 
-plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation prop score inverse weighting")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
@@ -618,17 +690,17 @@ pdf(file = "Plots/4.2.model2_plots.pdf")
 hist(1-prop_model$p_hat_train)
 plot_residuals
 plot_assessment
-plot_effects_validation
+# plot_effects_validation
 cowplot::plot_grid(plot_effect_1, plot_effect_2, ncol = 2, nrow = 1, labels = c("A", "B"))
 
 cowplot::plot_grid(
-  
+
   cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
-  
+
   , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 plot_ATE
@@ -637,7 +709,7 @@ plot_ATE_prop_score_weighting
 dev.off()
 
 
-pdf(file = "Plots/4.2.model4_partial_dependence.pdf")
+pdf(file = "Plots/4.2.model2_partial_dependence.pdf")
 features <- rep(0, length(bart_model_final$training_data_features)) %>%
   as.data.frame() %>%
   t()
