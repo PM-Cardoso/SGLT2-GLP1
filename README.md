@@ -1,17 +1,23 @@
 # SGLT2-GLP1
 Collection of functions and scripts to investigate how clinical features can be used for prediction.
 
-## Final structure for analysis: (Model 4.4)
+## Final structure for analysis: (Model 4.7)
 
-1. Variable selection: this will be the union of variables selected from two methods:
-    - Variables identified as strong predictors of the outcome variable (HbA1c outcome) - function _bartMachine::var_selection_by_permute_
-    - Variables identified as having causal effect on the treatment effect of a therapy - function _grf::variable_importance_
-2. Fit BART model (function _bartMachine::bartMachine_), using missing data feature.
-3. Check model fit for the outcome:
+1. Fit a BART propensity score model (function _bartMachine::bartMachine_) with all variable available.
+2. Perform BART variable selection (function _bartMachine::var_selection_by_permute_) to choose variables for the PS model.
+3. Re-fit a BART propensity score model (function _bartMachine::bartMachine_) with the selected variables.
+4. Fit a BART response model (function _bartMachine::bartMachine_):
+    - Include missing data feature (use_missing_data = FALSE)
+    - Include all available variables + propensity score values
+5. Perform BART variable selection (function _bartMachine::var_selection_by_permute_cv_) to choose variables for the response model.
+6. Re-fit a BART response model (function _bartMachine::bartMachine_) with the selected variables:
+    - Include missing data feature (use_missing_data = FALSE)
+7. Check model fit for the outcome:
     - Plot predicted vs observed to check for any structure in the values.
     - Plot standardised residuals to check for any structure in the residuals.
-4. Check model fit for treatment effects: (model fitted in observational data)
-    - Plot predicted treatment effect vs observed treatment effect.
+8. Check model fit for treatment effects: (model fitted in observational data)
+    - Plot predicted CATE vs ATE.
+
 
 ---
 
@@ -64,4 +70,15 @@ Files:
 - 10.0: Modelling accompanying data
     - .1: Weight reduction
     - .2: Discontinuation
+    
+---
+
+- 11.0: Aurum download modelling
+    - .1: Functions used specifically for this portion.
+    - .2: Detailed explanation of the selection of cohorts.
+    - .3: Descriptive analysis of datasets.
+    - .4: Model heterogeneity.
+
+
+    
 
