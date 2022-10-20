@@ -18,11 +18,6 @@ dir.create("Samples")
 ## make directory for outputs
 dir.create("Samples/SGLT2-GLP1")
 
-## make directory for outputs
-dir.create("Samples/SGLT2-GLP1/Plots")
-
-## make directory for outputs
-dir.create("Samples/SGLT2-GLP1/Plots/MRC_plots")
 
 #####
 
@@ -33,7 +28,7 @@ dir.create("Samples/SGLT2-GLP1/Plots/MRC_plots")
 # name: final.dev
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
 
-effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_dev.rds")
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/effects_summary_dev.rds")
 
 ## hist_plot function
 dat1 <- effects_summary_dev %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
@@ -145,7 +140,7 @@ dev.off()
 
 ## Differential treatment effect for variables
 
-effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Comparison/Model_4_4/effects_summary_dev.rds")
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Comparison/Model_5/effects_summary_dev.rds")
 
 # load all data for range of variable values; name: final.all.extra.vars
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
@@ -342,7 +337,7 @@ dev.off()
 
 # Plot 3
 
-cred_pred_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/cred_pred_dev.rds")
+cred_pred_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/cred_pred_dev.rds")
 
 plot_3 <- cowplot::plot_grid(
   
@@ -391,7 +386,7 @@ load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
 # name: final.val
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/bart_model_final.rds")
 
 data_dev <- final.dev %>%
   # select(-score) %>%
@@ -409,9 +404,9 @@ data_val <- final.val %>%
            colnames(bart_model_final$X)))
 
 
-effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_dev.rds")
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/effects_summary_dev.rds")
 
-effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_val.rds")
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/effects_summary_val.rds")
 
 
 
@@ -425,7 +420,7 @@ predicted_observed_val <- data_val %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
-ATE_matching_validation_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_dev.rds")
+ATE_matching_validation_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/ATE_matching_validation_dev.rds")
 
 plot_ATE_dev_prop_score <- ATE_matching_validation_dev[["effects"]] %>%
   as.data.frame() %>%
@@ -442,7 +437,7 @@ plot_ATE_dev_prop_score <- ATE_matching_validation_dev[["effects"]] %>%
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
 
-ATE_matching_validation_val <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/ATE_matching_validation_val.rds")
+ATE_matching_validation_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/Assessment/ATE_matching_validation_val.rds")
 
 plot_ATE_val_prop_score <- ATE_matching_validation_val[["effects"]] %>%
   as.data.frame() %>%
@@ -479,7 +474,7 @@ dev.off()
 # name: final.dev
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_devcohort.Rda")
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_4/bart_model_final.rds")
 
 # patient 39
 patient <- rbind(
