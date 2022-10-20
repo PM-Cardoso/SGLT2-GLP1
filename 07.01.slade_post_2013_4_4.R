@@ -49,6 +49,10 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_devcohort.Rda"))
 
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
 
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
+
+
 #### Removal of patients before 2013
 
 final.dev <- final.dev %>%
@@ -121,24 +125,19 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  bart_var_selection <- bartMachine::var_selection_by_permute(bart_machine = bart_model,
-                                                              num_reps_for_avg = 15,
-                                                              num_permute_samples = 150,
-                                                              num_trees_for_permute = 50)
+  bart_var_selection <- bartMachine::var_selection_by_permute(bart_machine = bart_model)
 
   saveRDS(bart_var_selection, paste0(output_path, "/Final_model/7.1.Sensitivity/bart_var_selection.rds"))
 
 }
 
 # Variables selected:
-#
-# [1] "prehba1cmmol"       "prealt"             "drugclass_SGLT2"
-# [4] "hba1cmonth"         "yrdrugstart"        "egfr_ckdepi"
-# [7] "drugclass_GLP1"     "score"              "drugline_2"
-# [10] "ncurrtx_3"          "drugline_3"         "ncurrtx_2"
-# [13] "drugline_4"         "Category_Ex-smoker" "drugline_5"
-# [16] "ncurrtx_1"
-# male_sex not included this time
+# [1] "prehba1cmmol"       "prebil"             "drugclass_SGLT2"
+# [4] "prealt"             "hba1cmonth"         "score"
+# [7] "yrdrugstart"        "drugclass_GLP1"     "ncurrtx_3"
+# [10] "drugline_2"         "drugline_5"         "drugline_4"
+# [13] "malesex_0"          "ncurrtx_2"          "drugline_3"
+# [16] "ncurrtx_1"          "Category_Ex-smoker" "malesex_1"
 
 
 if (class(try(
@@ -147,27 +146,21 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  bart_var_selection_cv <- bartMachine::var_selection_by_permute_cv(bart_machine = bart_model,
-                                                                    k_folds = 15,
-                                                                    num_reps_for_avg = 15,
-                                                                    num_permute_samples = 150,
-                                                                    num_trees_for_permute = 50,
-                                                                    num_trees_pred_cv = 50)
+  bart_var_selection_cv <- bartMachine::var_selection_by_permute_cv(bart_machine = bart_model)
 
   saveRDS(bart_var_selection_cv, paste0(output_path, "/Final_model/7.1.Sensitivity/bart_var_selection_cv.rds"))
 
 }
 
 # Variables selected:
-#
-# [1] "drugclass_GLP1"  "drugclass_SGLT2" "drugline_2"      "drugline_3"
-# [5] "drugline_4"      "drugline_5"      "egfr_ckdepi"     "hba1cmonth"
-# [9] "ncurrtx_1"       "ncurrtx_2"       "ncurrtx_3"       "prealt"
-# [13] "prebil"          "prehba1cmmol"    "score"           "yrdrugstart"
-# Category  not included, prebil extra
+# [1] "Category_Ex-smoker" "drugclass_GLP1"     "drugclass_SGLT2"
+# [4] "drugline_2"         "drugline_4"         "drugline_5"
+# [7] "hba1cmonth"         "malesex_0"          "malesex_1"
+# [10] "ncurrtx_1"          "ncurrtx_2"          "ncurrtx_3"
+# [13] "prealt"             "prehba1cmmol"       "score"
 
 
-
+# 
 # #### GRF variable selection
 # current.na.action <- options("na.action")
 # options(na.action = "na.pass")
@@ -183,60 +176,6 @@ if (class(try(
 # 
 # 
 # 
-# ## Fit a propensity model with all the variables
-# if (class(try(
-# 
-#   prop_model <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model.rds"))
-# 
-#   , silent = TRUE)) == "try-error") {
-# 
-#   # GLP1 is considered target so all the probabilities should be 1-prob
-#   prop_model <- bartMachine::bartMachine(X = dataset.dev %>%
-#                                            select(-patid,
-#                                                   -pateddrug,
-#                                                   -bothdrugs,
-#                                                   -posthba1c_final,
-#                                                   -drugclass,
-#                                                   -yrdrugstart,
-#                                                   -sglt2subtype,
-#                                                   -glp1subtype),
-#                                          y = dataset.dev[,"drugclass"],
-#                                          use_missing_data = TRUE,
-#                                          impute_missingness_with_rf_impute = FALSE,
-#                                          impute_missingness_with_x_j_bar_for_lm = TRUE,
-#                                          num_trees = 200,
-#                                          num_burn_in = 3000,
-#                                          num_iterations_after_burn_in = 1000,
-#                                          serialize = TRUE)
-# 
-#   saveRDS(prop_model, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model.rds"))
-# }
-# 
-# # Perform variables selection of important variables
-# 
-# if (class(try(
-# 
-#   prop_var_selection <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/prop_var_selection.rds"))
-# 
-#   , silent = TRUE)) == "try-error") {
-# 
-#   prop_var_selection <- bartMachine::var_selection_by_permute(bart_machine = prop_model,
-#                                                               num_reps_for_avg = 100,
-#                                                               num_permute_samples = 1000,
-#                                                               num_trees_for_permute = 50)
-# 
-#   saveRDS(prop_var_selection, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_var_selection.rds"))
-# 
-# 
-# }
-# # Variables selected:
-# #
-# # [1] "prebmi"              "t2dmduration"        "prehba1cmmol"
-# # [4] "preweight"           "drugline_2"          "drugline_5"
-# # [7] "ncurrtx_3"           "drugline_4"          "drugline_3"
-# # [10] "Category_Non-smoker"
-# 
-# 
 # 
 # # Fit final propensity model using selected variables
 # 
@@ -246,17 +185,16 @@ if (class(try(
 # 
 #   , silent = TRUE)) == "try-error") {
 # 
+#   set.seed(123)
 #   prop_model_final <- bartMachine::bartMachine(X = dataset.dev %>%
-#                                                  select(prebmi,
+#                                                  select(yrdrugstart,
+#                                                         prebmi,
 #                                                         t2dmduration,
-#                                                         # prealb,
-#                                                         # egfr_ckdepi,
 #                                                         drugline,
 #                                                         prehba1cmmol,
+#                                                         egfr_ckdepi,
 #                                                         ncurrtx,
-#                                                         # score,
-#                                                         # Category
-#                                                         ),
+#                                                         Category),
 #                                                y = dataset.dev[,"drugclass"],
 #                                                use_missing_data = TRUE,
 #                                                impute_missingness_with_rf_impute = FALSE,
@@ -264,7 +202,9 @@ if (class(try(
 #                                                num_trees = 200,
 #                                                num_burn_in = 3000,
 #                                                num_iterations_after_burn_in = 1000,
-#                                                serialize = TRUE)
+#                                                serialize = TRUE,
+#                                                seed = 123)
+#   
 #   saveRDS(prop_model_final, paste0(output_path, "/Final_model/7.1.Sensitivity/prop_model_final.rds"))
 # 
 # }
@@ -272,9 +212,7 @@ if (class(try(
 # 
 # grf_model <- grf::causal_forest(X = dataset_model.matrix %>%
 #                                   select(-posthba1c_final,
-#                                          -drugclass,
-#                                          -preweight,
-#                                          -height),
+#                                          -drugclass),
 #                                 Y = dataset_model.matrix[, "posthba1c_final"],
 #                                 W = dataset_model.matrix[, "drugclass"],
 #                                 W.hat = prop_model_final$p_hat_train)
@@ -285,22 +223,24 @@ if (class(try(
 # 
 # colnames(grf_model$X.orig)[which(grf_var_selection > 0.01)]
 # 
-# # malesex1 <- 0.20329320
-# # egfr_ckdepi <- 0.17543374
-# # score <- 0.08494679
-# # agetx <- 0.07947302
-# # prealt <- 0.07819542
-# # prehba1cmmol <- 0.05829137
-# # prehdl <- 0.04667077
-# # preplatelets <- 0.04575637
-# # prebmi <- 0.03981382
-# # hba1cmonth <- 0.02812800
-# # t2dmduration <- 0.02589190
-# # presys <- 0.02513101
-# # prebil <- 0.02227799
-# # yrdrugstart <- 0.01916421
-# # prealb <- 0.01903258
-# # preast <- 0.01068304
+# 
+# # malesex1 <- 0.22278220
+# # egfr_ckdepi <- 0.16687129
+# # score <- 0.08006476
+# # prealt <- 0.06893765
+# # agetx <- 0.06558237
+# # prehba1cmmol <- 0.05845444
+# # prehdl <- 0.05528312
+# # preplatelets <- 0.04907455
+# # prebmi <- 0.04052396
+# # t2dmduration <- 0.02804737
+# # prebil <- 0.02692575
+# # hba1cmonth <- 0.02638428
+# # presys <- 0.02318428
+# # prealb <- 0.01920983
+# # yrdrugstart <- 0.01758198
+# # preast <- 0.01196333
+# 
 # 
 # options(na.action = current.na.action)
 
@@ -309,34 +249,35 @@ if (class(try(
 
 
 if (class(try(
-  
+
   bart_model_final <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/bart_model_final.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
+  set.seed(123)
   bart_model_final <- bartMachine::bartMachine(X = dataset.dev %>%
                                                  select(drugclass,
                                                         # below is vars from both variable selections
-                                                        egfr_ckdepi,
                                                         hba1cmonth,
+                                                        malesex,
                                                         prealt,
                                                         prehba1cmmol,
                                                         score,
-                                                        prebil,
                                                         # below is vars from BART variable selection
-                                                        Category, # should be removed, not important for this model
+                                                        Category,
                                                         drugline,
                                                         ncurrtx,
-                                                        yrdrugstart,
                                                         # below is the vars from grf variable selection
+                                                        egfr_ckdepi,
                                                         agetx,
-                                                        malesex,
                                                         prehdl,
-                                                        prebmi,
                                                         preplatelets,
+                                                        prebmi,
                                                         t2dmduration,
-                                                        prealb,
+                                                        prebil,
                                                         presys,
+                                                        prealb,
+                                                        yrdrugstart,
                                                         preast
                                                  ),
                                                y = dataset.dev[,"posthba1c_final"],
@@ -346,12 +287,12 @@ if (class(try(
                                                num_trees = 200,
                                                num_burn_in = 3000,
                                                num_iterations_after_burn_in = 1000,
+                                               seed = 123,
                                                serialize = TRUE)
-  
-  saveRDS(bart_model_final, paste0(output_path, "/Final_model/7.1.Sensitivity/bart_model_final.rds"))
-  
-}
 
+  saveRDS(bart_model_final, paste0(output_path, "/Final_model/7.1.Sensitivity/bart_model_final.rds"))
+
+}
 
 
 ########
@@ -360,90 +301,90 @@ if (class(try(
 
 # Dev
 
-data_dev <- dataset.dev %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
+data_dev <- dataset.dev %>%
+  select(c(patid, pateddrug, posthba1c_final,
            colnames(bart_model_final$X)))
 
 
 
 ## Get posteriors
 if (class(try(
-  
+
   posteriors_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/posteriors_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   posteriors_dev <- bartMachine::bart_machine_get_posterior(bart_model_final, data_dev %>%
                                                               select(
                                                                 colnames(bart_model_final$X)
                                                               ))
   saveRDS(posteriors_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/posteriors_dev.rds"))
-  
-  
+
+
 }
 
 ### residuals calculation
 if (class(try(
-  
+
   cred_pred_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/cred_pred_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "posthba1c_final")
-  
+
   saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/cred_pred_dev.rds"))
-  
+
 }
 
 
 # Val
-data_val <- final.val %>% 
-  select(c(patid, pateddrug, posthba1c_final, 
+data_val <- final.val %>%
+  select(c(patid, pateddrug, posthba1c_final,
            colnames(bart_model_final$X)))
 
 
 ### Get posteriors
 if (class(try(
-  
+
   posteriors_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/posteriors_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   posteriors_val <- bartMachine::bart_machine_get_posterior(bart_model_final, data_val %>%
                                                               select(
                                                                 colnames(bart_model_final$X)
                                                               ))
   saveRDS(posteriors_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/posteriors_val.rds"))
-  
-  
+
+
 }
 
 ### residuals calculation
 if (class(try(
-  
+
   cred_pred_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/cred_pred_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   cred_pred_val <- calc_resid(data_val, posteriors_val, "posthba1c_final")
-  
+
   saveRDS(cred_pred_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/cred_pred_val.rds"))
-  
+
 }
 
 
 
 # assessment of R2, RSS, RMSE
 if (class(try(
-  
+
   assessment <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/assessment.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   assessment_values_dev <- calc_assessment(data_dev, posteriors_dev, "posthba1c_final")
-  
+
   assessment_values_val <- calc_assessment(data_val, posteriors_val, "posthba1c_final")
-  
+
   assessment <- rbind(
     cbind(t(assessment_values_dev[["r2"]]), Dataset = "Development", statistic = "R2 (bigger is better)"),
     cbind(t(assessment_values_val[["r2"]]), Dataset = "Validation", statistic = "R2 (bigger is better)"),
@@ -452,9 +393,9 @@ if (class(try(
     cbind(t(assessment_values_dev[["RMSE"]]), Dataset = "Development", statistic = "RMSE (smaller is better)"),
     cbind(t(assessment_values_val[["RMSE"]]), Dataset = "Validation", statistic = "RMSE (smaller is better)")
   )
-  
+
   saveRDS(assessment, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/assessment.rds"))
-  
+
 }
 
 
@@ -489,29 +430,29 @@ plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Residuals of Model 4
 
 # calculate effects
 if (class(try(
-  
+
   effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/effects_summary_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   effects_summary_dev <- calc_effect_summary(bart_model_final, data_dev)
-  
+
   saveRDS(effects_summary_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/effects_summary_dev.rds"))
-  
+
 }
 
 
 # calculate effects
 if (class(try(
-  
+
   effects_summary_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/effects_summary_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   effects_summary_val <- calc_effect_summary(bart_model_final, data_val)
-  
+
   saveRDS(effects_summary_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/effects_summary_val.rds"))
-  
+
 }
 
 
@@ -528,7 +469,7 @@ predicted_observed_val <- data_val %>%
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
 
-plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
+# plot_effects_validation <- plot_full_effects_validation(predicted_observed_dev, predicted_observed_val, bart_model_final)
 
 
 ## plot histogram of effect
@@ -567,127 +508,203 @@ plot_effect_2_female <- hist_plot(effects_summary_val_female, "Female", -15, 20)
 
 
 ##############
+
+# Calculate propensity score for validation
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_dev %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid,
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+set.seed(123)
+# fit propensity model with the variables that influence therapy indication
+prop_model_dev <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+# extracting selected variables for individuals in dataset
+data.new <- predicted_observed_val %>%
+  select(patid, pateddrug) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid,
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+set.seed(123)
+# fit propensity model with the variables that influence therapy indication
+prop_model_val <- bartMachine::bartMachine(X = data.new %>%
+                                             select(yrdrugstart,
+                                                    prebmi,
+                                                    t2dmduration,
+                                                    drugline,
+                                                    prehba1cmmol,
+                                                    egfr_ckdepi,
+                                                    ncurrtx,
+                                                    Category),
+                                           y = data.new[,"drugclass"],
+                                           use_missing_data = TRUE,
+                                           impute_missingness_with_rf_impute = FALSE,
+                                           impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                           num_trees = 200,
+                                           num_burn_in = 1000,
+                                           num_iterations_after_burn_in = 200,
+                                           seed = 123)
+
+
 # Validating ATE
 if (class(try(
-  
+
   ATE_validation_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final")
-  
+
+  ATE_validation_dev <- calc_ATE_validation(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
   saveRDS(ATE_validation_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_dev.rds"))
-  
+
 }
 
-plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 if (class(try(
-  
+
   ATE_validation_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "posthba1c_final")
-  
+
+  ATE_validation_val <- calc_ATE_validation(predicted_observed_val, "posthba1c_final", prop_model_val)
+
   saveRDS(ATE_validation_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_validation_val.rds"))
-  
+
 }
 
-plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val <- ATE_plot(ATE_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation lm(hba1c~drugclass+prop_score)")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev, plot_ATE_val, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 # Validation ATE prop score matching
 if (class(try(
-  
+
   ATE_matching_validation_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_matching_validation_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final")
-  
+
+  ATE_matching_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
   saveRDS(ATE_matching_validation_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_matching_validation_dev.rds"))
-  
+
 }
 
-plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -16, 16)
+plot_ATE_dev_prop_score <- ATE_plot(ATE_matching_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
-  
+
   ATE_matching_validation_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_matching_validation_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final")
-  
+
+  ATE_matching_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1c_final", prop_model_val)
+
   saveRDS(ATE_matching_validation_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_matching_validation_val.rds"))
-  
+
 }
 
-plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -16, 16)
+plot_ATE_val_prop_score <- ATE_plot(ATE_matching_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_matching <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation prop score matching")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev_prop_score, plot_ATE_val_prop_score, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
 # Validation ATE prop score inverse weighting
 if (class(try(
-  
+
   ATE_weighting_validation_dev <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_weighting_validation_dev.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final")
-  
+
+  ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1c_final", prop_model_dev)
+
   saveRDS(ATE_weighting_validation_dev, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_weighting_validation_dev.rds"))
-  
+
 }
 
-plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 if (class(try(
-  
+
   ATE_weighting_validation_val <- readRDS(paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_weighting_validation_val.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
-  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final")
-  
+
+  ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1c_final", prop_model_val)
+
   saveRDS(ATE_weighting_validation_val, paste0(output_path, "/Final_model/7.1.Sensitivity/Assessment/ATE_weighting_validation_val.rds"))
-  
+
 }
 
-plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
+plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 plot_ATE_prop_score_weighting <- cowplot::plot_grid(
-  
+
   cowplot::ggdraw() +
     cowplot::draw_label("Effects validation prop score inverse weighting")
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting, ncol = 2, nrow = 1, labels = c("A", "B"))
-  
+
   , nrow = 2, ncol = 1, rel_heights = c(0.1, 1))
 
 
@@ -699,17 +716,17 @@ plot_ATE_prop_score_weighting <- cowplot::plot_grid(
 pdf(file = "Plots/7.1.model4_plots.pdf")
 plot_residuals
 plot_assessment
-plot_effects_validation
+# plot_effects_validation
 cowplot::plot_grid(plot_effect_1, plot_effect_2, ncol = 2, nrow = 1, labels = c("A", "B"))
 
 cowplot::plot_grid(
-  
+
   cowplot::plot_grid(plot_effect_1_male, plot_effect_1_female, ncol = 2, nrow = 1)
-  
+
   ,
-  
+
   cowplot::plot_grid(plot_effect_2_male, plot_effect_2_female, ncol = 2, nrow = 1)
-  
+
   , nrow = 2, ncol = 1, labels = c("A", "B")
 )
 plot_ATE
