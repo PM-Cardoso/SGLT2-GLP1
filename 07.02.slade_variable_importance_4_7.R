@@ -31,11 +31,11 @@ dir.create(paste0(output_path, "/Final_model"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/With_grf_no_prop"))
+dir.create(paste0(output_path, "/Final_model/model_7"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment"))
+dir.create(paste0(output_path, "/Final_model/model_7/Assessment"))
 
 ## make directory for outputs
 dir.create("Plots")
@@ -48,7 +48,7 @@ dir.create("Plots")
 ###############################################################################
 
 # bart model
-bart_model_final <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/bart_model_final.rds"))
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/model_7/bart_model_final.rds"))
 
 
 
@@ -56,17 +56,17 @@ bart_model_final <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/b
 
 if (class(try(
   
-  variable_importance <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/variable_importance.rds"))
+  variable_importance <- readRDS(paste0(output_path, "/Final_model/model_7/Assessment/variable_importance.rds"))
   
   , silent = TRUE)) == "try-error") {
   
-  pdf(file = paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/variable_importance.pdf"))
+  pdf(file = paste0(output_path, "/Final_model/model_7/Assessment/variable_importance.pdf"))
   
   variable_importance <- bartMachine::investigate_var_importance(bart_model_final)
   
   dev.off()
   
-  saveRDS(variable_importance, paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/variable_importance.rds"))
+  saveRDS(variable_importance, paste0(output_path, "/Final_model/model_7/Assessment/variable_importance.rds"))
   
 }
 
@@ -83,20 +83,20 @@ plot_var_importance <- variable_importance$avg_var_props %>%
   select(-drugclass_SGLT2, -drugclass_GLP1, -drugline_2, -drugline_3, -drugline_4, -drugline_5, -ncurrtx_0, -ncurrtx_1, -ncurrtx_2, -ncurrtx_3, -malesex_0, -malesex_1, -`Category_Active smoker`, -`Category_Ex-smoker`, -`Category_Non-smoker`) %>%
   rename("Therapy" = "drugclass",
          "HbA1c" = "prehba1cmmol",
-         "Year Drug Start" = "yrdrugstart",
+         # "Year Drug Start" = "yrdrugstart",
          "eGFR" = "egfr_ckdepi",
          "Outcome month" = "hba1cmonth",
-         "Systolic" = "presys",
-         "ALT" = "prealt",
-         "Bilirubin" = "prebil",
-         "AST" = "preast",
-         "HDL" = "prehdl",
-         "Age" = "agetx",
-         "CVD score" = "score",
-         "Time to prescription" = "t2dmduration",
-         "BMI" = "prebmi",
-         "Albuminuria" = "prealb",
-         "Platelets" = "preplatelets",
+         # "Systolic" = "presys",
+         # "ALT" = "prealt",
+         # "Bilirubin" = "prebil",
+         # "AST" = "preast",
+         # "HDL" = "prehdl",
+         # "Age" = "agetx",
+         "CVD score" = "score.excl.mi",
+         # "Time to prescription" = "t2dmduration",
+         # "BMI" = "prebmi",
+         # "Albuminuria" = "prealb",
+         # "Platelets" = "preplatelets",
          "Number of past therapies" = "drugline",
          "Number of Current therapies" = "ncurrtx",
          "Sex" = "malesex",
@@ -107,12 +107,12 @@ plot_var_importance <- variable_importance$avg_var_props %>%
   theme_classic() +
   geom_col() +
   ylab("Inclusion proportions (%)") +
-  scale_y_continuous(limits = c(0, 25), expand = (c(0,0))) +
+  scale_y_continuous(limits = c(0, 30), expand = (c(0,0))) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.title.x = element_blank(),
         axis.line = element_blank(),
         axis.ticks.x = element_blank()) +
-  annotate(x = 0, xend=0, y=0, yend=25, colour="black", lwd=0.75, geom="segment")
+  annotate(x = 0, xend=0, y=0, yend=30, colour="black", lwd=0.75, geom="segment")
 
 
 
