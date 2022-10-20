@@ -155,7 +155,7 @@ plot_effect_comparison_1 <- cbind(`BCF Effect` = bcf.effects.dev[,"mean"],
 
 ### Complete model of only routine data, no propensity score
 
-comp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_no_prop_effects_summary_dev.rds"))
+comp_routine_no_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_no_prop_effects_summary_dev.rds"))
     
 plot_effect_comparison_2 <- as.data.frame(comp_routine_no_prop_effects_summary_dev) %>%
   cbind(`BCF Effect` = bcf.effects.dev[,"mean"]) %>%
@@ -170,7 +170,7 @@ plot_effect_comparison_2 <- as.data.frame(comp_routine_no_prop_effects_summary_d
     ggtitle("BCF vs BART (no propensity score)")
     
 
-bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_no_prop.rds"))
+bart_comp_routine_no_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_no_prop.rds"))
 
 # Dev
 data_complete_routine_dev <- final.dev %>%
@@ -225,7 +225,7 @@ plot_error_comparison_2 <- cbind(
 
 ### Complete model of only routine data, propensity score
 
-comp_routine_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/Assessment/comp_routine_prop_effects_summary_dev.rds"))
+comp_routine_prop_effects_summary_dev <- readRDS(paste0(output_path, "/Naive/assessment/comp_routine_prop_effects_summary_dev.rds"))
 
 plot_effect_comparison_3 <- as.data.frame(comp_routine_prop_effects_summary_dev) %>%
   cbind(`BCF Effect` = bcf.effects.dev[,"mean"]) %>%
@@ -240,9 +240,9 @@ plot_effect_comparison_3 <- as.data.frame(comp_routine_prop_effects_summary_dev)
     ggtitle("BCF vs BART (propensity score)")
 
 
-bart_comp_routine_prop <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop.rds"))
+bart_comp_routine_prop <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop.rds"))
 
-bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Model_fit/bart_comp_routine_prop_model.rds"))
+bart_comp_routine_prop_model <- readRDS(paste0(output_path, "/Naive/model_fit/bart_comp_routine_prop_model.rds"))
 
 
 # Dev

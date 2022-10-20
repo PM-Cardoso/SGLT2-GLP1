@@ -39,10 +39,10 @@ dir.create("Plots")
 
 
 assessment <- rbind(
-  cbind(readRDS(paste0(output_path, "/Final_model/Assessment/assessment.rds")), Model = "Model 1"),
-  cbind(readRDS(paste0(output_path, "/Final_model/John_idea/Assessment/assessment.rds")), Model = "Model 2"),
-  cbind(readRDS(paste0(output_path, "/Final_model/With_grf/Assessment/assessment.rds")), Model = "Model 3"),
-  cbind(readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Assessment/assessment.rds")), Model = "Model 4")
+  cbind(readRDS(paste0(output_path, "/Final_model/model_1/Assessment/assessment.rds")), Model = "Model 1"),
+  cbind(readRDS(paste0(output_path, "/Final_model/model_2/Assessment/assessment.rds")), Model = "Model 2"),
+  cbind(readRDS(paste0(output_path, "/Final_model/model_3/Assessment/assessment.rds")), Model = "Model 3"),
+  cbind(readRDS(paste0(output_path, "/Final_model/model_4/Assessment/assessment.rds")), Model = "Model 4")
   ) %>%
   as.data.frame() %>%
   mutate(`5%` = as.numeric(`5%`),
