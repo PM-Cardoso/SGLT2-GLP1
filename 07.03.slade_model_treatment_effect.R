@@ -31,11 +31,11 @@ dir.create(paste0(output_path, "/Final_model"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/With_grf_no_prop"))
+dir.create(paste0(output_path, "/Final_model/model_7"))
 
 
 ## make directory for outputs
-dir.create(paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects"))
+dir.create(paste0(output_path, "/Final_model/model_7/Treatment_Effects"))
 
 
 ###############################################################################
@@ -73,30 +73,35 @@ source("0.1.slade_functions.R")
 ## Initially we start with 9866 individuals
 ##
 
-dataset.dev <- final.dev
+# remove old CVD score, add new score
+dataset.dev <- final.dev %>%
+  select(-score) %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, pateddrug, score.excl.mi))
 
 
 
 # load in original BART model
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/bart_model_final.rds")
 
 # load in treatment effects
 
-effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/With_grf_no_prop/Assessment/effects_summary_dev.rds")
+effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/Assessment/effects_summary_dev.rds")
 
 
 # Fit new treatment effects model
 
 if (class(try(
   
-  bart_model_effects <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/bart_model_effects.rds"))
+  bart_model_effects <- readRDS(paste0(output_path, "/Final_model/model_7/Treatment_Effects/bart_model_effects.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   bart_model_effects <- bartMachine::bartMachine(X = dataset.dev %>%
                                                  select(colnames(bart_model_final$X)
-                                                 ),
+                                                 ) %>%
+                                                   select(-drugclass),
                                                y = effects_summary_dev[,"mean"],
                                                use_missing_data = TRUE,
                                                impute_missingness_with_rf_impute = FALSE,
@@ -106,7 +111,7 @@ if (class(try(
                                                num_iterations_after_burn_in = 1000,
                                                serialize = TRUE)
   
-  saveRDS(bart_model_effects, paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/bart_model_effects.rds"))
+  saveRDS(bart_model_effects, paste0(output_path, "/Final_model/model_7/Treatment_Effects/bart_model_effects.rds"))
   
 }
 
@@ -124,7 +129,7 @@ data_dev <- dataset.dev %>%
 ## Get posteriors
 if (class(try(
   
-  posteriors_dev <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/posteriors_dev.rds"))
+  posteriors_dev <- readRDS(paste0(output_path, "/Final_model/model_7/Treatment_Effects/posteriors_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -132,7 +137,7 @@ if (class(try(
                                                               select(
                                                                 colnames(bart_model_effects$X)
                                                               ))
-  saveRDS(posteriors_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/posteriors_dev.rds"))
+  saveRDS(posteriors_dev, paste0(output_path, "/Final_model/model_7/Treatment_Effects/posteriors_dev.rds"))
   
   
 }
@@ -141,13 +146,13 @@ if (class(try(
 ### residuals calculation
 if (class(try(
   
-  cred_pred_dev <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/cred_pred_dev.rds"))
+  cred_pred_dev <- readRDS(paste0(output_path, "/Final_model/model_7/Treatment_Effects/cred_pred_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   cred_pred_dev <- calc_resid(data_dev, posteriors_dev, "effects")
   
-  saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/cred_pred_dev.rds"))
+  saveRDS(cred_pred_dev, paste0(output_path, "/Final_model/model_7/Treatment_Effects/cred_pred_dev.rds"))
   
 }
 
@@ -182,13 +187,13 @@ plot_resid <- cred_pred_dev %>%
 
 if (class(try(
   
-  variable_importance <- readRDS(paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/variable_importance.rds"))
+  variable_importance <- readRDS(paste0(output_path, "/Final_model/model_7/Treatment_Effects/variable_importance.rds"))
   
   , silent = TRUE)) == "try-error") {
   
   variable_importance <- bartMachine::investigate_var_importance(bart_model_effects)
   
-  saveRDS(variable_importance, paste0(output_path, "/Final_model/With_grf_no_prop/Treatment_Effects/variable_importance.rds"))
+  saveRDS(variable_importance, paste0(output_path, "/Final_model/model_7/Treatment_Effects/variable_importance.rds"))
   
 }
 
@@ -205,20 +210,20 @@ plot_var_importance <- variable_importance$avg_var_props %>%
   select(-drugclass_SGLT2, -drugclass_GLP1, -drugline_2, -drugline_3, -drugline_4, -drugline_5, -ncurrtx_0, -ncurrtx_1, -ncurrtx_2, -ncurrtx_3, -malesex_0, -malesex_1, -`Category_Active smoker`, -`Category_Ex-smoker`, -`Category_Non-smoker`) %>%
   rename("Therapy" = "drugclass",
          "HbA1c" = "prehba1cmmol",
-         "Year Drug Start" = "yrdrugstart",
+         # "Year Drug Start" = "yrdrugstart",
          "eGFR" = "egfr_ckdepi",
          "Outcome month" = "hba1cmonth",
-         "Systolic" = "presys",
-         "ALT" = "prealt",
-         "Bilirubin" = "prebil",
-         "AST" = "preast",
-         "HDL" = "prehdl",
-         "Age" = "agetx",
-         "CVD score" = "score",
-         "Time to prescription" = "t2dmduration",
-         "BMI" = "prebmi",
-         "Albuminuria" = "prealb",
-         "Platelets" = "preplatelets",
+         # "Systolic" = "presys",
+         # "ALT" = "prealt",
+         # "Bilirubin" = "prebil",
+         # "AST" = "preast",
+         # "HDL" = "prehdl",
+         # "Age" = "agetx",
+         "CVD score" = "score.excl.mi",
+         # "Time to prescription" = "t2dmduration",
+         # "BMI" = "prebmi",
+         # "Albuminuria" = "prealb",
+         # "Platelets" = "preplatelets",
          "Number of past therapies" = "drugline",
          "Number of Current therapies" = "ncurrtx",
          "Sex" = "malesex",
@@ -229,12 +234,12 @@ plot_var_importance <- variable_importance$avg_var_props %>%
   theme_classic() +
   geom_col() +
   ylab("Inclusion proportions (%)") +
-  scale_y_continuous(limits = c(0, 15), expand = (c(0,0))) +
+  scale_y_continuous(limits = c(0, 30), expand = (c(0,0))) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.title.x = element_blank(),
         axis.line = element_blank(),
         axis.ticks.x = element_blank()) +
-  annotate(x = 0, xend=0, y=0, yend=15, colour="black", lwd=0.75, geom="segment")
+  annotate(x = 0, xend=0, y=0, yend=30, colour="black", lwd=0.75, geom="segment")
 
 
 pdf(file = "Plots/7.3.model_treatment_effect.pdf")
