@@ -41,6 +41,8 @@ load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_devcohort.Rda"))
 
 load(paste0(output_path, "/datasets/cprd_19_sglt2glp1_valcohort.Rda"))
 
+# load all data for range of variable values; name: final.all.extra.vars
+load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 
 
 ###############################################################################
@@ -142,10 +144,49 @@ predicted_observed_complete_routine_dev <- dataset_full_bcf[1:nrow(data_complete
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10)) 
 
+
+# extracting selected variables for individuals in dataset
+data.new <- data_complete_routine_dev[,c("patid", "pateddrug")] %>%
+  left_join(final.all.extra.vars %>%
+              select(patid, 
+                     pateddrug,
+                     drugclass,
+                     yrdrugstart,
+                     prebmi,
+                     t2dmduration,
+                     drugline,
+                     prehba1cmmol,
+                     egfr_ckdepi,
+                     ncurrtx,
+                     Category), by = c("patid", "pateddrug"))
+
+
+set.seed(123)
+# fit propensity model with the variables that influence therapy indication
+prop_model <- bartMachine::bartMachine(X = data.new %>%
+                                         select(yrdrugstart,
+                                                prebmi,
+                                                t2dmduration,
+                                                drugline,
+                                                prehba1cmmol,
+                                                egfr_ckdepi,
+                                                ncurrtx,
+                                                Category),
+                                       y = data.new[,"drugclass"],
+                                       use_missing_data = TRUE,
+                                       impute_missingness_with_rf_impute = FALSE,
+                                       impute_missingness_with_x_j_bar_for_lm = TRUE,
+                                       num_trees = 200,
+                                       num_burn_in = 100,
+                                       num_iterations_after_burn_in = 100,
+                                       seed = 123)
+
+
 # lm(hba1c ~ drugclass + prop_score)
 ATE_validation_dev <- calc_ATE_validation(predicted_observed_complete_routine_dev %>%
                                             cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
-                                          "posthba1_final")
+                                          "posthba1c_final",
+                                          prop_model)
 
 plot_ATE_dev <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -13, 13)
 
@@ -165,9 +206,9 @@ plot_ATE_dev <- cowplot::plot_grid(
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 1] <- "SGLT2"
 predicted_observed_complete_routine_dev[,"drugclass"][predicted_observed_complete_routine_dev[,"drugclass"] == 0] <- "GLP1"
 
-ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_complete_routine_dev %>%
-                                                          cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
-                                                        "posthba1c_final")
+ATE_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_complete_routine_dev,
+                                                        "posthba1c_final",
+                                                        prop_model)
 
 plot_ATE_dev_prop_score <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -14, 14)
 
@@ -184,9 +225,9 @@ plot_ATE_dev_prop_score <- cowplot::plot_grid(
 
 
 # Inverse Propensity score weighting 
-ATE_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_complete_routine_dev %>%
-                                                                   cbind(data_complete_routine_dev[,c("patid", "pateddrug")]),
-                                                                 "posthba1c_final")
+ATE_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_complete_routine_dev,
+                                                                 "posthba1c_final",
+                                                                 prop_model)
 
 plot_ATE_dev_prop_score_weighting <- ATE_plot(ATE_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12)
 
