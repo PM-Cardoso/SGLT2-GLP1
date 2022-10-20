@@ -126,7 +126,7 @@ if (class(try(
 ###############################
 ####### Description of weight change for deciles of model
 
-bart_model_final <- readRDS(paste0(output_path, "/Final_model/cvd_new/bart_model_final.rds"))
+bart_model_final <- readRDS(paste0(output_path, "/Final_model/model_5/bart_model_final.rds"))
 
 data_dev <- final.dev %>%
   select(-score) %>%
@@ -148,9 +148,9 @@ data_val <- final.val %>%
               select(patid, pateddrug, stopdrug6m_3mFU))
 
 
-effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_dev.rds"))
+effects_summary_dev <- readRDS(paste0(output_path, "/Final_model/model_5/Assessment/effects_summary_dev.rds"))
 
-effects_summary_val <- readRDS(paste0(output_path, "/Final_model/cvd_new/Assessment/effects_summary_val.rds"))
+effects_summary_val <- readRDS(paste0(output_path, "/Final_model/model_5/Assessment/effects_summary_val.rds"))
 
 
 #####################
