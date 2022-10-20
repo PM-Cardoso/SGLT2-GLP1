@@ -29,7 +29,7 @@ dir.create("Samples/SGLT2-GLP1")
 # name: final.val
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
-effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/Assessment/effects_summary_val.rds")
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_val.rds")
 
 ## hist_plot function
 dat1 <- effects_summary_val %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
@@ -220,7 +220,7 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
 
 
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/bart_model_final.rds")
 
 dataset.dev <- final.dev %>%
   select(-score) %>%
@@ -345,7 +345,7 @@ load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 # name: final.val
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/bart_model_final.rds")
 
 data_dev <- final.dev %>%
   select(-score) %>%
@@ -363,9 +363,9 @@ data_val <- final.val %>%
            colnames(bart_model_final$X)))
 
 
-# effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/Assessment/effects_summary_dev.rds")
+# effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_dev.rds")
 
-effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/cvd_new/Assessment/effects_summary_val.rds")
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_val.rds")
 
 
 predicted_observed_val_initial <- data_val %>%
