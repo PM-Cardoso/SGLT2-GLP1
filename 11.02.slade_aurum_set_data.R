@@ -127,6 +127,8 @@ set_up_data <- function() {
   ##### Drop patients initiating within 91 days of registration
   ################################################
   
+  # This is wrong, needs to be changed. Katie's email on 21/10/22 at 11:15
+  
   # table(cprd$dm_diag_flag)
   # # removing 4306
   
@@ -176,6 +178,15 @@ set_up_data <- function() {
   ############################# Variable Prep ###################################
   ###############################################################################
   ###############################################################################
+  
+  
+  ################################################
+  ##### Drug of interest
+  #####   - GLP1 and SGLT2: drugclass
+  ################################################
+  
+  cprd <- cprd %>%
+    mutate(drugclass = factor(drugclass))
   
   ################################################
   ##### Outcome HbA1c # name: posthba1c12m (missing - 46383)
@@ -258,10 +269,10 @@ set_up_data <- function() {
   ################################################
   
   cprd <- cprd %>%
-    mutate(SU = as.factor(SU),
-           MFN = as.factor(MFN),
-           DPP4 = as.factor(DPP4),
-           TZD = as.factor(TZD))
+    mutate(SU = factor(SU, levels = c(0, 1), labels = c("No", "Yes")),
+           MFN = factor(MFN, levels = c(0, 1), labels = c("No", "Yes")),
+           DPP4 = factor(DPP4, levels = c(0, 1), labels = c("No", "Yes")),
+           TZD = factor(TZD, levels = c(0, 1), labels = c("No", "Yes")))
   
   ################################################
   ##### Diabetes treatment
@@ -384,10 +395,280 @@ set_up_data <- function() {
   
   ################################################
   ##### Comorbidities
-  #####   - Angina: predrug_earliest_angina
+  #####   - Angina: predrug_latest_angina
   ################################################
   
-  # Nothing to do 
+  # any angina medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_angina = ifelse(is.na(predrug_latest_angina), "No", "Yes")) %>%
+    mutate(pre_angina = factor(pre_angina))
+  
+  # any angina medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_angina_5yrecent = difftime(dstartdate, predrug_latest_angina, units = "days") / 365.25) %>%
+    mutate(pre_angina_5yrecent = ifelse(pre_angina_5yrecent > 5 | is.na(pre_angina_5yrecent), "No", "Yes")) %>%
+    mutate(pre_angina_5yrecent = factor(pre_angina_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Chronic Liver Disease: predrug_latest_cld
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_cld = ifelse(is.na(predrug_latest_cld), "No", "Yes")) %>%
+    mutate(pre_cld = factor(pre_cld))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_cld_5yrecent = difftime(dstartdate, predrug_latest_cld, units = "days") / 365.25) %>%
+    mutate(pre_cld_5yrecent = ifelse(pre_cld_5yrecent > 5 | is.na(pre_cld_5yrecent), "No", "Yes")) %>%
+    mutate(pre_cld_5yrecent = factor(pre_cld_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Diabetic Nephropathy: predrug_latest_diabeticnephropathy
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_diabeticnephropathy = ifelse(is.na(predrug_latest_diabeticnephropathy), "No", "Yes")) %>%
+    mutate(pre_diabeticnephropathy = factor(pre_diabeticnephropathy))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_diabeticnephropathy_5yrecent = difftime(dstartdate, predrug_latest_diabeticnephropathy, units = "days") / 365.25) %>%
+    mutate(pre_diabeticnephropathy_5yrecent = ifelse(pre_diabeticnephropathy_5yrecent > 5 | is.na(pre_diabeticnephropathy_5yrecent), "No", "Yes")) %>%
+    mutate(pre_diabeticnephropathy_5yrecent = factor(pre_diabeticnephropathy_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Heart failure: predrug_latest_heartfailure
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_heartfailure = ifelse(is.na(predrug_latest_heartfailure), "No", "Yes")) %>%
+    mutate(pre_heartfailure = factor(pre_heartfailure))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_heartfailure_5yrecent = difftime(dstartdate, predrug_latest_heartfailure, units = "days") / 365.25) %>%
+    mutate(pre_heartfailure_5yrecent = ifelse(pre_heartfailure_5yrecent > 5 | is.na(pre_heartfailure_5yrecent), "No", "Yes")) %>%
+    mutate(pre_heartfailure_5yrecent = factor(pre_heartfailure_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Hypertension: predrug_latest_hypertension
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_hypertension = ifelse(is.na(predrug_latest_heartfailure), "No", "Yes")) %>%
+    mutate(pre_hypertension = factor(pre_hypertension))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_hypertension_5yrecent = difftime(dstartdate, predrug_latest_heartfailure, units = "days") / 365.25) %>%
+    mutate(pre_hypertension_5yrecent = ifelse(pre_hypertension_5yrecent > 5 | is.na(pre_hypertension_5yrecent), "No", "Yes")) %>%
+    mutate(pre_hypertension_5yrecent = factor(pre_hypertension_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Ischaemic Heart Disease: predrug_latest_ihd
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_ihd = ifelse(is.na(predrug_latest_ihd), "No", "Yes")) %>%
+    mutate(pre_ihd = factor(pre_ihd))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_ihd_5yrecent = difftime(dstartdate, predrug_latest_ihd, units = "days") / 365.25) %>%
+    mutate(pre_ihd_5yrecent = ifelse(pre_ihd_5yrecent > 5 | is.na(pre_ihd_5yrecent), "No", "Yes")) %>%
+    mutate(pre_ihd_5yrecent = factor(pre_ihd_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Myocardial Infarction: predrug_latest_myocardialinfarction
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_myocardialinfarction = ifelse(is.na(predrug_latest_myocardialinfarction), "No", "Yes")) %>%
+    mutate(pre_myocardialinfarction = factor(pre_myocardialinfarction))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_myocardialinfarction_5yrecent = difftime(dstartdate, predrug_latest_myocardialinfarction, units = "days") / 365.25) %>%
+    mutate(pre_myocardialinfarction_5yrecent = ifelse(pre_myocardialinfarction_5yrecent > 5 | is.na(pre_myocardialinfarction_5yrecent), "No", "Yes")) %>%
+    mutate(pre_myocardialinfarction_5yrecent = factor(pre_myocardialinfarction_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Neuropathy: predrug_latest_neuropathy
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_neuropathy = ifelse(is.na(predrug_latest_neuropathy), "No", "Yes")) %>%
+    mutate(pre_neuropathy = factor(pre_neuropathy))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_neuropathy_5yrecent = difftime(dstartdate, predrug_latest_neuropathy, units = "days") / 365.25) %>%
+    mutate(pre_neuropathy_5yrecent = ifelse(pre_neuropathy_5yrecent > 5 | is.na(pre_neuropathy_5yrecent), "No", "Yes")) %>%
+    mutate(pre_neuropathy_5yrecent = factor(pre_neuropathy_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Peripheral Arterial Disease: predrug_latest_pad
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_pad = ifelse(is.na(predrug_latest_pad), "No", "Yes")) %>%
+    mutate(pre_pad = factor(pre_pad))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_pad_5yrecent = difftime(dstartdate, predrug_latest_pad, units = "days") / 365.25) %>%
+    mutate(pre_pad_5yrecent = ifelse(pre_pad_5yrecent > 5 | is.na(pre_pad_5yrecent), "No", "Yes")) %>%
+    mutate(pre_pad_5yrecent = factor(pre_pad_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Retinopathy: predrug_latest_retinopathy
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_retinopathy = ifelse(is.na(predrug_latest_retinopathy), "No", "Yes")) %>%
+    mutate(pre_retinopathy = factor(pre_retinopathy))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_retinopathy_5yrecent = difftime(dstartdate, predrug_latest_retinopathy, units = "days") / 365.25) %>%
+    mutate(pre_retinopathy_5yrecent = ifelse(pre_retinopathy_5yrecent > 5 | is.na(pre_retinopathy_5yrecent), "No", "Yes")) %>%
+    mutate(pre_retinopathy_5yrecent = factor(pre_retinopathy_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Cardiac Revascularisation: predrug_latest_revasc
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_revasc = ifelse(is.na(predrug_latest_revasc), "No", "Yes")) %>%
+    mutate(pre_revasc = factor(pre_revasc))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_revasc_5yrecent = difftime(dstartdate, predrug_latest_revasc, units = "days") / 365.25) %>%
+    mutate(pre_revasc_5yrecent = ifelse(pre_revasc_5yrecent > 5 | is.na(pre_revasc_5yrecent), "No", "Yes")) %>%
+    mutate(pre_revasc_5yrecent = factor(pre_revasc_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Stroke: predrug_latest_stroke
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_stroke = ifelse(is.na(predrug_latest_stroke), "No", "Yes")) %>%
+    mutate(pre_stroke = factor(pre_stroke))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_stroke_5yrecent = difftime(dstartdate, predrug_latest_stroke, units = "days") / 365.25) %>%
+    mutate(pre_stroke_5yrecent = ifelse(pre_stroke_5yrecent > 5 | is.na(pre_stroke_5yrecent), "No", "Yes")) %>%
+    mutate(pre_stroke_5yrecent = factor(pre_stroke_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Transient Ischaemic Attack: predrug_latest_tia
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_tia = ifelse(is.na(predrug_latest_tia), "No", "Yes")) %>%
+    mutate(pre_tia = factor(pre_tia))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_tia_5yrecent = difftime(dstartdate, predrug_latest_tia, units = "days") / 365.25) %>%
+    mutate(pre_tia_5yrecent = ifelse(pre_tia_5yrecent > 5 | is.na(pre_tia_5yrecent), "No", "Yes")) %>%
+    mutate(pre_tia_5yrecent = factor(pre_tia_5yrecent))
+  
+  ################################################
+  ##### Comorbidities
+  #####   - Atrial fibrillation: predrug_latest_af
+  ################################################
+  
+  # any Chronic Liver Disease medcode in history 
+  
+  cprd <- cprd %>%
+    mutate(pre_af = ifelse(is.na(predrug_latest_af), "No", "Yes")) %>%
+    mutate(pre_af = factor(pre_af))
+  
+  # any Chronic Liver Disease medcode in the last 5 years
+  
+  cprd <- cprd %>%
+    mutate(pre_af_5yrecent = difftime(dstartdate, predrug_latest_af, units = "days") / 365.25) %>%
+    mutate(pre_af_5yrecent = ifelse(pre_af_5yrecent > 5 | is.na(pre_af_5yrecent), "No", "Yes")) %>%
+    mutate(pre_af_5yrecent = factor(pre_af_5yrecent))
+  
+  
+  
+  ###############################################################################
+  ###############################################################################
+  #################### Final dataset - all patients #############################
+  ###############################################################################
+  ###############################################################################
+  
+  final.dataset <- cprd %>%
+    select(
+      # information regarding patient
+      patid, pated,
+      # response hba1c
+      posthba1c_final,
+      # therapies of interest
+      drugclass,
+      # Sociodemographic features
+      agetx, malesex, t2dmduration, Ethnicity, Deprivation, Smoke, 
+      # Diabetes treatment 
+      drugline, SU, MFN, DPP4, TZD, hba1cmonth,
+      # Biomarkers
+      
+    )
+  
   
 }
 
