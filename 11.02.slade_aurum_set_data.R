@@ -21,7 +21,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("full_cohort"))) {stop("'dataset.type' must one of: full_cohort /")}
+  if (!(dataset.type %in% c("full.cohort", "hba1c.train", "hba1c.test", "weight.dataset"))) {
+    stop("'dataset.type' must one of: full.cohort / hba1c.train / hba1c.test / weight.dataset")
+  }
   
   
   # load original dataset # name - t2d_1stinstance_2ndline
@@ -41,33 +43,18 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # table(cprd$drugclass)
   
   
-  ################################################
-  ##### Drop if at least 6 months of follow-up available (treatment start < 01/04/2020) 
-  ################################################
-  
-  cprd <- cprd %>%
-    mutate(follow_up = ifelse(dstartdate > "2020-04-01", 1, NA_real_))
-  
-  # table(cprd$follow_up)
-  
-  
-  cprd <- cprd %>%
-    filter(is.na(follow_up))
-  
   
   ################################################
-  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ##### Drop patients diagnosed within 3 months of registration
   ################################################
   
-  cprd <- cprd %>%
-    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  # regstartdate # date of registration
+  # 
+  # dm_diag_date # date of diagnosis
   
-  # table(cprd$timeprevcombo_less61)
+  # cprd <- cprd %>%
+  #   mutate(dm_reg_3_months = ifelse(difftime(regstartdate, dm_diag_date, units = "days") > 0 & difftime(regstartdate, dm_diag_date, units = "days") < 90, 1, NA_real_))
   
-  
-  cprd <- cprd %>% 
-    filter(is.na(timeprevcombo_less61))
-
   
   ################################################
   ##### Drop patients initiating before 1/1/2015
@@ -91,28 +78,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   cprd <- cprd %>% 
     filter(INS == 0)      
   
-  ################################################
-  ##### Drop if first-line treatment
-  ################################################
-  
-  # table(cprd$drugline)
-  
-  cprd <- cprd %>%
-    filter(drugline > 1)
-  
-  ################################################
-  ##### Drop if within 1 year of diagnosis
-  ################################################
-  
-  cprd <- cprd %>%
-    mutate(dstart_1year = difftime(dstartdate, dm_diag_date, units = "days")) %>%
-    mutate(dstart_1year = ifelse(dstart_1year < 365.25, 1, NA_real_))
-  
-  # table(cprd$dstart_1year)
-  
-  cprd <- cprd %>%
-    filter(is.na(dstart_1year))
-  
   
   ################################################
   ##### Drop patients initiating drug whilst on the opposite
@@ -128,13 +93,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     filter(is.na(opposite_drug))
   
   
-# ------------------------------------------------------------------------------------------------
-  
-  # This needs more consideration
-  
-# ------------------------------------------------------------------------------------------------
-  
-  
   ################################################
   ##### Drop patients with ESRD
   ################################################
@@ -145,31 +103,21 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     filter(preckdstage != "stage_5")
   
   
-  ################################################
-  ##### Drop if HbA1c not in 53 - 120 at baseline + missing initial hba1c
-  ################################################
-  
-  cprd <- cprd %>% 
-    mutate(hb_extreme= ifelse(prehba1c < 53 | prehba1c > 120 | is.na(prehba1c), 1, 0))
-  
-  # table(cprd$hb_extreme)
-  
-  cprd <- cprd %>% 
-    filter(hb_extreme==0)
-  
-  
   ###############################################################################
   ###############################################################################
   ############################# Variable Prep ###################################
   ###############################################################################
   ###############################################################################
   
+  ### Add variable that identifies an individual entry in the data
+  
+  cprd <- cprd %>%
+    mutate(pated = paste(patid, drugclass, dstartdate, sep = ".")) %>%
   
   ################################################
   ##### Drug of interest
   ################################################
   
-  cprd <- cprd %>%
     #####   - GLP1 and SGLT2: drugclass
     mutate(drugclass = factor(drugclass))
   
@@ -180,8 +128,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ################################################
   
   cprd <- cprd %>%
-    mutate(posthba1c_final = ifelse(is.na(posthba1c12m), posthba1c6m, posthba1c12m)) %>%
-    mutate(posthba1c_final = as.numeric(posthba1c_final))
+    mutate(posthba1cfinal = ifelse(is.na(posthba1c12m), posthba1c6m, posthba1c12m)) %>%
+    mutate(posthba1cfinal = as.numeric(posthba1cfinal))
     
   
   ################################################
@@ -235,7 +183,13 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     #####   - BMI: prebmi (Nothing to do)
     #####   - eGFR: preegfr (Nothing to do)
     #####   - Albumin:Creatine ratio: preacr (Nothing to do)
-    #####   - Serum albumin: prealbumin_blood (Nothing to do)
+    #####   - Serum albumin: prealbumin_blood (remove the _ from the name)
+  
+  cprd <- cprd %>%
+    rename("prealbuminblood" = "prealbumin_blood",
+           "prealbuminblooddate" = "prealbumin_blooddate",
+           "prealbuminblooddrugdiff" = "prealbumin_blooddrugdiff")
+  
     #####   - Alanine aminotransferase: prealt (Nothing to do)
     #####   - Aspartate aminotransferase: preast (Nothing to do)
     #####   - Bilirubin: prebilirubin (Nothing to do)
@@ -260,33 +214,33 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cprd <- cprd %>%
     #####   - Angina: predrug_earliest_angina
-    mutate(pre_angina = ifelse(is.na(predrug_earliest_angina) | predrug_earliest_angina > dstartdate, "No", "Yes")) %>%
+    mutate(preangina = ifelse(is.na(predrug_earliest_angina) | predrug_earliest_angina > dstartdate, "No", "Yes")) %>%
     #####   - Chronic Liver Disease: predrug_earliest_cld
-    mutate(pre_cld = ifelse(is.na(predrug_earliest_cld) | predrug_earliest_cld > dstartdate, "No", "Yes")) %>%
+    mutate(precld = ifelse(is.na(predrug_earliest_cld) | predrug_earliest_cld > dstartdate, "No", "Yes")) %>%
     #####   - Diabetic Nephropathy: predrug_earliest_diabeticnephropathy
-    mutate(pre_diabeticnephropathy = ifelse(is.na(predrug_earliest_diabeticnephropathy) | predrug_earliest_diabeticnephropathy > dstartdate, "No", "Yes")) %>%
+    mutate(prediabeticnephropathy = ifelse(is.na(predrug_earliest_diabeticnephropathy) | predrug_earliest_diabeticnephropathy > dstartdate, "No", "Yes")) %>%
     #####   - Heart failure: predrug_earliest_heartfailure
-    mutate(pre_heartfailure = ifelse(is.na(predrug_earliest_heartfailure) | predrug_earliest_heartfailure > dstartdate, "No", "Yes")) %>%
+    mutate(preheartfailure = ifelse(is.na(predrug_earliest_heartfailure) | predrug_earliest_heartfailure > dstartdate, "No", "Yes")) %>%
     #####   - Hypertension: predrug_earliest_hypertension
-    mutate(pre_hypertension = ifelse(is.na(predrug_earliest_hypertension) | predrug_earliest_hypertension > dstartdate, "No", "Yes")) %>%
+    mutate(prehypertension = ifelse(is.na(predrug_earliest_hypertension) | predrug_earliest_hypertension > dstartdate, "No", "Yes")) %>%
     #####   - Ischaemic Heart Disease: predrug_earliest_ihd
-    mutate(pre_ihd = ifelse(is.na(predrug_earliest_ihd) | predrug_earliest_ihd > dstartdate, "No", "Yes")) %>%
+    mutate(preihd = ifelse(is.na(predrug_earliest_ihd) | predrug_earliest_ihd > dstartdate, "No", "Yes")) %>%
     #####   - Myocardial Infarction: predrug_earliest_myocardialinfarction
-    mutate(pre_myocardialinfarction = ifelse(is.na(predrug_earliest_myocardialinfarction) | predrug_earliest_myocardialinfarction > dstartdate, "No", "Yes")) %>%
+    mutate(premyocardialinfarction = ifelse(is.na(predrug_earliest_myocardialinfarction) | predrug_earliest_myocardialinfarction > dstartdate, "No", "Yes")) %>%
     #####   - Neuropathy: predrug_earliest_neuropathy
-    mutate(pre_neuropathy = ifelse(is.na(predrug_earliest_neuropathy) | predrug_earliest_neuropathy > dstartdate, "No", "Yes")) %>%
+    mutate(preneuropathy = ifelse(is.na(predrug_earliest_neuropathy) | predrug_earliest_neuropathy > dstartdate, "No", "Yes")) %>%
     #####   - Peripheral Arterial Disease: predrug_earliest_pad
-    mutate(pre_pad = ifelse(is.na(predrug_earliest_pad) | predrug_earliest_pad > dstartdate, "No", "Yes")) %>%
+    mutate(prepad = ifelse(is.na(predrug_earliest_pad) | predrug_earliest_pad > dstartdate, "No", "Yes")) %>%
     #####   - Retinopathy: predrug_earliest_retinopathy
-    mutate(pre_retinopathy = ifelse(is.na(predrug_earliest_retinopathy) | predrug_earliest_retinopathy > dstartdate, "No", "Yes")) %>%
+    mutate(preretinopathy = ifelse(is.na(predrug_earliest_retinopathy) | predrug_earliest_retinopathy > dstartdate, "No", "Yes")) %>%
     #####   - Cardiac Revascularisation: predrug_earliest_revasc
-    mutate(pre_revasc = ifelse(is.na(predrug_earliest_revasc) | predrug_earliest_revasc > dstartdate, "No", "Yes")) %>%
+    mutate(prerevasc = ifelse(is.na(predrug_earliest_revasc) | predrug_earliest_revasc > dstartdate, "No", "Yes")) %>%
     #####   - Stroke: predrug_earliest_stroke
-    mutate(pre_stroke = ifelse(is.na(predrug_earliest_stroke) | predrug_earliest_stroke > dstartdate, "No", "Yes")) %>%
+    mutate(prestroke = ifelse(is.na(predrug_earliest_stroke) | predrug_earliest_stroke > dstartdate, "No", "Yes")) %>%
     #####   - Transient Ischaemic Attack: predrug_earliest_tia
-    mutate(pre_tia = ifelse(is.na(predrug_earliest_tia) | predrug_earliest_tia > dstartdate, "No", "Yes")) %>%
+    mutate(pretia = ifelse(is.na(predrug_earliest_tia) | predrug_earliest_tia > dstartdate, "No", "Yes")) %>%
     #####   - Atrial fibrillation: predrug_earliest_af
-    mutate(pre_af = ifelse(is.na(predrug_earliest_af) | predrug_earliest_af > dstartdate, "No", "Yes"))
+    mutate(preaf = ifelse(is.na(predrug_earliest_af) | predrug_earliest_af > dstartdate, "No", "Yes"))
   
   
   
@@ -302,9 +256,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   final.dataset <- cprd %>%
     select(
       # information regarding patient
-      patid, multi_drug_start,
+      patid, pated, multi_drug_start, timeprevcombo,
       # response hba1c
-      posthba1c_final,
+      posthba1cfinal,
       # therapies of interest
       drugclass,
       # Sociodemographic features
@@ -312,44 +266,242 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # Diabetes treatment 
       drugline, SU, MFN, DPP4, TZD, hba1cmonth, dstartdate, dstopdate,
       # Biomarkers
-      prehba1c, prebmi, preegfr, preacr, prealbumin_blood, prealt, preast, prebilirubin, prefastingglucose,
+      prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
       prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
       # Comorbidities
-      pre_angina, pre_cld, pre_diabeticnephropathy, pre_heartfailure, pre_hypertension, pre_ihd, pre_myocardialinfarction, 
-      pre_neuropathy, pre_pad, pre_retinopathy, pre_revasc, pre_stroke, pre_tia, pre_af
+      preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+      # Weight analysis
+      preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate
     )
   
   
-  if (dataset.type == "full_cohort") {
+  # if full cohort was requested
+  if (dataset.type == "full.cohort") {
     return(final.dataset)
   }
   
   
+  
+  
   ###############################################################################
+  #:-----------------------------------------------------------------------------
   ###############################################################################
   ############################### HbA1c model ###################################
   ###############################################################################
+  #:-----------------------------------------------------------------------------
   ###############################################################################
   
   hba1c.model.dataset <- final.dataset
+  
+  ################################################
+  ##### Drop if first-line treatment
+  ################################################
 
+  # table(hba1c.model.dataset$drugline)
+
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(drugline != 1)
+  
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
+  # table(hba1c.model.dataset$multi_drug_start)
+  
   hba1c.model.dataset <- hba1c.model.dataset %>%
     filter(multi_drug_start == 0)
-    
+  
   
   ################################################
-  ##### Drop patients with only 1 script (eg: dstartdate = dstopdate)
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+
+  # table(hba1c.model.dataset$timeprevcombo_less61)
+
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # table(hba1c.model.dataset$hb_extreme_53)
+  
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  ################################################
+  ##### Drop if HbA1c >120
   ################################################
   
   hba1c.model.dataset <- hba1c.model.dataset %>%
+    mutate(hb_extreme_120 = ifelse(prehba1c > 120, 1, NA_real_))
+  
+  # table(hba1c.model.dataset$hb_extreme_120)
+  
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(is.na(hb_extreme_120))
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # summary(hba1c.model.dataset$prehba1c)
+  
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if post HbA1c missing
+  ################################################
+  
+  # summary(hba1c.model.dataset$posthba1cfinal)
+  
+  hba1c.model.dataset <- hba1c.model.dataset %>%
+    filter(!is.na(posthba1cfinal))
+    
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.hba1c.model.dataset <- hba1c.model.dataset %>%
+    select(
+      # information regarding patient
+      patid, pated,
+      # response hba1c
+      posthba1cfinal,
+      # therapies of interest
+      drugclass,
+      # Sociodemographic features
+      agetx, malesex, t2dmduration, ethnicity, deprivation, smoke, 
+      # Diabetes treatment 
+      drugline, SU, MFN, DPP4, TZD, hba1cmonth,
+      # Biomarkers
+      prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+      prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+      # Comorbidities
+      preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf
+    )
+  
+  
+  ################################################
+  ##### Define training and testing cohorts
+  ################################################
+  
+  # nrow(final.hba1c.model.dataset); table(final.hba1c.model.dataset$drugclass)
+  
+  # Training dataset
+  set.seed(123)
+  hba1c.model.dataset.train <- final.hba1c.model.dataset %>%
+    group_by(drugclass) %>%
+    sample_frac(.6)
+  
+  if (dataset.type == "hba1c.train") {
+    return(hba1c.model.dataset.train)
+  }
+  
+  
+  # Testing dataset
+  hba1c.model.dataset.test <- subset(final.hba1c.model.dataset, !(pated %in% hba1c.model.dataset.train$pated))
+  
+  if (dataset.type == "hba1c.test") {
+    return(hba1c.model.dataset.test)
+  }
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ############################ Weight population ################################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  weight.dataset <- final.dataset
+  
+  ################################################
+  ##### Drop if only 1 script (eg. dstartdate = dstopdate)
+  ################################################
+  
+  weight.dataset <- weight.dataset %>%
     mutate(one_script = ifelse(dstartdate == dstopdate, 1, NA_real_))
   
+  # table(weight.dataset$one_script)
   
-  print("you went too long")
+  weight.dataset <- weight.dataset %>%
+    filter(is.na(one_script))
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # table(weight.dataset$multi_drug_start)
+  
+  weight.dataset <- weight.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  ################################################
+  ##### Drop if Weight is missing
+  ################################################
+  
+  # summary(weight.dataset$preweight)
+  
+  weight.dataset <- weight.dataset %>%
+    filter(!is.na(preweight))
+  
+  ################################################
+  ##### Drop if post Weight is missing
+  ################################################
+  
+  weight.dataset <- weight.dataset %>%
+    mutate(postweight = ifelse(is.na(postweight12m), postweight6m, postweight12m))
+  
+  # summary(weight.dataset$postweight)
+  
+  weight.dataset <- weight.dataset %>%
+    filter(!is.na(postweight))
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.weight.dataset <- weight.dataset %>%
+    select(
+      # information regarding patient
+      patid, pated,
+      # response hba1c
+      posthba1cfinal,
+      # therapies of interest
+      drugclass,
+      # Sociodemographic features
+      agetx, malesex, t2dmduration, ethnicity, deprivation, smoke, 
+      # Diabetes treatment 
+      drugline, SU, MFN, DPP4, TZD, hba1cmonth,
+      # Biomarkers
+      prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+      prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+      # Comorbidities
+      preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+      # Weight analysis
+      preweight, postweight
+    )
+  
+  
+  if (dataset.type == "weight.dataset") {
+    return(final.weight.dataset)
+  }
+  
   
 }
 
