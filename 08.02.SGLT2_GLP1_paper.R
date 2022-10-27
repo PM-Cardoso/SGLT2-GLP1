@@ -29,7 +29,7 @@ dir.create("Samples/SGLT2-GLP1")
 # name: final.val
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
-effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_val.rds")
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/Assessment/effects_summary_val.rds")
 
 ## hist_plot function
 dat1 <- effects_summary_val %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
@@ -44,7 +44,7 @@ plot_effects_1 <- ggplot(data=dat1, aes(x=mean,fill=above)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Overall Population",x="HbA1c difference (mmol/mol)", y = "Number of people") +
   scale_fill_manual(breaks = c("Favours SGLT2", "Favours GLP1"), values = c("#f1a340", "red"))+
-  ylim(0, 1300) +
+  ylim(0, 1500) +
   theme_classic() +
   # theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -69,7 +69,7 @@ plot_effects_2 <- ggplot(data=dat2, aes(x=mean,fill=above)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Strata: Male",x="HbA1c difference (mmol/mol)", y = "Number of people") +
   scale_fill_manual(breaks = c("Favours SGLT2", "Favours GLP1"), values = c("#f1a340", "red"))+
-  ylim(0, 1300) +
+  ylim(0, 1500) +
   theme_classic() +
   # theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -85,7 +85,7 @@ plot_effects_3 <- ggplot(data=dat3, aes(x=mean,fill=above)) +
   geom_vline(aes(xintercept=0), linetype="dashed")+
   labs(title="Strata: Female",x="HbA1c difference (mmol/mol)", y = "Number of people") +
   scale_fill_manual(breaks = c("Favours SGLT2", "Favours GLP1"), values = c("#f1a340", "red"))+
-  ylim(0, 1300) +
+  ylim(0, 1500) +
   theme_classic() +
   # theme(legend.position = c(0.80, 0.97)) +
   theme(legend.title = element_blank())
@@ -220,7 +220,7 @@ plot_diff_treatment_response <- function(response, pre_hba1c, variable, xtitle, 
 
 
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/bart_model_final.rds")
 
 dataset.dev <- final.dev %>%
   select(-score) %>%
@@ -234,45 +234,24 @@ specific.patient <- cbind(
   drugclass = "SGLT2",
   egfr_ckdepi = as.numeric(dataset.dev[9433, "egfr_ckdepi"]),
   hba1cmonth = 12,
-  prealt = as.numeric(dataset.dev[9433, "prealt"]),
   prehba1cmmol = as.numeric(dataset.dev[9433, "prehba1cmmol"]),
   score.excl.mi = as.numeric(dataset.dev[9433, "score.excl.mi"]),
   Category = "Non-smoker",
   drugline = "2",
   ncurrtx = "1",
   yrdrugstart = 2015,
-  agetx = as.numeric(dataset.dev[9433, "agetx"]),
-  malesex = "1",
-  prehdl = as.numeric(dataset.dev[9433, "prehdl"]),
-  prebmi = as.numeric(dataset.dev[9433, "prebmi"]),
-  prebil = as.numeric(dataset.dev[9433, "prebil"]),
-  preplatelets = as.numeric(dataset.dev[9433, "preplatelets"]),
-  t2dmduration = as.numeric(dataset.dev[9433, "t2dmduration"]),
-  prealb = as.numeric(dataset.dev[9433, "prealb"]),
-  presys = as.numeric(dataset.dev[9433, "presys"]),
-  preast = as.numeric(dataset.dev[9433, "preast"])
+  malesex = "1"
 ) %>%
   as.data.frame() %>%
   mutate(drugclass = factor(drugclass, levels = levels(dataset.dev$drugclass)),
          egfr_ckdepi = as.numeric(egfr_ckdepi),
          hba1cmonth = as.numeric(hba1cmonth),
-         prealt = as.numeric(prealt),
          prehba1cmmol = as.numeric(prehba1cmmol),
          score.excl.mi = as.numeric(score.excl.mi),
          Category = factor(Category, levels = levels(dataset.dev$Category)),
          drugline = factor(drugline, levels = levels(dataset.dev$drugline)),
          ncurrtx = factor(ncurrtx, levels = levels(dataset.dev$ncurrtx)),
-         yrdrugstart = as.numeric(yrdrugstart),
-         agetx = as.numeric(agetx),
-         malesex = factor(malesex, levels = levels(dataset.dev$malesex)),
-         prehdl = as.numeric(prehdl),
-         prebmi = as.numeric(prebmi),
-         prebil = as.numeric(prebil),
-         preplatelets = as.numeric(preplatelets),
-         t2dmduration = as.numeric(t2dmduration),
-         prealb = as.numeric(prealb),
-         presys = as.numeric(presys),
-         preast = as.numeric(preast)
+         yrdrugstart = as.numeric(yrdrugstart)
   )
 
 
@@ -300,17 +279,17 @@ plot.egfr.diff.marg.female <- plot_diff_treatment_response(response = response_s
 
 
 # plot treatment response + histogram marginal
-plot.age.diff.marg.male <- plot_diff_treatment_response(response = response_summary_patient_male[["agetx"]],
+plot.cvd.diff.marg.male <- plot_diff_treatment_response(response = response_summary_patient_male[["score.excl.mi"]],
                                                         pre_hba1c = as.numeric(specific.patient["prehba1cmmol"]),
-                                                        variable = "agetx", xtitle = "Age",
+                                                        variable = "score.excl.mi", xtitle = "CVD risk",
                                                         ymin = -25, ymax = -9,
                                                         title = "Strata: Male")
 
 
 # plot treatment response + histogram marginal
-plot.age.diff.marg.female <- plot_diff_treatment_response(response = response_summary_patient_female[["agetx"]], 
+plot.cvd.diff.marg.female <- plot_diff_treatment_response(response = response_summary_patient_female[["score.excl.mi"]], 
                                                            pre_hba1c = as.numeric(specific.patient["prehba1cmmol"]),
-                                                           variable = "agetx", xtitle = "Age",
+                                                           variable = "score.excl.mi", xtitle = "CVD risk",
                                                            ymin = -25, ymax = -9,
                                                           title = "Strata: Female")
 
@@ -321,7 +300,7 @@ plot.malesex.diff.marg <- plot_diff_treatment_response(response = response_summa
                                                        ymin = -25, ymax = -9)
 
 
-plot_2 <- patchwork::wrap_plots(((plot.egfr.diff.marg.female|plot.egfr.diff.marg.male)/(plot.age.diff.marg.female|plot.age.diff.marg.male))|plot.malesex.diff.marg) +
+plot_2 <- patchwork::wrap_plots(((plot.egfr.diff.marg.female|plot.egfr.diff.marg.male)/(plot.cvd.diff.marg.female|plot.cvd.diff.marg.male))|plot.malesex.diff.marg) +
   patchwork::plot_annotation(caption = "Figure 2:\nDifferential treatment response for a range of values in baseline clinical features. Treatment response estimates for a patient: HbA1c - 76, ALT - 16, eGFR - 98.9, CVD risk - 1.3%, Year of\ndrug start - 2018, Age - 66, HDL - 0.92, BMI - 25.8, Bilirubin - 11, Platelets - 251, Albumin - 43, Systolic - 124, AST - 17, Drug line treatment - 2, number of current drugs - 1,\nSmoking status - Non-smoker, time between diabetes diagnosis and drug indication = 12 years") & theme(plot.caption = element_text(hjust = 0))
 
 plot_2
@@ -345,7 +324,7 @@ load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
 # name: final.val
 load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_valcohort.Rda")
 
-bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/bart_model_final.rds")
+bart_model_final <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/bart_model_final.rds")
 
 data_dev <- final.dev %>%
   select(-score) %>%
@@ -365,7 +344,7 @@ data_val <- final.val %>%
 
 # effects_summary_dev <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_dev.rds")
 
-effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_5/Assessment/effects_summary_val.rds")
+effects_summary_val <- readRDS("Samples/SGLT2-GLP1/Final_model/model_7/Assessment/effects_summary_val.rds")
 
 
 predicted_observed_val_initial <- data_val %>%
