@@ -77,7 +77,8 @@ Files:
     - .1: Functions used specifically for this portion.
     - .2: Detailed explanation of the selection of cohorts.
     - .3: Descriptive analysis of datasets.
-    - .4: Model heterogeneity.
+    - .4: Propensity score model.
+    - .5: Model heterogeneity.
 
 
     
