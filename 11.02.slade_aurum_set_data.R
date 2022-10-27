@@ -154,7 +154,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ################################################
   
     #####   - GLP1 and SGLT2: drugclass
-    mutate(drugclass = factor(drugclass))
+    mutate(drugclass = factor(drugclass)) %>%
+    mutate(drugclass = as.numeric(drugclass)) 
+  # 1 - GLP1; 2 - SGLT2
   
   ################################################
   ##### Outcome HbA1c # name: posthba1c12m (missing - 46383)
@@ -176,18 +178,25 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(agetx = as.numeric(dstartdate_age)) %>%
     #####   - Sex: malesex
     mutate(malesex = ifelse(gender == 1, 1, 0)) %>%
-    mutate(malesex = as.factor(malesex)) %>%
+    # 0 - female; 1 - male
+    
     #####   - Duration of diabetes: t2dmduration
     mutate(t2dmduration = as.numeric(dstartdate_dm_dur)) %>%
     #####   - Ethnicity: ethnicity
-    mutate(ethnicity = factor(ethnicity_5cat, levels = c(0, 1, 2, 3, 4), labels = c("White", "South Asian", "Black", "Other", "Mixed"))) %>%
+    mutate(ethnicity = ethnicity_5cat) %>%
+    # 0 - White; 1 - South Asian; 2 - Black; 3 - Other; 4 - Mixed
+    
     #####   - Deprivation: deprivation
-    mutate(deprivation = factor(imd2015_10)) %>%
+    mutate(deprivation = imd2015_10) %>%
+    # 1 to 10
+    
     #####   - Smoking Status: smoke
     mutate(smoke = factor(smoking_cat)) %>%
+    mutate(smoke = as.numeric(smoke)) %>%
+    # 1 - Active Smoker; 2 - Ex-smoker; 3 - Non-smoker
+    
     #####   - Line Therapy: drugline: turn all > 4 to 5+
-    mutate(drugline = ifelse(drugline > 4, "5+", drugline)) %>%
-    mutate(drugline = as.factor(drugline))
+    mutate(drugline = ifelse(drugline > 4, 5, drugline))
   
   ################################################
   ##### Diabetes treatment
@@ -204,8 +213,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     #        DPP4 = factor(DPP4, levels = c(0, 1), labels = c("No", "Yes")),
     #        TZD = factor(TZD, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     mutate(ncurrtx = DPP4 + SGLT2 + GLP1 + TZD + SU + MFN) %>%
-    mutate(ncurrtx = ifelse(ncurrtx > 4, "5+", ncurrtx)) %>%
-    mutate(ncurrtx = as.factor(ncurrtx)) %>%
+    mutate(ncurrtx = ifelse(ncurrtx > 4, 5, ncurrtx)) %>%
     
   #####   - Outcome month: hba1cmonth
     mutate(hba1cmonth_12 = difftime(posthba1c12mdate, dstartdate, units = "days") / 30) %>%
@@ -253,47 +261,33 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cprd <- cprd %>%
     #####   - Angina: predrug_earliest_angina
-    mutate(preangina = ifelse(is.na(predrug_earliest_angina) | predrug_earliest_angina > dstartdate, "No", "Yes")) %>%
-    mutate(preangina = factor(preangina)) %>%
+    mutate(preangina = ifelse(is.na(predrug_earliest_angina) | predrug_earliest_angina > dstartdate, 0, 1)) %>%
     #####   - Chronic Liver Disease: predrug_earliest_cld
-    mutate(precld = ifelse(is.na(predrug_earliest_cld) | predrug_earliest_cld > dstartdate, "No", "Yes")) %>%
-    mutate(precld = factor(precld)) %>%
+    mutate(precld = ifelse(is.na(predrug_earliest_cld) | predrug_earliest_cld > dstartdate, 0, 1)) %>%
     #####   - Diabetic Nephropathy: predrug_earliest_diabeticnephropathy
-    mutate(prediabeticnephropathy = ifelse(is.na(predrug_earliest_diabeticnephropathy) | predrug_earliest_diabeticnephropathy > dstartdate, "No", "Yes")) %>%
-    mutate(prediabeticnephropathy = factor(prediabeticnephropathy)) %>%
+    mutate(prediabeticnephropathy = ifelse(is.na(predrug_earliest_diabeticnephropathy) | predrug_earliest_diabeticnephropathy > dstartdate, 0, 1)) %>%
     #####   - Heart failure: predrug_earliest_heartfailure
-    mutate(preheartfailure = ifelse(is.na(predrug_earliest_heartfailure) | predrug_earliest_heartfailure > dstartdate, "No", "Yes")) %>%
-    mutate(preheartfailure = factor(preheartfailure)) %>%
+    mutate(preheartfailure = ifelse(is.na(predrug_earliest_heartfailure) | predrug_earliest_heartfailure > dstartdate, 0, 1)) %>%
     #####   - Hypertension: predrug_earliest_hypertension
-    mutate(prehypertension = ifelse(is.na(predrug_earliest_hypertension) | predrug_earliest_hypertension > dstartdate, "No", "Yes")) %>%
-    mutate(prehypertension = factor(prehypertension)) %>%
+    mutate(prehypertension = ifelse(is.na(predrug_earliest_hypertension) | predrug_earliest_hypertension > dstartdate, 0, 1)) %>%
     #####   - Ischaemic Heart Disease: predrug_earliest_ihd
-    mutate(preihd = ifelse(is.na(predrug_earliest_ihd) | predrug_earliest_ihd > dstartdate, "No", "Yes")) %>%
-    mutate(preihd = factor(preihd)) %>%
+    mutate(preihd = ifelse(is.na(predrug_earliest_ihd) | predrug_earliest_ihd > dstartdate, 0, 1)) %>%
     #####   - Myocardial Infarction: predrug_earliest_myocardialinfarction
-    mutate(premyocardialinfarction = ifelse(is.na(predrug_earliest_myocardialinfarction) | predrug_earliest_myocardialinfarction > dstartdate, "No", "Yes")) %>%
-    mutate(premyocardialinfarction = factor(premyocardialinfarction)) %>%
+    mutate(premyocardialinfarction = ifelse(is.na(predrug_earliest_myocardialinfarction) | predrug_earliest_myocardialinfarction > dstartdate, 0, 1)) %>%
     #####   - Neuropathy: predrug_earliest_neuropathy
-    mutate(preneuropathy = ifelse(is.na(predrug_earliest_neuropathy) | predrug_earliest_neuropathy > dstartdate, "No", "Yes")) %>%
-    mutate(preneuropathy = factor(preneuropathy)) %>%
+    mutate(preneuropathy = ifelse(is.na(predrug_earliest_neuropathy) | predrug_earliest_neuropathy > dstartdate, 0, 1)) %>%
     #####   - Peripheral Arterial Disease: predrug_earliest_pad
-    mutate(prepad = ifelse(is.na(predrug_earliest_pad) | predrug_earliest_pad > dstartdate, "No", "Yes")) %>%
-    mutate(prepad = factor(prepad)) %>%
+    mutate(prepad = ifelse(is.na(predrug_earliest_pad) | predrug_earliest_pad > dstartdate, 0, 1)) %>%
     #####   - Retinopathy: predrug_earliest_retinopathy
-    mutate(preretinopathy = ifelse(is.na(predrug_earliest_retinopathy) | predrug_earliest_retinopathy > dstartdate, "No", "Yes")) %>%
-    mutate(preretinopathy = factor(preretinopathy)) %>%
+    mutate(preretinopathy = ifelse(is.na(predrug_earliest_retinopathy) | predrug_earliest_retinopathy > dstartdate, 0, 1)) %>%
     #####   - Cardiac Revascularisation: predrug_earliest_revasc
-    mutate(prerevasc = ifelse(is.na(predrug_earliest_revasc) | predrug_earliest_revasc > dstartdate, "No", "Yes")) %>%
-    mutate(prerevasc = factor(prerevasc)) %>%
+    mutate(prerevasc = ifelse(is.na(predrug_earliest_revasc) | predrug_earliest_revasc > dstartdate, 0, 1)) %>%
     #####   - Stroke: predrug_earliest_stroke
-    mutate(prestroke = ifelse(is.na(predrug_earliest_stroke) | predrug_earliest_stroke > dstartdate, "No", "Yes")) %>%
-    mutate(prestroke = factor(prestroke)) %>%
+    mutate(prestroke = ifelse(is.na(predrug_earliest_stroke) | predrug_earliest_stroke > dstartdate, 0, 1)) %>%
     #####   - Transient Ischaemic Attack: predrug_earliest_tia
-    mutate(pretia = ifelse(is.na(predrug_earliest_tia) | predrug_earliest_tia > dstartdate, "No", "Yes")) %>%
-    mutate(pretia = factor(pretia)) %>%
+    mutate(pretia = ifelse(is.na(predrug_earliest_tia) | predrug_earliest_tia > dstartdate, 0, 1)) %>%
     #####   - Atrial fibrillation: predrug_earliest_af
-    mutate(preaf = ifelse(is.na(predrug_earliest_af) | predrug_earliest_af > dstartdate, "No", "Yes")) %>%
-    mutate(preaf = factor(preaf))
+    mutate(preaf = ifelse(is.na(predrug_earliest_af) | predrug_earliest_af > dstartdate, 0, 1))
   
   
   
