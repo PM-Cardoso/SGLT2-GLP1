@@ -179,9 +179,9 @@ female_age <- combination %>%
   relocate(Age, Sex, Benefit)
 
 plot_female_age <- ggpairs(female_age, columns = 1:(ncol(female_age)-1), 
-                                aes(color = Benefit),
+                                # aes(color = Benefit),
                                 showStrips = TRUE,
-                                lower = list(continuous = my_dens_lower, discrete = wrap(ggally_facetbar, position = "dodge", alpha = 0.7), combo = wrap(ggally_facetdensity,alpha=0.7)),
+                                lower = list(continuous = my_dens_lower, discrete = wrap(ggally_facetbar, position = "dodge", alpha = 0.7), combo = wrap(ggally_facethist,alpha=0.7, position = "identity")),
                                 diag = list(continuous = my_dens_diagonal, discrete = wrap(ggally_barDiag, position = "dodge", alpha = 0.7)),
                                 upper = NULL,
                                 legend = 1) +
@@ -195,4 +195,33 @@ plot_female_age <- ggpairs(female_age, columns = 1:(ncol(female_age)-1),
 pdf(file = "Plot1.pdf")
 plot_female_age
 dev.off()
+
+
+
+##### Tables for separating sex and age at 55
+
+strata.combination <- combination %>%
+  mutate(Strata = ifelse(agetx < 55 & malesex == 1, "Male: < 55",
+                         ifelse(agetx < 55 & malesex == 0, "Female: < 55", 
+                                ifelse(agetx > 55 & malesex == 1, "Male: > 55",
+                                       ifelse(agetx > 55 & malesex == 0, "Female: > 55", NA))))) %>%
+  rename("Age" = "agetx",
+         "Sex" = "malesex") %>%
+  mutate(Sex = factor(Sex, labels = c("Female", "Male")),
+         Benefit = factor(Benefit),
+         Strata = factor(Strata))
+
+
+vars <- c("Benefit", "drugclass", "egfr_ckdepi", "Sex", "prealt", "prehba1cmmol", "Category", "ethnicityF", "score.excl.mi",
+          "Age", "preplatelets", "t2dmduration", "prehdl", "prebmi", "prealb", "presys", "prebil")
+
+
+## Construct a table
+tab.full.cohort <- CreateTableOne(vars = vars, includeNA = TRUE, strata = "Strata", data = strata.combination, test = FALSE)
+## Show table with SMD
+print(tab.full.cohort, quote = TRUE, noSpaces = TRUE)
+
+
+
+
 
