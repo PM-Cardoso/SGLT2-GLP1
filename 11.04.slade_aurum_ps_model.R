@@ -80,14 +80,46 @@ if (class(try(
                                               mutate(drugclass = factor(drugclass)) %>%
                                               unlist(),
                                             use_missing_data = TRUE,
-                                            num_trees = 200,
-                                            num_burn_in = 5000,
+                                            num_trees = 50,
+                                            num_burn_in = 2000,
                                             num_iterations_after_burn_in = 1000,
                                             serialize = TRUE,
                                             seed = 123)
 
   saveRDS(bart_ps_model, paste0(output_path, "/ps_model/bart_ps_model.rds"))
 
+}
+
+
+# Check the optimal number of trees
+## Does not work for classification
+
+
+# Cross validation of model
+if (class(try(
+  
+  bart_ps_model_cv <- readRDS(paste0(output_path, "/ps_model/bart_ps_model_cv.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  set.seed(123)
+  bart_ps_model_cv <- bartMachine::bartMachineCV(X = ps.model.train %>%
+                                                   select(-patid,
+                                                          -pated,
+                                                          -drugclass),
+                                                 y = ps.model.train[,"drugclass"] %>%
+                                                   mutate(drugclass = factor(drugclass)) %>%
+                                                   unlist(),
+                                                 num_tree_cvs = c(50, 100, 150, 200),
+                                                 k_cvs = c(2, 3),
+                                                 use_missing_data = TRUE,
+                                                 num_burn_in = 2000,
+                                                 num_iterations_after_burn_in = 1000,
+                                                 serialize = TRUE,
+                                                 seed = 123)
+  
+  saveRDS(bart_ps_model_cv, paste0(output_path, "/ps_model/bart_ps_model_cv.rds"))
+  
 }
 
 
@@ -107,7 +139,8 @@ if (class(try(
   vs_bart_ps_model <- var_selection_by_permute(bart_ps_model)
   dev.off()
 
-  ## Long version of the var selection
+  ## Variables selected
+
 
   saveRDS(vs_bart_ps_model, paste0(output_path, "/ps_model/vs_bart_ps_model.rds"))
 
@@ -126,22 +159,17 @@ if (class(try(
   , silent = TRUE)) == "try-error") {
 
   set.seed(123)
-  bart_ps_model_final <- bartMachine::bartMachine(X = ps.model.train %>%
+  bart_ps_model_final <- bartMachine::bartMachineCV(X = ps.model.train %>%
                                                     select(
-                                                      drugline,
-                                                      prebmi,
-                                                      yrdrugstart,
-                                                      prehba1c,
-                                                      preegfr,
-                                                      agetx,
-                                                      t2dmduration
+                                                      vs_bart_ps_model$important_vars_local_names
                                                       ),
                                                   y = ps.model.train[,"drugclass"] %>%
                                                     mutate(drugclass = factor(drugclass)) %>%
                                                     unlist(),
+                                                  num_tree_cvs = c(50, 100, 150, 200),
+                                                  k_cvs = c(2, 3),
                                                   use_missing_data = TRUE,
-                                                  num_trees = 200,
-                                                  num_burn_in = 5000,
+                                                  num_burn_in = 2000,
                                                   num_iterations_after_burn_in = 1000,
                                                   serialize = TRUE,
                                                   seed = 123)
@@ -151,11 +179,47 @@ if (class(try(
 }
 
 
+# 
+# predictions <- bart_ps_model_final$p_hat_train
+# 
+# df <- as.data.frame(cbind(predictions, ps.model.train[,"drugclass"] %>%
+#                             mutate(drugclass = ifelse(drugclass == 2, 0, 1)))) %>%
+#   set_names(c("predictions", "labels"))
+# 
+# library(ROCR)
+# pred <- prediction(df$predictions, df$labels)
+# perf <- performance(pred,"tpr","fpr")
+# pdf()
+# plot(perf,colorize=TRUE)
+# dev.off()
+# 
+# library(pROC)
+# pROC_obj <- roc(df$labels,df$predictions,
+#                 smoothed = TRUE,
+#                 # arguments for ci
+#                 ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+#                 # arguments for plot
+#                 plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+#                 print.auc=TRUE, show.thres=TRUE)
+# 
+# 
+# 
+# values <- coords(pROC_obj, "best", ret=c("threshold", "specificity", "sensitivity", "accuracy",
+#                                          "precision", "recall"), transpose = FALSE)
+# 
+# 
+# as.data.frame(cbind(predictions, ps.model.train[,"drugclass"])) %>%
+#   set_names(c("predictions", "labels")) %>%
+#   mutate(predictions = ifelse(predictions > values$threshold, 1, 2)) %>% table()
+
+
+
 ###############################################################################
 ###############################################################################
 ###################### Propensity scores for patients #########################
 ###############################################################################
 ###############################################################################
+
 
 # Prop scores for train dataset
 patient_prop_scores <- ps.model.train %>%
@@ -169,20 +233,53 @@ ps.model.test <- set_up_data_sglt2_glp1(dataset.type = "ps.model.test")
 
 # calculate prop score
 if (class(try(
-  
+
   prop_score_testing_data <- readRDS(paste0(output_path, "/ps_model/prop_score_testing_data.rds"))
-  
+
   , silent = TRUE)) == "try-error") {
-  
+
   set.seed(123)
   prop_score_testing_data <- predict(bart_ps_model_final, ps.model.test %>%
                         select(
                           colnames(bart_ps_model_final$X)
                         ))
-  
+
   saveRDS(prop_score_testing_data, paste0(output_path, "/ps_model/prop_score_testing_data.rds"))
-  
+
 }
+
+predictions <- prop_score_testing_data
+
+df <- as.data.frame(cbind(predictions, ps.model.test[,"drugclass"] %>%
+                            mutate(drugclass = ifelse(drugclass == 2, 0, 1)))) %>%
+  set_names(c("predictions", "labels"))
+
+library(ROCR)
+pred <- prediction(df$predictions, df$labels)
+perf <- performance(pred,"tpr","fpr")
+pdf()
+plot(perf,colorize=TRUE)
+dev.off()
+
+library(pROC)
+pROC_obj <- roc(df$labels,df$predictions,
+                smoothed = TRUE,
+                # arguments for ci
+                ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+                # arguments for plot
+                plot=TRUE, auc.polygon=TRUE, max.auc.polygon=TRUE, grid=TRUE,
+                print.auc=TRUE, show.thres=TRUE)
+
+
+
+values <- coords(pROC_obj, "best", ret=c("threshold", "specificity", "sensitivity", "accuracy",
+                                         "precision", "recall"), transpose = FALSE)
+
+
+as.data.frame(cbind(predictions, ps.model.test[,"drugclass"])) %>%
+  set_names(c("predictions", "labels")) %>%
+  mutate(predictions = ifelse(predictions > values$threshold, 1, 2)) %>% table()
+
 
 patient_prop_scores <- patient_prop_scores %>%
   rbind(
