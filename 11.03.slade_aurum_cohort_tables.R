@@ -15,7 +15,7 @@ library(tableone)
 source("11.02.slade_aurum_set_data.R")
 
 ############################
-vars <- c("drugsubstances", "agetx", "malesex", "t2dmduration", "ethnicity", "deprivation",
+vars <- c("drugsubstances", "agetx", "sex", "t2dmduration", "ethnicity", "deprivation",
           "smoke", "drugline", "ncurrtx", "hba1cmonth", "preacr", "prealbuminblood",
           "prealt", "preast", "prebilirubin", "prebmi", "prehaematocrit", "prehaemoglobin",
           "prehba1c", "prehdl", "premap", "preegfr", "pretotalcholesterol",
@@ -23,7 +23,7 @@ vars <- c("drugsubstances", "agetx", "malesex", "t2dmduration", "ethnicity", "de
           "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
           "preneuropathy", "prepad", "preretinopathy", "prerevasc", "prestroke",
           "pretia", "preaf")
-factorvars <- c("drugsubstances", "malesex", "ethnicity", "deprivation", "smoke", "drugline", "ncurrtx", "preangina", 
+factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "drugline", "ncurrtx", "preangina", 
                 "precld", "prediabeticnephropathy", "preheartfailure", "prehypertension", "preihd",
                 "premyocardialinfarction", "preneuropathy", "prepad", "preretinopathy", "prerevasc",
                 "prestroke", "pretia", "preaf")
