@@ -77,7 +77,6 @@ if (class(try(
                                                      -pated,
                                                      -drugclass),
                                             y = ps.model.train[,"drugclass"] %>%
-                                              mutate(drugclass = factor(drugclass)) %>%
                                               unlist(),
                                             use_missing_data = TRUE,
                                             num_trees = 50,
@@ -108,7 +107,6 @@ if (class(try(
                                                           -pated,
                                                           -drugclass),
                                                  y = ps.model.train[,"drugclass"] %>%
-                                                   mutate(drugclass = factor(drugclass)) %>%
                                                    unlist(),
                                                  num_tree_cvs = c(50, 100, 150, 200),
                                                  k_cvs = c(2, 3),
@@ -164,7 +162,6 @@ if (class(try(
                                                       vs_bart_ps_model$important_vars_local_names
                                                       ),
                                                   y = ps.model.train[,"drugclass"] %>%
-                                                    mutate(drugclass = factor(drugclass)) %>%
                                                     unlist(),
                                                   num_tree_cvs = c(50, 100, 150, 200),
                                                   k_cvs = c(2, 3),
