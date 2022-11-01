@@ -303,7 +303,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   final.dataset <- cprd %>%
     select(
       # information regarding patient
-      patid, pated, multi_drug_start, timeprevcombo,
+      patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
       # response hba1c
       posthba1cfinal,
       # therapies of interest
