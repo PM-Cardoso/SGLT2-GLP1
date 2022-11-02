@@ -26,14 +26,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   
-  # # load original dataset # name - t2d_1stinstance_2ndline
-  # load("/slade/CPRD_data/mastermind_2022/20221019_t2d_1stinstance_2ndline.Rda")
-  # 
-  # cprd <- t2d_1stinstance_2ndline
-  
   
   # load original dataset # name - t2d_1stinstance
-  load("/slade/CPRD_data/mastermind_2022/20221024_t2d_1stinstance.Rda")
+  load("/slade/CPRD_data/mastermind_2022/20221102_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
   
@@ -46,7 +41,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     filter(drugclass == "GLP1" | drugclass == "SGLT2")
   
   # table(cprd$drugclass)
-  
   
   
   ################################################
@@ -137,6 +131,17 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     filter(drugline != 1)
   
   
+  ################################################
+  ##### Drop if semaglutide
+  ################################################
+  
+  cprd <- cprd %>%
+    mutate(semaglutide_drug = ifelse(str_detect(drugsubstances, "Semaglutide"), 1, NA_real_))
+  
+  # table(cprd$semaglutide_drug)
+  
+  cprd <- cprd %>%
+    filter(is.na(semaglutide_drug))
   
   ###############################################################################
   ###############################################################################
@@ -257,47 +262,33 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cprd <- cprd %>%
     #####   - Angina: predrug_earliest_angina
-    mutate(preangina = ifelse(is.na(predrug_earliest_angina) | predrug_earliest_angina > dstartdate, 0, 1)) %>%
-    mutate(preangina = factor(preangina, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(preangina = factor(predrug_angina, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Chronic Liver Disease: predrug_earliest_cld
-    mutate(precld = ifelse(is.na(predrug_earliest_cld) | predrug_earliest_cld > dstartdate, 0, 1)) %>%
-    mutate(precld = factor(precld, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(precld = factor(predrug_cld, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Diabetic Nephropathy: predrug_earliest_diabeticnephropathy
-    mutate(prediabeticnephropathy = ifelse(is.na(predrug_earliest_diabeticnephropathy) | predrug_earliest_diabeticnephropathy > dstartdate, 0, 1)) %>%
-    mutate(prediabeticnephropathy = factor(prediabeticnephropathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(prediabeticnephropathy = factor(predrug_diabeticnephropathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Heart failure: predrug_earliest_heartfailure
-    mutate(preheartfailure = ifelse(is.na(predrug_earliest_heartfailure) | predrug_earliest_heartfailure > dstartdate, 0, 1)) %>%
-    mutate(preheartfailure = factor(preheartfailure, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(preheartfailure = factor(predrug_heartfailure, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Hypertension: predrug_earliest_hypertension
-    mutate(prehypertension = ifelse(is.na(predrug_earliest_hypertension) | predrug_earliest_hypertension > dstartdate, 0, 1)) %>%
-    mutate(prehypertension = factor(prehypertension, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(prehypertension = factor(predrug_hypertension, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Ischaemic Heart Disease: predrug_earliest_ihd
-    mutate(preihd = ifelse(is.na(predrug_earliest_ihd) | predrug_earliest_ihd > dstartdate, 0, 1)) %>%
-    mutate(preihd = factor(preihd, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(preihd = factor(predrug_ihd, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Myocardial Infarction: predrug_earliest_myocardialinfarction
-    mutate(premyocardialinfarction = ifelse(is.na(predrug_earliest_myocardialinfarction) | predrug_earliest_myocardialinfarction > dstartdate, 0, 1)) %>%
-    mutate(premyocardialinfarction = factor(premyocardialinfarction, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(premyocardialinfarction = factor(predrug_myocardialinfarction, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Neuropathy: predrug_earliest_neuropathy
-    mutate(preneuropathy = ifelse(is.na(predrug_earliest_neuropathy) | predrug_earliest_neuropathy > dstartdate, 0, 1)) %>%
-    mutate(preneuropathy = factor(preneuropathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(preneuropathy = factor(predrug_neuropathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Peripheral Arterial Disease: predrug_earliest_pad
-    mutate(prepad = ifelse(is.na(predrug_earliest_pad) | predrug_earliest_pad > dstartdate, 0, 1)) %>%
-    mutate(prepad = factor(prepad, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(prepad = factor(predrug_pad, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Retinopathy: predrug_earliest_retinopathy
-    mutate(preretinopathy = ifelse(is.na(predrug_earliest_retinopathy) | predrug_earliest_retinopathy > dstartdate, 0, 1)) %>%
-    mutate(preretinopathy = factor(preretinopathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(preretinopathy = factor(predrug_retinopathy, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Cardiac Revascularisation: predrug_earliest_revasc
-    mutate(prerevasc = ifelse(is.na(predrug_earliest_revasc) | predrug_earliest_revasc > dstartdate, 0, 1)) %>%
-    mutate(prerevasc = factor(prerevasc, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(prerevasc = factor(predrug_revasc, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Stroke: predrug_earliest_stroke
-    mutate(prestroke = ifelse(is.na(predrug_earliest_stroke) | predrug_earliest_stroke > dstartdate, 0, 1)) %>%
-    mutate(prestroke = factor(prestroke, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(prestroke = factor(predrug_stroke, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Transient Ischaemic Attack: predrug_earliest_tia
-    mutate(pretia = ifelse(is.na(predrug_earliest_tia) | predrug_earliest_tia > dstartdate, 0, 1)) %>%
-    mutate(pretia = factor(pretia, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    mutate(pretia = factor(predrug_tia, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Atrial fibrillation: predrug_earliest_af
-    mutate(preaf = ifelse(is.na(predrug_earliest_af) | predrug_earliest_af > dstartdate, 0, 1)) %>% 
-    mutate(preaf = factor(preaf, levels = c(0, 1), labels = c("No", "Yes")))
+    mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes")))
   
   
   ###############################################################################
