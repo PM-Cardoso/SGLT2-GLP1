@@ -196,7 +196,10 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     
     #####   - Line Therapy: drugline: turn all > 4 to 5+
     mutate(drugline = ifelse(drugline > 4, 5, drugline)) %>%
-    mutate(drugline = factor(drugline, levels = c(2, 3, 4, 5), labels = c("2", "3", "4", "5+")))
+    mutate(drugline = factor(drugline, levels = c(2, 3, 4, 5), labels = c("2", "3", "4", "5+"))) %>%
+    
+    #####   - Hospitalisations in previous year
+    mutate(pre.hospitalisation = factor(hosp_admission_prev_year, levels = c(0, 1), labels = c("No", "Yes")))
   
   ################################################
   ##### Diabetes treatment
@@ -309,7 +312,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # therapies of interest
       drugclass,
       # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, 
+      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, pre.hospitalisation,
       # Diabetes treatment 
       drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
       # Biomarkers
@@ -353,7 +356,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # therapies of interest
       drugclass,
       # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, 
+      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, pre.hospitalisation,
       # Diabetes treatment 
       drugline, ncurrtx, yrdrugstart,
       # Biomarkers
