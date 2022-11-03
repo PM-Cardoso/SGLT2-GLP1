@@ -32,6 +32,21 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cprd <- t2d_1stinstance
   
+  
+  ################################################
+  ##### Drop patients diagnosed within 91 days of registration
+  ################################################
+  
+  # table(is.na(cprd$dm_diag_date)); table(is.na(cprd$dm_diag_age)); table(is.na(cprd$dstartdate_dm_dur))
+  
+  cprd <- cprd %>%
+    filter(!is.na(dm_diag_date)) %>%
+    filter(!is.na(dm_diag_age)) %>%
+    filter(!is.na(dstartdate_dm_dur))
+  
+  
+  
+  
   ################################################
   ##### Select only SGLT-2 and GLP-1
   ################################################
@@ -40,7 +55,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   cprd <- cprd %>% 
     filter(drugclass == "GLP1" | drugclass == "SGLT2")
   
-  # table(cprd$drugclass)
+  # nrow(cprd); table(cprd$drugclass)
   
   
   ################################################
@@ -199,7 +214,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(drugline = factor(drugline, levels = c(2, 3, 4, 5), labels = c("2", "3", "4", "5+"))) %>%
     
     #####   - Hospitalisations in previous year
-    mutate(pre.hospitalisation = factor(hosp_admission_prev_year, levels = c(0, 1), labels = c("No", "Yes")))
+    mutate(prehospitalisation = factor(hosp_admission_prev_year, levels = c(0, 1), labels = c("No", "Yes")))
   
   ################################################
   ##### Diabetes treatment
@@ -312,7 +327,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # therapies of interest
       drugclass,
       # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, pre.hospitalisation,
+      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
       # Diabetes treatment 
       drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
       # Biomarkers
@@ -356,7 +371,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # therapies of interest
       drugclass,
       # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, pre.hospitalisation,
+      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
       # Diabetes treatment 
       drugline, ncurrtx, yrdrugstart,
       # Biomarkers
@@ -366,8 +381,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf
     )
   
-  # nrow(ps.model.dataset); table(ps.model.dataset$drugclass)
-  
   # Training dataset
   set.seed(123)
   ps.model.dataset.train <- ps.model.dataset %>%
@@ -375,6 +388,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     sample_frac(.6) %>%
     ungroup() %>%
     as.data.frame()
+  
+  
+  # nrow(ps.model.dataset.train); table(ps.model.dataset.train$drugclass)
   
   if (dataset.type == "ps.model.train") {
     return(ps.model.dataset.train)
@@ -384,6 +400,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # Testing dataset
   ps.model.dataset.test <- subset(ps.model.dataset, !(pated %in% ps.model.dataset.train$pated)) %>%
     as.data.frame()
+  
+  nrow(ps.model.dataset.test); table(ps.model.dataset.test$drugclass)
   
   if (dataset.type == "ps.model.test") {
     return(ps.model.dataset.test)
@@ -414,7 +432,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
-  # table(hba1c.model.dataset.train$multi_drug_start); table(hba1c.model.dataset.train$multi_drug_start, hba1c.model.dataset.train$drugclass) 
+  # table(hba1c.model.dataset.train$multi_drug_start); table(hba1c.model.dataset.train$multi_drug_start, hba1c.model.dataset.train$drugclass)
   # 
   # table(hba1c.model.dataset.test$multi_drug_start); table(hba1c.model.dataset.test$multi_drug_start, hba1c.model.dataset.test$drugclass)
   
@@ -437,9 +455,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
   
   
-  # table(hba1c.model.dataset.train$timeprevcombo_less61); table(hba1c.model.dataset.train$timeprevcombo_less61, hba1c.model.dataset.train$drugclass) 
+  # table(hba1c.model.dataset.train$timeprevcombo_less61); table(hba1c.model.dataset.train$timeprevcombo_less61, hba1c.model.dataset.train$drugclass)
   # 
-  # table(hba1c.model.dataset.test$timeprevcombo_less61); table(hba1c.model.dataset.test$timeprevcombo_less61, hba1c.model.dataset.test$drugclass) 
+  # table(hba1c.model.dataset.test$timeprevcombo_less61); table(hba1c.model.dataset.test$timeprevcombo_less61, hba1c.model.dataset.test$drugclass)
   
   
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
@@ -475,7 +493,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ################################################
   
   # table(is.na(hba1c.model.dataset.train$prehba1c)); table(is.na(hba1c.model.dataset.train$prehba1c), hba1c.model.dataset.train$drugclass)
-  #
+  # 
   # table(is.na(hba1c.model.dataset.test$prehba1c)); table(is.na(hba1c.model.dataset.test$prehba1c), hba1c.model.dataset.test$drugclass)
 
   
@@ -555,7 +573,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.hba1c.model.dataset.test); table(final.hba1c.model.dataset.test$drugclass)
+  nrow(final.hba1c.model.dataset.test); table(final.hba1c.model.dataset.test$drugclass)
   
   if (dataset.type == "hba1c.test") {
     return(final.hba1c.model.dataset.test)
@@ -761,7 +779,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.discontinuation.dataset); table(final.discontinuation.dataset$drugclass)
+  nrow(final.discontinuation.dataset); table(final.discontinuation.dataset$drugclass)
   
   if (dataset.type == "discontinuation.dataset") {
     return(final.discontinuation.dataset)
