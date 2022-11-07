@@ -79,8 +79,8 @@ if (class(try(
                                               unlist(),
                                             use_missing_data = TRUE,
                                             num_trees = 50,
-                                            num_burn_in = 2000,
-                                            num_iterations_after_burn_in = 1000,
+                                            num_burn_in = 15000,
+                                            num_iterations_after_burn_in = 3000,
                                             serialize = TRUE)
 
   saveRDS(bart_ps_model, paste0(output_path, "/ps_model/bart_ps_model.rds"))
@@ -108,8 +108,8 @@ if (class(try(
                                                  num_tree_cvs = c(50, 100, 150, 200),
                                                  k_cvs = c(2, 3),
                                                  use_missing_data = TRUE,
-                                                 num_burn_in = 2000,
-                                                 num_iterations_after_burn_in = 1000,
+                                                 num_burn_in = 15000,
+                                                 num_iterations_after_burn_in = 3000,
                                                  serialize = TRUE)
   
   saveRDS(bart_ps_model_cv, paste0(output_path, "/ps_model/bart_ps_model_cv.rds"))
@@ -133,8 +133,6 @@ if (class(try(
   dev.off()
 
   ## Variables selected
-  # [1] "prebmi"      "yrdrugstart" "preegfr"     "prehba1c"    "drugline"
-  # [6] "ncurrtx"     "ethnicity"
   
 
 
@@ -155,7 +153,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  bart_ps_model_final <- bartMachine::bartMachineCV(X = ps.model.train %>%
+  bart_ps_model_final <- bartMachine::bartMachine(X = ps.model.train %>%
                                                     select(
                                                       all_of(variables_chosen)
                                                       ),
@@ -164,9 +162,9 @@ if (class(try(
                                                   num_tree_cvs = c(50, 100, 150, 200),
                                                   k_cvs = c(2, 3),
                                                   use_missing_data = TRUE,
-                                                  num_burn_in = 2000,
-                                                  num_iterations_after_burn_in = 1000,
-                                                  serialize = TRUE)
+                                                  num_burn_in = 15000,
+                                                  num_iterations_after_burn_in = 3000,
+                                                  serialize = FALSE)
 
   saveRDS(bart_ps_model_final, paste0(output_path, "/ps_model/bart_ps_model_final.rds"))
 
