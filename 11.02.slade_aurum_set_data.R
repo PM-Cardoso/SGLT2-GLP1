@@ -28,7 +28,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   # load original dataset # name - t2d_1stinstance
-  load("/slade/CPRD_data/mastermind_2022/20221102_t2d_1stinstance.Rda")
+  load("/slade/CPRD_data/mastermind_2022/20221107_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
   
@@ -39,10 +39,10 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   # table(is.na(cprd$dm_diag_date)); table(is.na(cprd$dm_diag_age)); table(is.na(cprd$dstartdate_dm_dur))
   
-  cprd <- cprd %>%
-    filter(!is.na(dm_diag_date)) %>%
-    filter(!is.na(dm_diag_age)) %>%
-    filter(!is.na(dstartdate_dm_dur))
+  # cprd <- cprd %>%
+  #   filter(!is.na(dm_diag_date)) %>%
+  #   filter(!is.na(dm_diag_age)) %>%
+  #   filter(!is.na(dstartdate_dm_dur))
   
   
   
@@ -140,10 +140,10 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if first-line treatment
   ################################################
   
-  # table(cprd$drugline); table(cprd$drugline, cprd$drugclass)
+  # table(cprd$drugline_all); table(cprd$drugline_all, cprd$drugclass)
   
   cprd <- cprd %>%
-    filter(drugline != 1)
+    filter(drugline_all != 1)
   
   
   ################################################
@@ -199,7 +199,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(sex = factor(ifelse(gender == 1, "Male", "Female"))) %>%
     
     #####   - Duration of diabetes: t2dmduration
-    mutate(t2dmduration = as.numeric(dstartdate_dm_dur)) %>%
+    mutate(t2dmduration = as.numeric(dstartdate_dm_dur_all)) %>%
     #####   - Ethnicity: ethnicity
     mutate(ethnicity = factor(ethnicity_5cat, levels = c(0, 1, 2, 3, 4), labels = c("White", "South Asian", "Black", "Other", "Mixed"))) %>%
     
@@ -210,7 +210,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(smoke = factor(smoking_cat)) %>%
     
     #####   - Line Therapy: drugline: turn all > 4 to 5+
-    mutate(drugline = ifelse(drugline > 4, 5, drugline)) %>%
+    mutate(drugline = ifelse(drugline_all > 4, 5, drugline_all)) %>%
     mutate(drugline = factor(drugline, levels = c(2, 3, 4, 5), labels = c("2", "3", "4", "5+"))) %>%
     
     #####   - Hospitalisations in previous year
@@ -401,7 +401,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ps.model.dataset.test <- subset(ps.model.dataset, !(pated %in% ps.model.dataset.train$pated)) %>%
     as.data.frame()
   
-  nrow(ps.model.dataset.test); table(ps.model.dataset.test$drugclass)
+  # nrow(ps.model.dataset.test); table(ps.model.dataset.test$drugclass)
   
   if (dataset.type == "ps.model.test") {
     return(ps.model.dataset.test)
@@ -573,7 +573,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  nrow(final.hba1c.model.dataset.test); table(final.hba1c.model.dataset.test$drugclass)
+  # nrow(final.hba1c.model.dataset.test); table(final.hba1c.model.dataset.test$drugclass)
   
   if (dataset.type == "hba1c.test") {
     return(final.hba1c.model.dataset.test)
