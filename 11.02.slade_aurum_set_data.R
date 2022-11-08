@@ -21,8 +21,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset"))) {
-    stop("'dataset.type' must one of: full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset"))) {
+    stop("'dataset.type' must one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset")
   }
   
   
@@ -34,20 +34,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   ################################################
-  ##### Drop patients diagnosed within 91 days of registration
-  ################################################
-  
-  # table(is.na(cprd$dm_diag_date)); table(is.na(cprd$dm_diag_age)); table(is.na(cprd$dstartdate_dm_dur))
-  
-  # cprd <- cprd %>%
-  #   filter(!is.na(dm_diag_date)) %>%
-  #   filter(!is.na(dm_diag_age)) %>%
-  #   filter(!is.na(dstartdate_dm_dur))
-  
-  
-  
-  
-  ################################################
   ##### Select only SGLT-2 and GLP-1
   ################################################
   
@@ -55,7 +41,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   cprd <- cprd %>% 
     filter(drugclass == "GLP1" | drugclass == "SGLT2")
   
-  # nrow(cprd); table(cprd$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Select only SGLT-2 and GLP-1")
+    print("################################################")
+    print(nrow(cprd))
+    print(table(cprd$drugclass))
+    
+  }
   
   
   ################################################
@@ -111,7 +106,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   cprd <- cprd %>%
     mutate(dstartdate_cutoff = ifelse(dstartdate < "2013-01-01", 1 , NA_real_))
   
-  # table(cprd$dstartdate_cutoff); table(cprd$dstartdate_cutoff, cprd$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop patients initiating before 1/1/2013")
+    print("################################################")
+    print(table(cprd$dstartdate_cutoff))
+    print(table(cprd$dstartdate_cutoff, cprd$drugclass))
+    
+  }
   
   cprd <- cprd %>%
     filter(is.na(dstartdate_cutoff))
@@ -121,7 +125,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if treated with insulin when starting new drug
   ################################################
   
-  # table(cprd$INS); table(cprd$INS, cprd$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if treated with insulin when starting new drug")
+    print("################################################")
+    print(table(cprd$INS))
+    print(table(cprd$INS, cprd$drugclass))
+    
+  }
   
   cprd <- cprd %>% 
     filter(INS == 0)      
@@ -130,7 +143,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop patients with ESRD
   ################################################
   
-  # table(cprd$preckdstage); table(cprd$preckdstage, cprd$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop patients with ESRD")
+    print("################################################")
+    print(table(cprd$preckdstage))
+    print(table(cprd$preckdstage, cprd$drugclass))
+    
+  }
   
   cprd <- cprd %>%
     filter(preckdstage != "stage_5")
@@ -140,7 +162,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if first-line treatment
   ################################################
   
-  # table(cprd$drugline_all); table(cprd$drugline_all, cprd$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if first-line treatment")
+    print("################################################")
+    print(table(cprd$drugline_all))
+    print(table(cprd$drugline_all, cprd$drugclass))
+    
+  }
   
   cprd <- cprd %>%
     filter(drugline_all != 1)
@@ -153,7 +184,15 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   cprd <- cprd %>%
     mutate(semaglutide_drug = ifelse(str_detect(drugsubstances, "Semaglutide"), 1, NA_real_))
   
-  # table(cprd$semaglutide_drug)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if semaglutide")
+    print("################################################")
+    print(table(cprd$semaglutide_drug))
+    
+  }
   
   cprd <- cprd %>%
     filter(is.na(semaglutide_drug))
@@ -343,11 +382,60 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.dataset); table(final.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Final dataset - all patients")
+    print("################################################")
+    print(nrow(final.dataset))
+    print(table(final.dataset$drugclass))
+    
+  }
   
   # if full cohort was requested
   if (dataset.type == "full.cohort") {
     return(final.dataset)
+  }
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ############################ Synthetic dataset ################################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # Create synthetic dataset
+  if (dataset.type == "synthetic") {
+    # load package
+    require(synthpop)
+    
+    set.seed(123)
+    syn.dataset <- synthpop::syn(final.dataset %>%
+                                   select(
+                                     # response hba1c
+                                     posthba1cfinal,
+                                     # therapies of interest
+                                     drugclass,
+                                     # Sociodemographic features
+                                     agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
+                                     # Diabetes treatment 
+                                     drugline, ncurrtx, hba1cmonth, yrdrugstart,
+                                     # Biomarkers
+                                     prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+                                     prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+                                     # Comorbidities
+                                     preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+                                     preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf
+                                   ) %>%
+                                   sample_n(520),
+                                 print.flag = FALSE
+    )
+    
+    return(syn.dataset$syn)
+    
   }
   
   
@@ -389,8 +477,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ungroup() %>%
     as.data.frame()
   
-  
-  # nrow(ps.model.dataset.train); table(ps.model.dataset.train$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Propensity score training cohort")
+    print("################################################")
+    print(nrow(ps.model.dataset.train))
+    print(table(ps.model.dataset.train$drugclass))
+    
+  }
   
   if (dataset.type == "ps.model.train") {
     return(ps.model.dataset.train)
@@ -401,7 +497,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ps.model.dataset.test <- subset(ps.model.dataset, !(pated %in% ps.model.dataset.train$pated)) %>%
     as.data.frame()
   
-  # nrow(ps.model.dataset.test); table(ps.model.dataset.test$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Propensity score testing cohort")
+    print("################################################")
+    print(nrow(ps.model.dataset.test))
+    print(table(ps.model.dataset.test$drugclass))
+    
+  }
   
   if (dataset.type == "ps.model.test") {
     return(ps.model.dataset.test)
@@ -418,6 +523,15 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   #:-----------------------------------------------------------------------------
   ###############################################################################
   
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### HbA1c model")
+    print("################################################")
+    
+  }
+  
   hba1c.model.dataset.train <- ps.model.dataset.train %>%
     select(patid, pated) %>%
     left_join(final.dataset, by = c("patid", "pated"))
@@ -432,10 +546,20 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
-  # table(hba1c.model.dataset.train$multi_drug_start); table(hba1c.model.dataset.train$multi_drug_start, hba1c.model.dataset.train$drugclass)
-  # 
-  # table(hba1c.model.dataset.test$multi_drug_start); table(hba1c.model.dataset.test$multi_drug_start, hba1c.model.dataset.test$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print("Training Cohort")
+    print(table(hba1c.model.dataset.train$multi_drug_start))
+    print(table(hba1c.model.dataset.train$multi_drug_start, hba1c.model.dataset.train$drugclass))
+    print("Testing Cohort")
+    print(table(hba1c.model.dataset.test$multi_drug_start))
+    print(table(hba1c.model.dataset.test$multi_drug_start, hba1c.model.dataset.test$drugclass))
+    
+  }
   
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
     filter(multi_drug_start == 0)
@@ -455,11 +579,21 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
   
   
-  # table(hba1c.model.dataset.train$timeprevcombo_less61); table(hba1c.model.dataset.train$timeprevcombo_less61, hba1c.model.dataset.train$drugclass)
-  # 
-  # table(hba1c.model.dataset.test$timeprevcombo_less61); table(hba1c.model.dataset.test$timeprevcombo_less61, hba1c.model.dataset.test$drugclass)
-  
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print("Training Cohort")
+    print(table(hba1c.model.dataset.train$timeprevcombo_less61))
+    print(table(hba1c.model.dataset.train$timeprevcombo_less61, hba1c.model.dataset.train$drugclass))
+    print("Testing Cohort")
+    print(table(hba1c.model.dataset.test$timeprevcombo_less61))
+    print(table(hba1c.model.dataset.test$timeprevcombo_less61, hba1c.model.dataset.test$drugclass))
+    
+  }
+
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
     filter(is.na(timeprevcombo_less61))
   
@@ -476,10 +610,20 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   hba1c.model.dataset.test <- hba1c.model.dataset.test %>%
     mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
   
-  # table(hba1c.model.dataset.train$hb_extreme_53); table(hba1c.model.dataset.train$hb_extreme_53, hba1c.model.dataset.train$drugclass)
-  # 
-  # table(hba1c.model.dataset.test$hb_extreme_53); table(hba1c.model.dataset.test$hb_extreme_53, hba1c.model.dataset.test$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print("Training Cohort")
+    print(table(hba1c.model.dataset.train$hb_extreme_53))
+    print(table(hba1c.model.dataset.train$hb_extreme_53, hba1c.model.dataset.train$drugclass))
+    print("Testing Cohort")
+    print(table(hba1c.model.dataset.test$hb_extreme_53))
+    print(table(hba1c.model.dataset.test$hb_extreme_53, hba1c.model.dataset.test$drugclass))
+    
+  }
   
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
     filter(is.na(hb_extreme_53))
@@ -492,10 +636,20 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if HbA1c is missing
   ################################################
   
-  # table(is.na(hba1c.model.dataset.train$prehba1c)); table(is.na(hba1c.model.dataset.train$prehba1c), hba1c.model.dataset.train$drugclass)
-  # 
-  # table(is.na(hba1c.model.dataset.test$prehba1c)); table(is.na(hba1c.model.dataset.test$prehba1c), hba1c.model.dataset.test$drugclass)
-
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print("Training Cohort")
+    print(table(is.na(hba1c.model.dataset.train$prehba1c)))
+    print(table(is.na(hba1c.model.dataset.train$prehba1c), hba1c.model.dataset.train$drugclass))
+    print("Testing Cohort")
+    print(table(is.na(hba1c.model.dataset.test$prehba1c)))
+    print(table(is.na(hba1c.model.dataset.test$prehba1c), hba1c.model.dataset.test$drugclass))
+    
+  }
   
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
     filter(!is.na(prehba1c))
@@ -507,10 +661,20 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if post HbA1c missing
   ################################################
   
-  # table(is.na(hba1c.model.dataset.train$posthba1cfinal)); table(is.na(hba1c.model.dataset.train$posthba1cfinal), hba1c.model.dataset.train$drugclass)
-  # 
-  # table(is.na(hba1c.model.dataset.test$posthba1cfinal)); table(is.na(hba1c.model.dataset.test$posthba1cfinal), hba1c.model.dataset.test$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if post HbA1c missing")
+    print("################################################")
+    print("Training Cohort")
+    print(table(is.na(hba1c.model.dataset.train$posthba1cfinal)))
+    print(table(is.na(hba1c.model.dataset.train$posthba1cfinal), hba1c.model.dataset.train$drugclass))
+    print("Testing Cohort")
+    print(table(is.na(hba1c.model.dataset.test$posthba1cfinal)))
+    print(table(is.na(hba1c.model.dataset.test$posthba1cfinal), hba1c.model.dataset.test$drugclass))
+    
+  }
   
   hba1c.model.dataset.train <- hba1c.model.dataset.train %>%
     filter(!is.na(posthba1cfinal))
@@ -544,8 +708,17 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.hba1c.model.dataset.train); table(final.hba1c.model.dataset.train$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### HbA1c model - Training cohort")
+    print("################################################")
+    print("Training Cohort")
+    print(nrow(final.hba1c.model.dataset.train))
+    print(table(final.hba1c.model.dataset.train$drugclass))
+    
+  }
   
   if (dataset.type == "hba1c.train") {
     return(final.hba1c.model.dataset.train)
@@ -573,7 +746,17 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.hba1c.model.dataset.test); table(final.hba1c.model.dataset.test$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### HbA1c model - Training cohort")
+    print("################################################")
+    print("Training Cohort")
+    print(nrow(final.hba1c.model.dataset.test))
+    print(table(final.hba1c.model.dataset.test$drugclass))
+    
+  }
   
   if (dataset.type == "hba1c.test") {
     return(final.hba1c.model.dataset.test)
@@ -589,13 +772,31 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   #:-----------------------------------------------------------------------------
   ###############################################################################
   
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Weight model")
+    print("################################################")
+    
+  }
+  
   weight.dataset <- final.dataset
   
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
-  # table(weight.dataset$multi_drug_start); table(weight.dataset$multi_drug_start, weight.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(weight.dataset$multi_drug_start))
+    print(table(weight.dataset$multi_drug_start, weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(multi_drug_start == 0)
@@ -608,8 +809,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   weight.dataset <- weight.dataset %>%
     mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
   
-  # table(weight.dataset$timeprevcombo_less61); table(weight.dataset$timeprevcombo_less61, weight.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(weight.dataset$timeprevcombo_less61))
+    print(table(weight.dataset$timeprevcombo_less61, weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(is.na(timeprevcombo_less61))
@@ -622,8 +831,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   weight.dataset <- weight.dataset %>%
     mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
   
-  # table(weight.dataset$hb_extreme_53); table(weight.dataset$hb_extreme_53, weight.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(weight.dataset$hb_extreme_53))
+    print(table(weight.dataset$hb_extreme_53, weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(is.na(hb_extreme_53))
@@ -633,7 +850,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if HbA1c is missing
   ################################################
   
-  # table(is.na(weight.dataset$prehba1c)); table(is.na(weight.dataset$prehba1c), weight.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(weight.dataset$prehba1c)))
+    print(table(is.na(weight.dataset$prehba1c), weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(!is.na(prehba1c))
@@ -643,7 +869,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if Weight is missing
   ################################################
   
-  # table(is.na(weight.dataset$preweight)); table(is.na(weight.dataset$preweight), weight.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if Weight is missing")
+    print("################################################")
+    print(table(is.na(weight.dataset$preweight)))
+    print(table(is.na(weight.dataset$preweight), weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(!is.na(preweight))
@@ -655,8 +890,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   weight.dataset <- weight.dataset %>%
     mutate(postweight = ifelse(is.na(postweight12m), postweight6m, postweight12m))
   
-  # table(is.na(weight.dataset$postweight)); table(is.na(weight.dataset$postweight), weight.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if post Weight is missing")
+    print("################################################")
+    print(table(is.na(weight.dataset$postweight)))
+    print(table(is.na(weight.dataset$postweight), weight.dataset$drugclass))
+    
+  }
   
   weight.dataset <- weight.dataset %>%
     filter(!is.na(postweight))
@@ -687,8 +930,17 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       preweight, postweight
     ) %>%
     as.data.frame()
-
-   # nrow(final.weight.dataset); table(final.weight.dataset$drugclass)
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Weight model - final")
+    print("################################################")
+    print(nrow(final.weight.dataset))
+    print(table(final.weight.dataset$drugclass))
+    
+  }
   
   if (dataset.type == "weight.dataset") {
     return(final.weight.dataset)
@@ -704,14 +956,32 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   #:-----------------------------------------------------------------------------
   ###############################################################################
   
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Discontinuation model")
+    print("################################################")
+    
+  }
+  
   discontinuation.dataset <- final.dataset
   
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
-  # table(discontinuation.dataset$multi_drug_start); table(discontinuation.dataset$multi_drug_start, discontinuation.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(discontinuation.dataset$multi_drug_start))
+    print(table(discontinuation.dataset$multi_drug_start, discontinuation.dataset$drugclass))
+    
+  }
+
   discontinuation.dataset <- discontinuation.dataset %>%
     filter(multi_drug_start == 0)
   
@@ -723,8 +993,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   discontinuation.dataset <- discontinuation.dataset %>%
     mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
   
-  # table(discontinuation.dataset$timeprevcombo_less61); table(discontinuation.dataset$timeprevcombo_less61, discontinuation.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(discontinuation.dataset$timeprevcombo_less61))
+    print(table(discontinuation.dataset$timeprevcombo_less61, discontinuation.dataset$drugclass))
+    
+  }
   
   discontinuation.dataset <- discontinuation.dataset %>%
     filter(is.na(timeprevcombo_less61))
@@ -737,8 +1015,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   discontinuation.dataset <- discontinuation.dataset %>%
     mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
   
-  # table(discontinuation.dataset$hb_extreme_53); table(discontinuation.dataset$hb_extreme_53, discontinuation.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(discontinuation.dataset$hb_extreme_53))
+    print(table(discontinuation.dataset$hb_extreme_53, discontinuation.dataset$drugclass))
+    
+  }
   
   discontinuation.dataset <- discontinuation.dataset %>%
     filter(is.na(hb_extreme_53))
@@ -748,7 +1034,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if HbA1c is missing
   ################################################
   
-  # table(is.na(discontinuation.dataset$prehba1c)); table(is.na(discontinuation.dataset$prehba1c), discontinuation.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(discontinuation.dataset$prehba1c)))
+    print(table(is.na(discontinuation.dataset$prehba1c), discontinuation.dataset$drugclass))
+    
+  }
   
   discontinuation.dataset <- discontinuation.dataset %>%
     filter(!is.na(prehba1c))
@@ -779,7 +1074,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  nrow(final.discontinuation.dataset); table(final.discontinuation.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Discontinuation model - final")
+    print("################################################")
+    print(nrow(final.discontinuation.dataset))
+    print(table(final.discontinuation.dataset$drugclass))
+    
+  }
   
   if (dataset.type == "discontinuation.dataset") {
     return(final.discontinuation.dataset)
@@ -796,13 +1100,31 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   #:-----------------------------------------------------------------------------
   ###############################################################################
   
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### eGFR model")
+    print("################################################")
+    
+  }
+  
   egfr.dataset <- final.dataset
   
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
-  # table(egfr.dataset$multi_drug_start); table(egfr.dataset$multi_drug_start, egfr.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(egfr.dataset$multi_drug_start))
+    print(table(egfr.dataset$multi_drug_start, egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(multi_drug_start == 0)
@@ -815,8 +1137,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   egfr.dataset <- egfr.dataset %>%
     mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
   
-  # table(egfr.dataset$timeprevcombo_less61); table(egfr.dataset$timeprevcombo_less61, egfr.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(egfr.dataset$timeprevcombo_less61))
+    print(table(egfr.dataset$timeprevcombo_less61, egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(is.na(timeprevcombo_less61))
@@ -829,8 +1159,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   egfr.dataset <- egfr.dataset %>%
     mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
   
-  # table(egfr.dataset$hb_extreme_53); table(egfr.dataset$hb_extreme_53, egfr.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(egfr.dataset$hb_extreme_53))
+    print(table(egfr.dataset$hb_extreme_53, egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(is.na(hb_extreme_53))
@@ -840,7 +1178,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if HbA1c is missing
   ################################################
   
-  # table(is.na(egfr.dataset$prehba1c)); table(is.na(egfr.dataset$prehba1c), egfr.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(egfr.dataset$prehba1c)))
+    print(table(is.na(egfr.dataset$prehba1c), egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(!is.na(prehba1c))
@@ -850,7 +1197,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Drop if baseline eGRF is missing
   ################################################
   
-  # table(is.na(egfr.dataset$preegfr)); table(is.na(egfr.dataset$preegfr), egfr.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if baseline eGRF is missing")
+    print("################################################")
+    print(table(is.na(egfr.dataset$preegfr)))
+    print(table(is.na(egfr.dataset$preegfr), egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(!is.na(preegfr))
@@ -863,8 +1219,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   egfr.dataset <- egfr.dataset %>%
     mutate(postegfr = ifelse(is.na(postegfr12m), postegfr6m, postegfr12m))
   
-  # table(is.na(egfr.dataset$postegfr)); table(is.na(egfr.dataset$postegfr), egfr.dataset$drugclass)
-  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if post eGRF is missing")
+    print("################################################")
+    print(table(is.na(egfr.dataset$postegfr)))
+    print(table(is.na(egfr.dataset$postegfr), egfr.dataset$drugclass))
+    
+  }
   
   egfr.dataset <- egfr.dataset %>%
     filter(!is.na(postegfr))
@@ -897,7 +1261,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     ) %>%
     as.data.frame()
   
-  # nrow(final.egfr.dataset); table(final.egfr.dataset$drugclass)
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### eGFR model - final")
+    print("################################################")
+    print(nrow(final.egfr.dataset))
+    print(table(final.egfr.dataset$drugclass))
+    
+  }
   
   if (dataset.type == "egfr.dataset") {
     return(final.egfr.dataset)
