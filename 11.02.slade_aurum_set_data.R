@@ -26,9 +26,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   
-  
   # load original dataset # name - t2d_1stinstance
-  load("/slade/CPRD_data/mastermind_2022/20221107_t2d_1stinstance.Rda")
+  load("/slade/CPRD_data/mastermind_2022/20221110_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
   
