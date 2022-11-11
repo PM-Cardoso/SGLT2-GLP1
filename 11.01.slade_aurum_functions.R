@@ -12,22 +12,22 @@ calc_resid <- function(data, posteriors, outcome_variable) {
   # outcome_variable - variable with outcome values
   
   # calculate standard deviation of residuals
-  resid.SD <- apply(posteriors$y_hat_posterior_samples, MARGIN = 2, function(x) (data[,outcome_variable] - x)^2) %>%
+  resid.SD <- apply(posteriors, MARGIN = 1, function(x) (data[,outcome_variable] - x)^2) %>%
     colSums() %>%
     as.data.frame() %>%
     set_names(c("SD")) %>%
     mutate(SD = sqrt(SD/(nrow(data)-2)))
   
   # calculate standardised residuals
-  resid <- posteriors$y_hat_posterior_samples
+  resid <- posteriors %>% t()
   for (i in 1:nrow(data)) {
     resid[i,] <- (data[i, outcome_variable] - resid[i,])/resid.SD[,1]
   }
   
   # return data.frame with residuals information for each data entry
-  cred_pred <- cbind(lower_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) min(x)),
-                     upper_bd = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) max(x)),
-                     mean = apply(posteriors$y_hat_posterior_samples, MARGIN = 1, function(x) mean(x)),
+  cred_pred <- cbind(lower_bd = apply(posteriors, MARGIN = 2, function(x) min(x)),
+                     upper_bd = apply(posteriors, MARGIN = 2, function(x) max(x)),
+                     mean = apply(posteriors, MARGIN = 2, function(x) mean(x)),
                      orig = data[,outcome_variable]) %>%
     as.data.frame() %>%
     mutate(resid = orig - mean,
@@ -47,39 +47,38 @@ resid_plot <- function(pred_dev, pred_val, title) {
   # pred_dev - predicted/observed values for development dataset
   # pred_val - predicted/observed values for validation dataset
   # title - plot title
-  
-  # Plot of predicted vs observed for development dataset
-  plot_dev_pred <- pred_dev %>%
-    ggplot() +
-    theme_bw() +
-    geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-    geom_point(aes(x = orig, y = mean)) +
-    geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-    xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-    ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-    xlab("Observed HbA1c (mmol/mol)") +
-    ylab("Predicted HbA1c (mmol/mol)")
-  
-  # Plot of predicted vs observed for validation dataset
-  plot_val_pred <- pred_val %>%
-    ggplot() +
-    theme_bw() +
-    geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-    geom_point(aes(x = orig, y = mean)) +
-    geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-    xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-    ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-    xlab("Observed HbA1c (mmol/mol)") +
-    ylab("Predicted HbA1c (mmol/mol)")
-  
+  # 
+  # # Plot of predicted vs observed for development dataset
+  # plot_dev_pred <- pred_dev %>%
+  #   ggplot() +
+  #   theme_bw() +
+  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+  #   geom_point(aes(x = orig, y = mean)) +
+  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
+  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+  #   xlab("Observed HbA1c (mmol/mol)") +
+  #   ylab("Predicted HbA1c (mmol/mol)")
+  # 
+  # # Plot of predicted vs observed for validation dataset
+  # plot_val_pred <- pred_val %>%
+  #   ggplot() +
+  #   theme_bw() +
+  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
+  #   geom_point(aes(x = orig, y = mean)) +
+  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
+  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
+  #   xlab("Observed HbA1c (mmol/mol)") +
+  #   ylab("Predicted HbA1c (mmol/mol)")
+  # 
   # Plot of standardised residuals for development dataset
   plot_dev_std <- pred_dev %>%
     ggplot() +
     theme_bw() +
     geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
     geom_point(aes(x = mean, y = std.resid)) +
-    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-    stat_smooth(aes(x = mean, y = std.resid)) +
+    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
     xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
     ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
     xlab("Average Predicted HbA1c (mmol/mol)") +
@@ -91,75 +90,21 @@ resid_plot <- function(pred_dev, pred_val, title) {
     theme_bw() +
     geom_errorbar(aes(ymin = std.resid.low, ymax = std.resid.high, x = mean), colour = "grey") +
     geom_point(aes(x = mean, y = std.resid)) +
-    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), lwd=0.75) +
-    stat_smooth(aes(x = mean, y = std.resid)) +
+    geom_hline(aes(yintercept = 0), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
     xlim(min(pred_dev$mean, pred_val$mean), max(pred_dev$mean, pred_val$mean)) +
     ylim(min(pred_dev$std.resid.low, pred_val$std.resid.low), max(pred_dev$std.resid.high, pred_val$std.resid.high)) +
     xlab("Average Predicted HbA1c (mmol/mol)") +
     ylab("Standardised Residuals")
   
-  plot_list <- list(plot_dev_pred, plot_val_pred, plot_dev_std, plot_val_std)
+  plot_list <- list(plot_dev_std, plot_val_std)
   
   plot <- patchwork::wrap_plots(plot_list, ncol = 2) +
     patchwork::plot_annotation(
+      tag_levels = "A", # labels A = development, B = validation
       title = title
     )
   
   return(plot)
-  
-}
-
-
-## Summarise calculated treatment effect
-
-calc_effect_summary <- function(bart_model, data) {
-  ##### Input variables
-  # bart_model - bart model used for fitting
-  # data - data being investigated
-  
-  # Calculate treatment effects for entries
-  effect <- calc_effect(bart_model, data)
-  
-  # # Summarise treatment effect for each entry
-  effects_summary <- cbind(
-    `5%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.05))),
-    `50%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.50))),
-    `95%` = apply(effect, MARGIN = 1, function(x) quantile(c(x), probs = c(0.95))),
-    mean = apply(effect, MARGIN = 1, function(x) mean(c(x)))
-  ) %>%
-    as.data.frame()
-  
-  return(effects_summary)
-  
-}
-
-
-## Calculate treatment effect
-
-calc_effect <- function(bart_model, data) {
-  ##### Input variables
-  # bart_model - bart model used for fitting
-  # data - data being investigated
-  
-  # get posteriors for SGLT2
-  effect_SGLT2 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
-                                                            select(
-                                                              colnames(bart_model$X)
-                                                            ) %>%
-                                                            mutate(drugclass = factor("SGLT2", levels = levels(data$drugclass))))
-  
-  # get posteriors for GLP1
-  effect_GLP1 <- bartMachine::bart_machine_get_posterior(bart_model, data %>%
-                                                           select(
-                                                             colnames(bart_model$X)
-                                                           ) %>%
-                                                           mutate(drugclass = factor("GLP1", levels = levels(data$drugclass))))
-  
-  # calculate treatment effect for entry
-  effect <- effect_SGLT2$y_hat_posterior_samples - effect_GLP1$y_hat_posterior_samples %>%
-    as.data.frame()
-  
-  return(effect)
   
 }
 
@@ -196,12 +141,6 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores) {
   # variable - variable with y values
   # prop_scores - propensity scores for individuals
   
-  # # load all data for range of variable values; name: final.all.extra.vars
-  # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
-  # 
-  # # calculate propensity score
-  # prop_model <- calc_ATE_prop_score(data, seed)
-  # 
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
   
@@ -303,12 +242,6 @@ calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_scor
   # variable - variable with y values
   # prop_scores - propensity scores for individuals
   
-  # # load all data for range of variable values; name: final.all.extra.vars
-  # load("Samples/SGLT2-GLP1/datasets/cprd_19_sglt2glp1_allcohort.Rda")
-  # 
-  # # calculate propensity score
-  # prop_model <- calc_ATE_prop_score(data, seed)
-  # 
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
   
