@@ -14,16 +14,24 @@ library(tableone)
 
 source("11.02.slade_aurum_set_data.R")
 
+####
+
+# Inclusion criteria
+
+set_up_data_sglt2_glp1(dataset.type = "diagnostics")
+
+
+
 ############################
 vars <- c("drugsubstances", "agetx", "sex", "t2dmduration", "ethnicity", "deprivation",
-          "smoke", "drugline", "ncurrtx", "hba1cmonth", "preacr", "prealbuminblood",
+          "smoke", "prehospitalisation", "drugline", "ncurrtx", "hba1cmonth", "preacr", "prealbuminblood",
           "prealt", "preast", "prebilirubin", "prebmi", "prehaematocrit", "prehaemoglobin",
           "prehba1c", "prehdl", "premap", "preegfr", "pretotalcholesterol",
           "pretriglyceride", "preangina", "precld", "prediabeticnephropathy", 
           "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
           "preneuropathy", "prepad", "preretinopathy", "prerevasc", "prestroke",
           "pretia", "preaf")
-factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "drugline", "ncurrtx", "preangina", 
+factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "drugline", "prehospitalisation", "ncurrtx", "preangina", 
                 "precld", "prediabeticnephropathy", "preheartfailure", "prehypertension", "preihd",
                 "premyocardialinfarction", "preneuropathy", "prepad", "preretinopathy", "prerevasc",
                 "prestroke", "pretia", "preaf")
