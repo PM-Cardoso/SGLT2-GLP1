@@ -749,9 +749,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   if (dataset.type == "diagnostics") {
     
     print("################################################")
-    print("##### HbA1c model - Training cohort")
+    print("##### HbA1c model - Testing cohort")
     print("################################################")
-    print("Training Cohort")
+    print("Testing Cohort")
     print(nrow(final.hba1c.model.dataset.test))
     print(table(final.hba1c.model.dataset.test$drugclass))
     
