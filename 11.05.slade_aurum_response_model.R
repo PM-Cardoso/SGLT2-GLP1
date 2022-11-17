@@ -518,10 +518,19 @@ dev.off()
 #
 
 library(rpart)
-
+library(rattle)
+library(rpart.plot)
 
 
 fit <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = predicted_observed_dev)
+
+
+pdf(width = 20, height = 8, file = "Plots/11.05.effect_decision_tree.pdf")
+
+prp(fit, pal.thresh = 0, box.palette="BuGn", extra = "auto")
+
+dev.off()
+
 
 
 #:-------------------------------------------------------------------------------------
