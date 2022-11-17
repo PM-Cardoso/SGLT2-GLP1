@@ -296,8 +296,6 @@ if (class(try(
 }
 
 
-hba1c.test.complete.vs <- readRDS("hba1c.test.complete.vs.rds")
-
 if (class(try(
   
   predictions.hba1c.test <- readRDS(paste0(output_path, "/response_model/predictions.hba1c.test.rds"))
@@ -381,12 +379,12 @@ plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Standardised Residua
 data_dev <- cbind(mean = colMeans(bcf_model$tau)) %>%
   as.data.frame()
 
-plot_effect_1 <- hist_plot(data_dev, "", -17, 25)
+plot_effect_1 <- hist_plot(data_dev, "", -15, 25)
 
 data_val <- cbind(mean = colMeans(predictions.hba1c.test$tau)) %>%
   as.data.frame()
 
-plot_effect_2 <- hist_plot(data_val, "", -17, 25)
+plot_effect_2 <- hist_plot(data_val, "", -15, 25)
 
 ####### Strata effect
 ## male sex
@@ -396,7 +394,7 @@ sex_male_dev <- hba1c.train.complete.vs %>%
   filter(sex == "Male") %>%
   select(-sex)
 
-plot_effect_1_male <- hist_plot(sex_male_dev, "", -17, 25)
+plot_effect_1_male <- hist_plot(sex_male_dev, "", -15, 25)
 
 ## female sex
 sex_female_dev <- hba1c.train.complete.vs %>%
@@ -405,7 +403,7 @@ sex_female_dev <- hba1c.train.complete.vs %>%
   filter(sex == "Female") %>%
   select(-sex)
 
-plot_effect_1_female <- hist_plot(sex_female_dev, "", -17, 25)
+plot_effect_1_female <- hist_plot(sex_female_dev, "", -15, 25)
 
 
 ## male sex
@@ -415,7 +413,7 @@ sex_male_val <- hba1c.test.complete.vs %>%
   filter(sex == "Male") %>%
   select(-sex)
 
-plot_effect_2_male <- hist_plot(sex_male_val, "", -17, 25)
+plot_effect_2_male <- hist_plot(sex_male_val, "", -15, 25)
 
 ## female sex
 sex_female_val <- hba1c.test.complete.vs %>%
@@ -424,7 +422,7 @@ sex_female_val <- hba1c.test.complete.vs %>%
   filter(sex == "Female") %>%
   select(-sex)
 
-plot_effect_2_female <- hist_plot(sex_female_val, "", -17, 25)
+plot_effect_2_female <- hist_plot(sex_female_val, "", -15, 25)
 
 
 ####### Validation
@@ -515,6 +513,84 @@ patchwork::wrap_plots(list(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_
 
 
 dev.off()
+
+#:-------------------------------------------------------------------------------------
+#
+
+library(rpart)
+
+
+
+fit <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = predicted_observed_dev)
+
+
+#:-------------------------------------------------------------------------------------
+# Prediction of treatment effects for all patients
+
+# patients which already have a calculated effect
+patient_effects <- hba1c.train.complete.vs %>%
+  select(patid, pated) %>%
+  cbind(effects = colMeans(bcf_model$tau)) %>%
+  rbind(
+    hba1c.test.complete.vs %>%
+      select(patid, pated) %>%
+      cbind(effects = colMeans(predictions.hba1c.test$tau))
+  )
+
+
+# patients not yet calculated
+full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+
+interim.dataset <- full.cohort[!(full.cohort$pated %in% patient_effects$pated),] %>%
+  # left_join propensity scores%>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  # select variables to make prediction
+  select(patid, pated, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
+  # this results in a lot of missing hba1cmonth, should I set these to 12 months?
+  drop_na()
+
+
+if (class(try(
+  
+  patient_effects <- readRDS(paste0(output_path, "/response_model/patient_effects.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  predictions.interim <- predict(object = bcf_model,
+                                    x_predict_control = interim.dataset %>%
+                                      select(
+                                        all_of(variables_mu)
+                                      ) %>%
+                                      mutate_all(funs(as.numeric(.))) %>%
+                                      as.matrix(),
+                                    x_predict_moderate = interim.dataset %>%
+                                      select(
+                                        all_of(variables_tau)
+                                      ) %>%
+                                      mutate_all(funs(as.numeric(.))) %>%
+                                      as.matrix(),
+                                    pi_pred = 1-interim.dataset$prop.score,
+                                    z_pred = interim.dataset %>%
+                                      select(drugclass) %>%
+                                      mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
+                                      unlist(),
+                                    save_tree_directory = paste0(output_path, "/response_model/trees"))
+  
+  
+  
+  patient_effects <- patient_effects %>%
+    rbind(
+      interim.dataset %>%
+        select(patid, pated) %>%
+        cbind(effects = colMeans(predictions.interim$tau))
+    )
+  
+  
+  saveRDS(patient_effects, paste0(output_path, "/response_model/patient_effects.rds"))
+  
+}
+
+
 
 
 
