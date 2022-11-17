@@ -521,13 +521,23 @@ library(rpart)
 library(rattle)
 library(rpart.plot)
 
+rpart.dataset <- predicted_observed_dev
 
-fit <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = predicted_observed_dev)
+fit <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = rpart.dataset)
+
+rpart.dataset.strata <- predicted_observed_dev %>%
+filter(ncurrtx == "2" | ncurrtx == "1") %>%
+filter(drugline == "2") %>%
+filter(hba1cmonth > 6)
+
+fit2 <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = rpart.dataset.strata)
 
 
 pdf(width = 20, height = 8, file = "Plots/11.05.effect_decision_tree.pdf")
 
-prp(fit, pal.thresh = 0, box.palette="BuGn", extra = "auto")
+prp(fit, pal.thresh = 0, box.palette="BuGn", extra = "auto", main = "Decision tree for treatment effects using development cohort")
+
+prp(fit2, pal.thresh = 0, box.palette="BuGn", extra = "auto", main = "Strata: drugline = 2, ncurrtx == 1/2, hba1cmonth > 6")
 
 dev.off()
 
