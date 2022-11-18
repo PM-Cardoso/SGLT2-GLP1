@@ -167,6 +167,9 @@ plot_weight <- predictions %>%
          intervals = factor(intervals, levels = levels(group.weight.dataset[,"intervals"]))) %>%
   ggplot() +
   geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
+  ylab("Weight change") +
+  xlab("Predicted treatment effect") +
+  ggtitle("Weight change in CPRD") +
   coord_flip() 
 
 
@@ -287,6 +290,9 @@ plot_egfr <- predictions %>%
          intervals = factor(intervals, levels = levels(group.egfr.dataset[,"intervals"]))) %>%
   ggplot() +
   geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
+  ylab("eGFR change") +
+  xlab("Predicted treatment effect") +
+  ggtitle("eGFR change in CPRD") +
   coord_flip() 
 
 
@@ -309,6 +315,15 @@ discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuatio
 
 
 
+
+pdf(file = "Plots/11.06.additional_outcomes.pdf")
+
+patchwork::wrap_plots(list(plot_weight, plot_egfr)) +
+  patchwork::plot_layout(guides = "collect") +
+  patchwork::plot_annotation(theme = theme(plot.title = element_text(hjust = 0.5),
+                                           legend.position = "bottom")) # center title of full plot
+
+dev.off()
 
 
 
