@@ -526,9 +526,10 @@ rpart.dataset <- predicted_observed_dev
 fit <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = rpart.dataset)
 
 rpart.dataset.strata <- predicted_observed_dev %>%
-filter(ncurrtx == "2" | ncurrtx == "1") %>%
-filter(drugline == "2") %>%
-filter(hba1cmonth > 6)
+  filter(ncurrtx == "2") %>%
+  filter(drugline == "3") %>%
+  mutate(hba1cmonth = round(hba1cmonth)) %>%
+  filter(hba1cmonth == 12)
 
 fit2 <- rpart(hba1c_diff ~ agetx + sex + drugline + ncurrtx + hba1cmonth + prehba1c + preegfr + preihd + preneuropathy + preretinopathy + preaf, data = rpart.dataset.strata)
 
@@ -537,7 +538,7 @@ pdf(width = 20, height = 8, file = "Plots/11.05.effect_decision_tree.pdf")
 
 prp(fit, pal.thresh = 0, box.palette="BuGn", extra = "auto", main = "Decision tree for treatment effects using development cohort")
 
-prp(fit2, pal.thresh = 0, box.palette="BuGn", extra = "auto", main = "Strata: drugline = 2, ncurrtx == 1/2, hba1cmonth > 6")
+prp(fit2, pal.thresh = 0, box.palette="BuGn", extra = "auto", main = "Strata: drugline = 3, ncurrtx == 2, hba1cmonth = 12(rounded)")
 
 dev.off()
 
