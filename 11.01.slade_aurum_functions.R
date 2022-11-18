@@ -142,7 +142,7 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # prop_scores - propensity scores for individuals
   # quantile_var - variable containing quantile indexes
   
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+  # keep propensity scores (1-score because bartMachine makes 1-DPP4 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
   
   # split predicted treatment effects into deciles
@@ -168,48 +168,67 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # iterate through deciles
   for (i in mnumber) {
     
-    # dataset individuals in decile that had GLP1
-    rows.glp1 <- which(data.new[,quantile_var] == i & data.new$drugclass == "GLP1")
+    # dataset individuals in decile that had DPP4
+    rows.drug1 <- which(data.new[,quantile_var] == i & data.new$drugclass == "GLP1")
     
     # dataset individuals in decile that had SGLT2
-    rows.sglt2 <- which(data.new[,quantile_var] == i & data.new$drugclass == "SGLT2")
+    rows.drug2 <- which(data.new[,quantile_var] == i & data.new$drugclass == "SGLT2")
     
-    # list of matched SGLT2 rows to GLP1 
-    matched.glp1 <- vector(mode = "numeric", length = length(rows.glp1))
     
-    # iterate through rows of GLP1
-    for (l in 1:length(rows.glp1)) {
-      # closest SGLT2 row to GLP1
-      chosen.row <- which.min(abs(prop_score[rows.sglt2] - prop_score[rows.glp1[l]]))
+    if (length(rows.drug1) > length(rows.drug2)) {
+      
+      smaller_group <- rows.drug2
+      
+      # list of matched
+      matched <- vector(mode = "numeric", length = length(rows.drug2))
+      
+      bigger_group <- rows.drug1
+      
+    } else {
+      
+      smaller_group <- rows.drug1
+      
+      # list of matched 
+      matched <- vector(mode = "numeric", length = length(rows.drug1))
+      
+      bigger_group <- rows.drug2
+      
+    }
+    
+    # iterate through rows of smaller group
+    for (l in 1:length(smaller_group)) {
+      # closest bigger_group row to smaller_group
+      chosen.row <- which.min(abs(prop_score[bigger_group] - prop_score[smaller_group[l]]))
       
       # check if distance is less than 0.05 (caliper distance)
-      if (prop_score[rows.sglt2[chosen.row]] - prop_score[rows.glp1[l]] < 0.05) {
+      if (prop_score[bigger_group[chosen.row]] - prop_score[smaller_group[l]] < 0.05) {
         # if chosen row is within caliper distance
         
         # update list of matched rows
-        matched.glp1[l] <- rows.sglt2[chosen.row]
+        matched[l] <- bigger_group[chosen.row]
         
         # remove row from being matched again
-        rows.sglt2 <- rows.sglt2[-chosen.row]
+        bigger_group <- bigger_group[-chosen.row]
         
       } else {
         # if chosen row is outside caliper distance
         
         # update list of matched rows with NA
-        matched.glp1[l] <- NA
+        matched[l] <- NA
         
       }
     }
     
+    
     # rows without NA in list of SGLT2 rows matched
-    not.na.rows <- !is.na(matched.glp1)
+    not.na.rows <- !is.na(matched)
     
     # only keep rows with matched entries
-    matched.glp1 <- matched.glp1[not.na.rows]
-    rows.glp1 <- rows.glp1[not.na.rows]
+    matched <- matched[not.na.rows]
+    smaller_group <- smaller_group[not.na.rows]
     
     # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(formula),data=data.new[c(rows.glp1, matched.glp1),],subset=data.new[c(rows.glp1, matched.glp1),quantile_var]==i)
+    models[[i]] <- lm(as.formula(formula),data=data.new[c(smaller_group, matched),],subset=data.new[c(smaller_group, matched),quantile_var]==i)
     
     # collect treatment effect from regression
     obs <- append(obs,models[[i]]$coefficients[2])
@@ -228,7 +247,7 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # join treatment effects for deciles in a data.frame
   effects <- data.frame(predicted_treatment_effect,cbind(obs,lci,uci))
   
-  # returned list with fitted propensity model + decile treatment effects  
+  # returned list with fitted propensity model + decile treatment effects
   t <- list(effects = effects)
   
   return(t)
