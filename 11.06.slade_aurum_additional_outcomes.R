@@ -61,32 +61,14 @@ weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
   left_join(treatment_effects, by = c("patid", "pated")) %>%
   mutate(w.change = postweight - preweight)
 
-# breaks_weight <- c(-8, -5, -3, 0, 3, 5, 8)
-# 
-# group.weight.dataset <- group_values(data = weight.dataset,
-#                                      variable = "effects",
-#                                      breaks = breaks_weight) %>%
-#   group_by(intervals) %>%
-#   mutate(mean.values = mean(w.change, na.rm = TRUE),
-#          low.values = quantile(w.change, probs = c(0.05), na.rm = TRUE),
-#          high.values = quantile(w.change, probs = c(0.95), na.rm = TRUE),
-#          pred.drug = ifelse(effects > 0, "GLP1", "SGLT2")) %>%
-#   select(intervals, mean.values, low.values, high.values, pred.drug) %>%
-#   unique() %>%
-#   ungroup() %>%
-#   drop_na()
-# 
-# 
-# plot_weight <- group.weight.dataset %>%
-#   ggplot() +
-#   geom_pointrange(aes(x = intervals, y = mean.values, ymin = low.values, ymax = high.values, colour = pred.drug)) +
-#   coord_flip() 
 
 breaks_weight <- c(-8, -5, -3, 0, 3, 5, 8)
 
 group.weight.dataset <- group_values(data = weight.dataset,
                                      variable = "effects",
-                                     breaks = breaks_weight)
+                                     breaks = breaks_weight) %>%
+  select(postweight, preweight, w.change, drugclass, intervals, prop.score) %>%
+  drop_na()
 
 # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
 prop_score <- 1 - group.weight.dataset$prop.score
@@ -94,8 +76,7 @@ prop_score <- 1 - group.weight.dataset$prop.score
 # split predicted treatment effects into deciles
 predicted_treatment_effect <- group.weight.dataset %>%
   plyr::ddply("intervals", dplyr::summarise,
-              N = length(postweight)) %>%
-  drop_na()
+              N = length(postweight))
 
 # maximum number of deciles being tested
 quantiles <- length(levels(group.weight.dataset[,"intervals"]))
@@ -118,7 +99,7 @@ glp1.data <- group.weight.dataset %>%
 data.new <- rbind(sglt2.data, glp1.data)
 
 # formula
-formula <- "w.change ~ factor(drugclass)"
+formula <- "w.change ~ factor(drugclass) + preweight"
 
 # iterate through deciles
 for (i in mnumber) {
@@ -141,12 +122,12 @@ for (i in mnumber) {
   uci <- append(uci,confint_all[2,2])
   
   # predictions in SGLT2
-  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1")), preweight = mean(data.new$preweight, na.rm = TRUE)), interval = "confidence")
   
   predictions <- rbind(predictions, cbind(values, drugclass = "SGLT2", intervals = levels(group.weight.dataset[,"intervals"])[i]))
   
   # predictions in GLP1
-  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1")), preweight = mean(data.new$preweight, na.rm = TRUE)), interval = "confidence")
   
   predictions <- rbind(predictions, cbind(values, drugclass = "GLP1", intervals = levels(group.weight.dataset[,"intervals"])[i]))
   
@@ -167,10 +148,21 @@ plot_weight <- predictions %>%
          intervals = factor(intervals, levels = levels(group.weight.dataset[,"intervals"]))) %>%
   ggplot() +
   geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
-  ylab("Weight change") +
+  scale_x_discrete(labels = c("GLP1 benefit >8 mmol/mol",
+                              "GLP1 benefit 5-8 mmol/mol",
+                              "GLP1 benefit 3-5 mmol/mol",
+                              "GLP1 benefit 0-3 mmol/mol",
+                              "SGLT2 benefit 0-3 mmol/mol",
+                              "SGLT2 benefit 3-5 mmol/mol",
+                              "SGLT2 benefit 5-8 mmol/mol",
+                              "SGLT2 benefit >8 mmol/mol")) +
+  ylab("Observed weight change") +
   xlab("Predicted treatment effect") +
   ggtitle("Weight change in CPRD") +
-  coord_flip() 
+  coord_flip() +
+  scale_colour_manual(values = c("red", "#f1a340")) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
 
 
 
@@ -184,32 +176,13 @@ egfr.dataset <- set_up_data_sglt2_glp1(dataset.type = "egfr.dataset") %>%
   mutate(egfr.change = postegfr - preegfr)
 
 
-# breaks_egfr <- c(-8, -5, -3, 0, 3, 5, 8)
-# 
-# group.egfr.dataset <- group_values(data = egfr.dataset,
-#                                      variable = "effects",
-#                                      breaks = breaks_egfr) %>%
-#   group_by(intervals) %>%
-#   mutate(mean.values = mean(egfr.change, na.rm = TRUE),
-#          low.values = quantile(egfr.change, probs = c(0.05), na.rm = TRUE),
-#          high.values = quantile(egfr.change, probs = c(0.95), na.rm = TRUE),
-#          pred.drug = ifelse(effects > 0, "GLP1", "SGLT2")) %>%
-#   select(intervals, mean.values, low.values, high.values, pred.drug) %>%
-#   unique() %>%
-#   ungroup() %>%
-#   drop_na()
-# 
-# 
-# plot_egfr <- group.egfr.dataset %>%
-#   ggplot() +
-#   geom_pointrange(aes(x = intervals, y = mean.values, ymin = low.values, ymax = high.values, colour = pred.drug)) +
-#   coord_flip() 
-
 breaks_egfr <- c(-8, -5, -3, 0, 3, 5, 8)
 
 group.egfr.dataset <- group_values(data = egfr.dataset,
                                      variable = "effects",
                                      breaks = breaks_egfr)
+select(postegfr, preegfr, w.change, drugclass, intervals, prop.score) %>%
+  drop_na()
 
 # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
 prop_score <- 1 - group.egfr.dataset$prop.score
@@ -241,7 +214,7 @@ glp1.data <- group.egfr.dataset %>%
 data.new <- rbind(sglt2.data, glp1.data)
 
 # formula
-formula <- "egfr.change ~ factor(drugclass)"
+formula <- "egfr.change ~ factor(drugclass) + preegfr"
 
 # iterate through deciles
 for (i in mnumber) {
@@ -264,12 +237,12 @@ for (i in mnumber) {
   uci <- append(uci,confint_all[2,2])
   
   # predictions in SGLT2
-  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  values <- predict(models[[i]], data.frame(drugclass = factor("SGLT2", levels = c("SGLT2", "GLP1")), preegfr = mean(data.new$preegfr, na.rm = TRUE)), interval = "confidence")
   
   predictions <- rbind(predictions, cbind(values, drugclass = "SGLT2", intervals = levels(group.egfr.dataset[,"intervals"])[i]))
   
   # predictions in GLP1
-  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1"))), interval = "confidence")
+  values <- predict(models[[i]], data.frame(drugclass = factor("GLP1", levels = c("SGLT2", "GLP1")), preegfr = mean(data.new$preegfr, na.rm = TRUE)), interval = "confidence")
   
   predictions <- rbind(predictions, cbind(values, drugclass = "GLP1", intervals = levels(group.egfr.dataset[,"intervals"])[i]))
   
@@ -290,10 +263,21 @@ plot_egfr <- predictions %>%
          intervals = factor(intervals, levels = levels(group.egfr.dataset[,"intervals"]))) %>%
   ggplot() +
   geom_pointrange(aes(x = intervals, y = fit, ymin = lwr, ymax = upr, colour = drugclass), position = position_dodge(width = 0.5)) +
-  ylab("eGFR change") +
+  scale_x_discrete(labels = c("GLP1 benefit >8 mmol/mol",
+                              "GLP1 benefit 5-8 mmol/mol",
+                              "GLP1 benefit 3-5 mmol/mol",
+                              "GLP1 benefit 0-3 mmol/mol",
+                              "SGLT2 benefit 0-3 mmol/mol",
+                              "SGLT2 benefit 3-5 mmol/mol",
+                              "SGLT2 benefit 5-8 mmol/mol",
+                              "SGLT2 benefit >8 mmol/mol")) +
+  ylab("Observed eGFR change") +
   xlab("Predicted treatment effect") +
   ggtitle("eGFR change in CPRD") +
-  coord_flip() 
+  coord_flip() +
+  scale_colour_manual(values = c("red", "#f1a340")) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
 
 
 
@@ -316,9 +300,12 @@ discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuatio
 
 
 
-pdf(file = "Plots/11.06.additional_outcomes.pdf")
+pdf(width = 10, file = "Plots/11.06.additional_outcomes.pdf")
 
-patchwork::wrap_plots(list(plot_weight, plot_egfr)) +
+patchwork::wrap_plots(list(plot_weight, 
+                           plot_egfr +
+                             theme(axis.title.y = element_blank(),
+                                   axis.text.y = element_blank()))) +
   patchwork::plot_layout(guides = "collect") +
   patchwork::plot_annotation(theme = theme(plot.title = element_text(hjust = 0.5),
                                            legend.position = "bottom")) # center title of full plot
