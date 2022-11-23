@@ -135,13 +135,15 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
 }
 
 
-calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05) {
+calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random") {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
   # prop_scores - propensity scores for individuals
   # quantile_var - variable containing quantile indexes
   # caliper - maximum distance between propensity scores of drug 1 vs drug 2
+  # replace - logical variables, whether we replace matched individuals of small group
+  # order - which side we start matching individuals, "largest", "smallest", "random"
   
   # keep propensity scores (1-score because bartMachine makes 1-DPP4 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
@@ -170,67 +172,30 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # iterate through deciles
   for (i in mnumber) {
     
-    # dataset individuals in decile that had DPP4
-    rows.drug1 <- which(data.new[,quantile_var] == i & data.new$drugclass == "GLP1")
+    matching_package_result <- MatchIt::matchit(
+      formula = formula("drugclass ~ posthba1cfinal"), # shouldn't be used since we are specifying 'distance' (propensity scores)
+      data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
+      method = "nearest",
+      distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
+      estimand = "ATT",
+      exact = NULL,
+      mahvars = NULL,
+      antiexact = NULL,
+      discard = "none",
+      reestimate = FALSE,
+      s.weights = NULL,
+      replace = replace,
+      m.order = "random",
+      caliper = caliper,
+      std.caliper = TRUE,
+      ratio = 1,
+      verbose = FALSE,
+      include.obj = FALSE,
+    )
     
-    # dataset individuals in decile that had SGLT2
-    rows.drug2 <- which(data.new[,quantile_var] == i & data.new$drugclass == "SGLT2")
-    
-    
-    if (length(rows.drug1) > length(rows.drug2)) {
-      
-      smaller_group <- rows.drug2
-      
-      bigger_group <- rows.drug1
-      
-    } else {
-      
-      smaller_group <- rows.drug1
-      
-      bigger_group <- rows.drug2
-      
-    }
-    
-    # list of matched
-    matched <- vector(mode = "numeric", length = length(smaller_group))
-    
-    # iterate through rows of smaller group
-    for (l in 1:length(smaller_group)) {
-      # closest bigger_group row to smaller_group
-      chosen.row <- which.min(abs(prop_score[bigger_group] - prop_score[smaller_group[l]]))
-      
-      # check if distance is less than caliper distance
-      if (prop_score[bigger_group[chosen.row]] - prop_score[smaller_group[l]] < caliper) {
-        # if chosen row is within caliper distance
-        
-        # update list of matched rows
-        matched[l] <- bigger_group[chosen.row]
-        
-        # remove row from being matched again
-        bigger_group <- bigger_group[-chosen.row]
-        
-      } else {
-        # if chosen row is outside caliper distance
-        
-        # update list of matched rows with NA
-        matched[l] <- NA
-        
-      }
-    }
-    
-    
-    # rows without NA in list of smaller group rows matched
-    not.na.rows <- !is.na(matched)
-    
-    # only keep rows with matched entries
-    matched <- matched[not.na.rows]
-    smaller_group <- smaller_group[not.na.rows]
-    
-    # number of individuals kept
-    n_paired <- append(n_paired, length(matched)*2)
     
     # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(formula),data=data.new[c(smaller_group, matched),],subset=data.new[c(smaller_group, matched),quantile_var]==i)
+    models[[i]] <- lm(as.formula(formula),data=data.new[which(data.new[,quantile_var] == i),], weights = matching_package_result$weights)
     
     # collect treatment effect from regression
     obs <- append(obs,models[[i]]$coefficients[2])
