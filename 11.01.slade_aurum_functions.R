@@ -135,7 +135,7 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
 }
 
 
-calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", random.effect = FALSE, IQR = FALSE, breakdown = NULL) {
+calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", breakdown = NULL, adjust = FALSE) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
   # variable - variable with y values
@@ -146,9 +146,7 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # order - which side we start matching individuals, "largest", "smallest", "random"
   
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-  if (!is.character(prop_scores)) {
-    prop_score <- 1 - prop_scores
-  }
+  prop_score <- 1 - prop_scores
   
   # split predicted treatment effects into deciles
   predicted_treatment_effect <- data %>%
@@ -164,36 +162,30 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   models  <- as.list(1:quantiles)
   obs <- vector(); lci <- vector(); uci <- vector(); n_drug1 <- vector(); n_drug2 <- vector()
   
-  # join dataset and propensity score
-  if (!is.character(prop_scores)) {
-    data.new <- data %>%
-      cbind(prop_score)
-  }
+  data.new <- data %>%
+    cbind(prop_score)
   
   # list of matchings
-  if (!isTRUE(breakdown)) {
-        my_dens_lower <- function(data, mapping, ...) {
-      ggplot(mapping=mapping) +
-        geom_density2d(data = filter(data, type.row == "Treated"), size = 1.2, alpha = 0.7, colour = "red") +
-        geom_density2d(data = filter(data, type.row == "Control"), size = 1.2, alpha = 0.7, colour = '#f1a340')
-    }
-    
-    my_dens_diagonal <- function(data, mapping, ...) {
-      ggplot(data = data, mapping=mapping) +
-        geom_density(aes(fill = type.row), alpha = 0.7) +
-        scale_fill_manual(values = c("red", "#f1a340")) +
-        scale_colour_manual(values = c("red", "#f1a340"))
-    }
-    
-    plot_characteristics <- list()
-    
+  if (!is.null(breakdown)) {
+    matchit.ouputs <- list()
   }
   
   # iterate through deciles
   for (i in mnumber) {
     
-    if (!is.character(prop_scores)) {
-      
+    if (!is.null(breakdown)) {
+      # model if propensity scores are provided
+      matching_package_result <- MatchIt::matchit(
+        formula = formula(paste0("drugclass ~ ", paste(breakdown, collapse = " + "))), # shouldn't be used since we are specifying 'distance' (propensity scores)
+        data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
+        method = "nearest",
+        distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
+        replace = replace,
+        m.order = order,
+        caliper = caliper,
+        mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+      )
+    } else {
       # model if propensity scores are provided
       matching_package_result <- MatchIt::matchit(
         formula = formula("drugclass ~ posthba1cfinal"), # shouldn't be used since we are specifying 'distance' (propensity scores)
@@ -205,144 +197,53 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
         caliper = caliper,
         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
       )
-      
-      
-    } else {
-      
-      # model if "Mahalanobis" was provided
-      matching_package_result <- MatchIt::matchit(
-        formula = formula(paste0("drugclass ~ ", paste(prop_scores, collapse = " + "))),
-        data = data[which(data[,quantile_var] == i),], # select people in the quantile
-        method = "nearest",
-        distance = "Mahalanobis",
-        replace = replace,
-        m.order = "random",
-        mahvars = NULL,
-        caliper = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
-      )
-      
     }
     
-    if (!isTRUE(breakdown)) {
-      vars_1 <- rownames(matching_package_result$match.matrix)[!is.na(matching_package_result$match.matrix)] # treated
-      vars_2 <- matching_package_result$match.matrix[!is.na(matching_package_result$match.matrix)] # control
-      
-      combination <- data %>%
-        select(drugline, ncurrtx, hba1cmonth, prehba1c, preegfr, prepad, agetx, sex, preihd, preneuropathy, preretinopathy, preaf) %>%
-        slice(c(as.numeric(vars_1), as.numeric(vars_2))) %>%
-        cbind(type.row = c(rep("Treated", length.out = length(vars_1)), rep("Control", length.out = length(vars_2))))
-      
-      plot_characteristics[[i]] <- ggpairs(combination, columns = 1:(ncol(combination)-1), 
-                                           aes(color = type.row),
-                                           showStrips = TRUE,
-                                           lower = list(continuous = my_dens_lower, discrete = wrap(ggally_facetbar, position = "dodge", alpha = 0.7), combo = wrap(ggally_facetdensity,alpha=0.7)),
-                                           diag = list(continuous = my_dens_diagonal, discrete = wrap(ggally_barDiag, position = "dodge", alpha = 0.7)),
-                                           upper = NULL,
-                                           legend = 1,
-                                           title = paste0("Matching of decile ", i)) +
-        theme(legend.position = 'bottom',
-              panel.border = element_rect(fill = NA),
-              panel.grid.major = element_blank()) +
-        scale_fill_manual(values = c("red", "#f1a340")) +
-        scale_colour_manual(values = c("red", "#f1a340"))
-      
-    }
-    
-    
-    
-    # generate vector of treatment differences
-    diff.vector <- vector(); weights.vector <- vector()
-    
-    for (m in 1:length(matching_package_result$match.matrix)) {
-      if (is.na(matching_package_result$match.matrix[m])) {} else {
-        # calculate difference in matched posthba1c
-        diff.vector <- append(diff.vector,
-                              # subtract SGLT2 from GLP1
-                              data[rownames(matching_package_result$match.matrix)[m], variable] - data[matching_package_result$match.matrix[m], variable]
-                              )
-        if (replace == TRUE) {
-          # if we are repeating variables
-          weights.vector <- append(weights.vector, 
-                                   # 1 over the number of times the smaller group entry is reused
-                                   1/sum(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)] == matching_package_result$match.matrix[m])
-                                   )
-        } else {
-          # if we don't have repeated variables
-          weights.vector <- append(weights.vector, 1)
-        }
-        
-      }
-      
+    if (!is.null(breakdown)) {
+      matchit.ouputs[[i]] <- matching_package_result
     }
     
     n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
     n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
     
-    if (IQR == FALSE) {
-      
-      if (random.effect == FALSE) {
-        # fit linear regression for decile in the matched dataset
-        models[[i]] <- lm(as.formula("diff.vector ~ 1"),data=as.data.frame(diff.vector), weights = weights.vector)
-        
-        # collect treatment effect from regression
-        obs <- append(obs,models[[i]]$coefficients[1])
-        
-        # calculate confidence intervals
-        confint_all <- confint(models[[i]], levels=0.95)
-        
-        # collect lower bound CI
-        lci <- append(lci,confint_all[1,1])
-        
-        # collect upper bound CI
-        uci <- append(uci,confint_all[1,2])
-        
-      } else { # add random effect
-        random_effect <- matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)]
-        # fit linear regression with random effect for decile in the matched dataset
-        models[[i]] <- lme4::lmer(as.formula("diff.vector ~ 1 + (1 | random_effect)"),
-                                  data=as.data.frame(cbind(diff.vector, random_effect)) %>%
-                                    mutate(diff.vector = as.numeric(diff.vector),
-                                           random_effect = as.factor(random_effect)),
-                                  weights = weights.vector, 
-                                  control=lmerControl(check.nobs.vs.nlev = "ignore",
-                                                      check.nobs.vs.rankZ = "ignore",
-                                                      check.nobs.vs.nRE="ignore"))
-        
-        # collect treatment effect from regression
-        obs <- append(obs, summary(models[[i]])$coefficients[1])
-        
-        # calculate confidence intervals
-        confint_all <- confint(models[[i]], level=0.95)
-        
-        # collect lower bound CI
-        lci <- append(lci,confint_all[3,1])
-        
-        # collect upper bound CI
-        uci <- append(uci,confint_all[3,2])
-        
-      }
-      
+    
+    if (adjust == TRUE) {
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
     } else {
-      # collect treatment effect from regression
-      obs <- append(obs, quantile(diff.vector, probs = c(0.5)))
-      
-      # collect lower bound CI
-      lci <- append(lci, quantile(diff.vector, probs = c(0.25)))
-      
-      # collect upper bound CI
-      uci <- append(uci, quantile(diff.vector, probs = c(0.95)))
-      
+      formula <- "posthba1cfinal ~ factor(drugclass)"
     }
+    
+    # fit linear regression for decile in the matched dataset
+    models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
+  
+    # collect treatment effect from regression
+    obs <- append(obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
+    confint_all <- confint(models[[i]], levels=0.95)
+    
+    # collect lower bound CI
+    lci <- append(lci,confint_all[2,1])
+    
+    # collect upper bound CI
+    uci <- append(uci,confint_all[2,2])
+     
   }
     
   
   
   # join treatment effects for deciles in a data.frame
   effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
+    
   
-  # returned list with fitted propensity model + decile treatment effects
-  t <- list(effects = effects,
-            matching_characteristics = plot_characteristics)
+  if (!is.null(breakdown)) {
+    # returned list with fitted propensity model + decile treatment effects
+    t <- list(effects = effects,
+              matching_outputs = matchit.ouputs)
+  } else {
+    # returned list with fitted propensity model + decile treatment effects
+    t <- list(effects = effects)
+  }
   
   return(t)
 }
