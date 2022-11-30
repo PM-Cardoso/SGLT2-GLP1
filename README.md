@@ -1,26 +1,29 @@
 # SGLT2-GLP1
 Collection of functions and scripts to investigate how clinical features can be used for prediction.
 
-## Final structure for analysis: (Model 4.7)
+## Final structure for analysis: (Model 11.5)
 
 1. Fit a BART propensity score model (function _bartMachine::bartMachine_) with all variable available.
 2. Perform BART variable selection (function _bartMachine::var_selection_by_permute_) to choose variables for the PS model.
 3. Re-fit a BART propensity score model (function _bartMachine::bartMachine_) with the selected variables.
-4. Fit a BART response model (function _bartMachine::bartMachine_):
-    - Include missing data feature (use_missing_data = FALSE)
-    - Include all available variables + propensity score values
-5. Perform BART variable selection (function _bartMachine::var_selection_by_permute_cv_) to choose variables for the response model.
-6. Re-fit a BART response model (function _bartMachine::bartMachine_) with the selected variables:
-    - Include missing data feature (use_missing_data = FALSE)
-7. Check model fit for the outcome:
-    - Plot predicted vs observed to check for any structure in the values.
-    - Plot standardised residuals to check for any structure in the residuals.
-8. Check model fit for treatment effects: (model fitted in observational data)
-    - Plot predicted CATE vs ATE.
+4. Fit a SparseBCF model (function _SparseBCF::SparseBCF_) on complete data and perform variable selection:
+    - Only include variable with ~ 20% missingness (discard higher amounts)
+    - Select variables with an inclusion proportion above 1/n (n = number of variables used)
+5. Fit a BCF model (function _bcf::bcf_) on complete data with the selected variables.
+    - Fit two versions of the model:
+        - With propensity scores included in the "control" or mu(x) (use include_pi = "control")
+        - Without propensity scores included in the model (use include_pi = "none")
+    - Compare individual predictions from both models in order to decide on the use of propensity scores.
+6. Check model fit for the outcomes:
+    - Plot standardised results to check for any structure in the residuals.
+7. Check model fit for the treatment effects: (model fitted in observational data)
+    - Plot predicted CATE vs ATE for several ntiles of predicted treatment effect:
+        - Propensity score matching 1:1 (check whether matched individuals are well balanced)
+        - Propensity score matching 1:1 whilst adjusting for all variables used in the propensity score and the BCF model.
 
 
 ---
-
+(Developed in CPRD: GOLD download)
 Files:
 - 0.0: Functions
     - .1: Functions for plotting and some calculations.
@@ -44,7 +47,7 @@ Files:
     - .4: Fitting a BART model with variable selection using BART + _grf_ for the outcome model. This includes an evaluation of model fit.
     - .5: Fitting a BART model with variable selection for using BART + _grf_ for the outcome model. This includes an evaluation of model fit. (Change from 4.4 - instead of 'score', we use 'score.excl.mi')
     - .6: Fitting a BART propensity score model, variable selection, matching individuals, BART model with all variables.
-    - .7: **Fitting a BART propensity score model, variable selection, refit propensity score model, BART HbA1c model + propensity score as covariate, variable selection, refit BART HbA1c model.** (Model chosen) 
+    - .7: Fitting a BART propensity score model, variable selection, refit propensity score model, BART HbA1c model + propensity score as covariate, variable selection, refit BART HbA1c model.
     
 - 5.0: _bartMachine_ models using no methodical procedure.
     - .1: Fitting a collection of naive Bart models for HbA1c outcome using routine clinical variables / all variables / propensity scores, alternating between them.
@@ -72,6 +75,7 @@ Files:
     - .2: Discontinuation
     
 ---
+(Developed in CPRD: Aurum download)
 
 - 11.0: Aurum download modelling
     - .1: Functions used specifically for this portion.
@@ -80,6 +84,7 @@ Files:
     - .4: Propensity score model.
     - .5: Model heterogeneity.
     - .6: Risks/Benefits: weight change, eGFR change, discontinuation.
+    - .7: Differential treatment effects.
 
 
     
