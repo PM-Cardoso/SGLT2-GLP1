@@ -135,6 +135,64 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
 }
 
 
+calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_diff.q", breakdown = NULL, adjust = TRUE) {
+  ##### Input variables
+  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+  # variable - variable with y values
+  # quantile_var - variable containing quantile indexes
+  # breakdown - variables used to compare quality of matching
+  # adjust - variables to adjust linear regression of effects
+  
+  # split predicted treatment effects into deciles
+  predicted_treatment_effect <- data %>%
+    plyr::ddply(quantile_var, dplyr::summarise,
+                N = length(hba1c_diff),
+                hba1c_diff.pred = mean(hba1c_diff))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(unique(data[,quantile_var]))
+  
+  # create lists with results
+  mnumber = c(1:quantiles)
+  models  <- as.list(1:quantiles)
+  obs <- vector(); lci <- vector(); uci <- vector();
+  
+  
+  # iterate through deciles
+  for (i in mnumber) {
+    
+    if (adjust == TRUE) {
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
+    } else {
+      formula <- "posthba1cfinal ~ factor(drugclass)"
+    }
+    
+    # fit linear regression for decile in the matched dataset
+    models[[i]] <- lm(as.formula(formula),data=data[data[,quantile_var] == i,])
+    
+    # collect treatment effect from regression
+    obs <- append(obs,models[[i]]$coefficients[2])
+    
+    # calculate confidence intervals
+    confint_all <- confint(models[[i]], levels=0.95)
+    
+    # collect lower bound CI
+    lci <- append(lci,confint_all[2,1])
+    
+    # collect upper bound CI
+    uci <- append(uci,confint_all[2,2])
+    
+  }
+  
+  # join treatment effects for deciles in a data.frame
+  effects <- data.frame(predicted_treatment_effect,cbind(obs, lci, uci))
+  
+  # returned list with fitted propensity model + decile treatment effects
+  t <- list(effects = effects)
+  
+  return(t)
+}
+
 calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", breakdown = NULL, adjust = FALSE) {
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
@@ -144,6 +202,8 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # caliper - maximum distance between propensity scores of drug 1 vs drug 2
   # replace - logical variables, whether we replace matched individuals of small group
   # order - which side we start matching individuals, "largest", "smallest", "random"
+  # breakdown - variables used to compare quality of matching
+  # adjust - variables to adjust linear regression of effects
   
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
