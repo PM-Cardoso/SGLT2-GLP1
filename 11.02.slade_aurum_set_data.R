@@ -1575,7 +1575,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     #####   - Transient Ischaemic Attack: predrug_earliest_tia
     mutate(pretia = factor(predrug_tia, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Atrial fibrillation: predrug_earliest_af
-    mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes")))
+    mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    #####   - CKD stages
+    mutate(preckd = factor(preckdstage))
   
   
   ###############################################################################
@@ -1604,7 +1606,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
       # Comorbidities
       preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
       # Weight analysis
       preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
       # eGFR analysis
