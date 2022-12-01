@@ -4,9 +4,6 @@
 ##    - Produce tables to describe cohorts
 ####################
 
-# Used in slade to ensure the library being used is my personal library
-.libPaths(.libPaths()[c(2,1,3)])
-
 
 library(tidyverse)
 library(tableone)
@@ -39,10 +36,13 @@ factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "d
 
 #####################
 # Full cohort
-full.cohort <- set_up_data_sglt2_glp1(dataset.type = "full.cohort")
+full.cohort <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  mutate(CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No")) %>%
+  mutate(microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"))
+  
 
 ## Construct a table
-tab.full.cohort <- CreateTableOne(vars = vars, factorVars = factorvars, includeNA = TRUE, strata = "drugclass", data = full.cohort, test = FALSE)
+tab.full.cohort <- CreateTableOne(vars = c(vars, "preckd", "CV_problems", "microvascular_complications"), factorVars = c(factorvars, "preckd", "CV_problems", "microvascular_complications"), includeNA = TRUE, strata = "drugclass", data = full.cohort, test = FALSE)
 ## Show table with SMD
 print(tab.full.cohort, smd = TRUE)
 
