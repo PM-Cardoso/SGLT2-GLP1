@@ -270,6 +270,29 @@ plot_agetx_strata <- group_values(data = hba1c.train,
   xlab("Agetx") +
   ylim(-10, 10)
 
+# hba1cmonth
+breaks_hba1cmonth <- quantile(hba1c.train$hba1cmonth, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_hba1cmonth_strata <- group_values(data = hba1c.train,
+                                  variable = "hba1cmonth",
+                                  breaks = breaks_hba1cmonth) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_point() +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~sex) +
+  xlab("HbA1cmonth") +
+  ylim(-10, 10)
 
 
 # Combine all
@@ -285,6 +308,7 @@ plot_strata <- patchwork::wrap_plots(
     plot_prehba1c_strata,
     plot_preegfr_strata,
     plot_agetx_strata,
+    plot_hba1cmonth_strata,
     plot_sex_strata
 )) +
   patchwork::plot_annotation(
@@ -845,6 +869,57 @@ plot_agetx <- cbind(
   xlab("Agetx") +
   ylim(-8, 12)
 
+# hba1cmonth
+# breaks_hba1cmonth
+
+current.average.patient <- average.patient %>%
+  slice(rep(1, 2*length(breaks_hba1cmonth))) %>%
+  mutate(hba1cmonth = rep(breaks_hba1cmonth, 2)) %>%
+  slice(rep(1:n(), 2)) %>%
+  cbind(sex = rep(c(2,1), each = 2*length(breaks_hba1cmonth))) %>%
+  mutate(sex = factor(sex, levels = 1:length(levels(hba1c.train$sex)), labels = levels(hba1c.train$sex)))
+
+predictions.hba1cmonth <- predict(object = bcf_model,
+                             x_predict_control = current.average.patient %>%
+                               select(
+                                 all_of(variables_mu)
+                               ) %>%
+                               mutate_all(funs(as.numeric(.))) %>%
+                               as.matrix(),
+                             x_predict_moderate = current.average.patient %>%
+                               select(
+                                 all_of(variables_tau)
+                               ) %>%
+                               mutate_all(funs(as.numeric(.))) %>%
+                               as.matrix(),
+                             pi_pred = rep(0.5, nrow(current.average.patient)),
+                             z_pred = rep(rep(c(0,1), each = length(breaks_hba1cmonth)), 2),
+                             save_tree_directory = paste0(output_path, "/response_model/trees"))
+
+plot_hba1cmonth <- cbind(
+  values = current.average.patient$hba1cmonth,
+  drugclass = rep(rep(c("GLP1", "SGLT2"), each = length(breaks_hba1cmonth)), 2),
+  mean = apply(predictions.hba1cmonth$tau, MARGIN = 2, function(x) quantile(c(x), probs = c(0.5))),
+  uci = apply(predictions.hba1cmonth$tau, MARGIN = 2, function(x) quantile(c(x), probs = c(0.95))),
+  lci = apply(predictions.hba1cmonth$tau, MARGIN = 2, function(x) quantile(c(x), probs = c(0.05))),
+  sex = current.average.patient$sex
+) %>%
+  as.data.frame() %>%
+  mutate(values = as.numeric(values),
+         drugclass = factor(drugclass, levels = levels(hba1c.train$drugclass)),
+         mean = as.numeric(mean),
+         uci = as.numeric(uci),
+         lci = as.numeric(lci),
+         sex = factor(sex, levels = 1:length(levels(hba1c.train$sex)), labels = levels(hba1c.train$sex))
+  ) %>%
+  ggplot(aes(x = values, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_point() +
+  geom_errorbar(aes(x = values, y = mean, ymax = uci, ymin = lci)) +
+  facet_wrap(~sex) +
+  xlab("Hba1cmonth") +
+  ylim(-8, 12)
+
 
 # Combine all
 plot_predictions <- patchwork::wrap_plots(
@@ -858,7 +933,8 @@ plot_predictions <- patchwork::wrap_plots(
     plot_preaf,
     plot_prehba1c,
     plot_preegfr,
-    plot_agetx
+    plot_agetx,
+    plot_hba1cmonth
   )) +
   patchwork::plot_annotation(
     title = "Prediction of treatment effect for the average patient"
