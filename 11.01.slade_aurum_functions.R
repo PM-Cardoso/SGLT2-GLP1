@@ -4,6 +4,38 @@
 ####################
 
 
+## Calculate assessments of prediction
+
+rsq <- function (x, y) cor(x, y) ^ 2
+
+calc_assessment <- function(data, posteriors, outcome_variable) {
+  ##### Input variables
+  # data - dataset used in the fitting 
+  # posteriors - posteriors values for the dataset inputed
+  # outcome_variable - variable with y values
+  
+  # Calculate R2
+  r2 <- posteriors %>%
+    apply(MARGIN = 1, function(x) rsq(data[,outcome_variable], x)) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  # Calculate RSS: residual sum of squares
+  RSS <- posteriors %>%
+    apply(MARGIN = 1, function(x) sum((data[,outcome_variable] - x)^2)) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  # Calculate RMSE: root mean square error
+  RMSE <- posteriors %>%
+    apply(MARGIN = 1, function(x) sqrt(sum((data[,outcome_variable] - x)^2)/nrow(data))) %>%
+    quantile(probs = c(0.05, 0.5, 0.95))
+  
+  # return data.frame with all assessments
+  assessment_values <- list(r2 = r2, RSS = RSS, RMSE = RMSE)
+  
+  return(assessment_values)
+}
+
+
 ## Calculate residuals
 calc_resid <- function(data, posteriors, outcome_variable) {
   ##### Input variables
@@ -119,17 +151,20 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
   # ytitle: title of y axis
   
   # define data
-  dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean> 0, "Favours GLP1", "Favours SGLT2"))
+  dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean< 0, "Favours SGLT2i", "Favours GLP1-RA")) %>%
+    mutate(above = factor(above, levels = c("Favours SGLT2i", "Favours GLP1-RA")))
   
   # plot
   plot <- ggplot(data = dat, aes(x = mean, fill = above)) +
     geom_histogram(position = "identity", alpha = 0.5, color = "black", breaks = seq(xmin, xmax, by = 1)) +
     geom_vline(aes(xintercept = 0), linetype = "dashed")+
     labs(title = title, x = xtitle, y = ytitle) +
-    scale_fill_manual(values = c("red", "#f1a340"))+
+    scale_fill_manual(values = c("#f1a340", "dodgerblue2"))+
     theme_classic() +
-    theme(legend.position = c(0.80, 0.97)) +
-    theme(legend.title = element_blank())
+    theme(legend.title = element_blank(),
+          legend.direction = "horizontal", 
+          legend.position = "bottom",
+          legend.box = "horizontal")
   
   return(plot)
 }
@@ -161,6 +196,8 @@ calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_dif
   # iterate through deciles
   for (i in mnumber) {
     
+    data.new <- data[data[,quantile_var] == levels(unique(data[,quantile_var]))[i],]
+    
     if (adjust == TRUE) {
       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
     } else {
@@ -168,7 +205,7 @@ calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_dif
     }
     
     # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(formula),data=data[data[,quantile_var] == i,])
+    models[[i]] <- lm(as.formula(formula),data=data.new)
     
     # collect treatment effect from regression
     obs <- append(obs,models[[i]]$coefficients[2])
@@ -467,14 +504,14 @@ calc_ATE_validation_inverse_prop_weighting_stabilised <- function(data, variable
 
 
 #Function to output ATE by subgroup
-ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
+ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_background = FALSE) {
   ###
   # data: dataset used in fitting,
   # pred: column with predicted values
   # obs: observed values
   # obslowerci: lower bound of CI for prediction
   # obsupperci: upper bound of CI for prediction
-  # dataset.type: type of dataset to choose axis: "Development" or "Validation"
+  # colour_background: colour of drug benefit on the background
   
   if (missing(ymin)) {
     ymin <- plyr::round_any(floor(min(c(unlist(data[obslowerci]), unlist(data[pred])))), 2, f = floor)
@@ -483,13 +520,22 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax) {
     ymax <- plyr::round_any(ceiling(max(c(unlist(data[obsupperci]), unlist(data[pred])))), 2, f = ceiling)
   }
   
-  # Plot predicted treatment effects vs observed treatment effects
-  plot <- ggplot(data = data,aes_string(x = pred,y = obs)) +
+  plot <- ggplot(data = data,aes_string(x = pred,y = obs))
+  
+  if (colour_background == TRUE) {
+    
+    plot <- plot +
+      annotate("rect", xmin = Inf, xmax = 0, ymin = Inf, ymax = 0, fill= "dodgerblue2", alpha = 0.5)  + # top right
+      annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = 0 , fill= "#f1a340", alpha = 0.5) # bottom left
+    
+  }
+  
+  plot <- plot +
     geom_point(alpha = 1) + 
     theme_bw() +
     geom_errorbar(aes_string(ymin = obslowerci, ymax = obsupperci), colour = "black", width = 0.1) +
-    ylab("Decile average treatment effect") + 
-    xlab("Predicted conditional average treatment effect") +
+    ylab("Decile average treatment effect (mmol/mol)") + 
+    xlab("Predicted conditional average treatment effect (mmol/mol)") +
     scale_x_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
     scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
     geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
