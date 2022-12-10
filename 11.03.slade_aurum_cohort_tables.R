@@ -18,6 +18,25 @@ source("11.02.slade_aurum_set_data.R")
 set_up_data_sglt2_glp1(dataset.type = "diagnostics")
 
 
+####
+
+# Characteristics of individuals predicted benefit >8
+hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+              select(patid, pated, ethnicity), by = c("patid", "pated")) %>%
+  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_)),
+         CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
+         microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
+         ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No")) %>%
+  mutate(benefit = factor(benefit))
+
+vars <- c("agetx", "sex", "t2dmduration", "ethnicity", "prehba1c", "prebmi", "preegfr", "ASCVD")
+
+tab.benefits <- CreateTableOne(vars = vars, includeNA = TRUE, strata = "benefit", data = hba1c.train, test = FALSE)
+## Show table with SMD
+print(tab.benefits, smd = TRUE)
+
 
 ############################
 vars <- c("drugsubstances", "agetx", "sex", "t2dmduration", "ethnicity", "deprivation",
@@ -37,12 +56,13 @@ factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "d
 #####################
 # Full cohort
 full.cohort <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
-  mutate(CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No")) %>%
-  mutate(microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"))
+  mutate(CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
+         microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
+         ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No"))
   
 
 ## Construct a table
-tab.full.cohort <- CreateTableOne(vars = c(vars, "preckd", "CV_problems", "microvascular_complications"), factorVars = c(factorvars, "preckd", "CV_problems", "microvascular_complications"), includeNA = TRUE, strata = "drugclass", data = full.cohort, test = FALSE)
+tab.full.cohort <- CreateTableOne(vars = c(vars, "preckd", "CV_problems", "microvascular_complications", "ASCVD", "posthba1cfinal", "MFN",  "DPP4", "GLP1", "SGLT2", "SU", "TZD"), factorVars = c(factorvars, "preckd", "CV_problems", "microvascular_complications", "ASCVD", "MFN",  "DPP4", "GLP1", "SGLT2", "SU", "TZD"), includeNA = TRUE, strata = "drugclass", data = full.cohort, test = FALSE)
 ## Show table with SMD
 print(tab.full.cohort, smd = TRUE)
 
