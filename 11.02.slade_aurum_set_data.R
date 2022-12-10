@@ -343,7 +343,9 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
       # Weight analysis
       preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
       # eGFR analysis
-      postegfr12m, postegfr6m
+      postegfr12m, postegfr6m,
+      # discontinuation
+      stopdrug_6m_3mFU
     ) %>%
     as.data.frame()
   
@@ -1035,7 +1037,9 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
       prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
       # Comorbidities
       preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+      # discontinuation
+      stopdrug_6m_3mFU
     ) %>%
     as.data.frame()
   
@@ -1597,6 +1601,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       posthba1cfinal,
       # therapies of interest
       drugclass,
+      # background
+      MFN, DPP4, GLP1, SGLT2, SU, TZD,
       # Sociodemographic features
       agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
       # Diabetes treatment 
@@ -1610,7 +1616,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       # Weight analysis
       preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
       # eGFR analysis
-      postegfr12m, postegfr6m
+      postegfr12m, postegfr6m,
+      # discontinuation
+      stopdrug_6m_3mFU
     ) %>%
     as.data.frame()
   
@@ -2302,7 +2310,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
       # Comorbidities
       preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf
+      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+      # discontinuation
+      stopdrug_6m_3mFU
     ) %>%
     as.data.frame()
   
