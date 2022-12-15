@@ -7,6 +7,59 @@
 require(tidyverse)
 
 
+# synthetic.original <- set_up_data_sglt2_glp1(dataset.type="synthetic")
+# synthetic.newer <- set_up_data(dataset.type="synthetic", drugs = c("GLP1", "SGLT2"))
+# identical(synthetic.original, synthetic.newer)
+# 
+# full.cohort.original <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+# full.cohort.newer <- set_up_data(dataset.type="full.cohort", drugs = c("GLP1", "SGLT2"))
+# identical(full.cohort.original, full.cohort.newer)
+# 
+# ps.model.train.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.train")
+# ps.model.train.newer <- set_up_data(dataset.type="ps.model.train", drugs = c("GLP1", "SGLT2"))
+# identical(ps.model.train.original, ps.model.train.newer)
+# 
+# ps.model.test.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.test")
+# ps.model.test.newer <- set_up_data(dataset.type="ps.model.test", drugs = c("GLP1", "SGLT2"))
+# identical(ps.model.test.original, ps.model.test.newer)
+# 
+# hba1c.train.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.train")
+# hba1c.train.newer <- set_up_data(dataset.type="hba1c.train", drugs = c("GLP1", "SGLT2"))
+# identical(hba1c.train.original, hba1c.train.newer)
+# 
+# hba1c.test.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.test")
+# hba1c.test.newer <- set_up_data(dataset.type="hba1c.test", drugs = c("GLP1", "SGLT2"))
+# identical(hba1c.test.original, hba1c.test.newer)
+# 
+# weight.dataset.original <- set_up_data_sglt2_glp1(dataset.type="weight.dataset")
+# weight.dataset.newer <- set_up_data(dataset.type="weight.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(weight.dataset.original, weight.dataset.newer)
+# 
+# discontinuation.dataset.original <- set_up_data_sglt2_glp1(dataset.type="discontinuation.dataset")
+# discontinuation.dataset.newer <- set_up_data(dataset.type="discontinuation.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(discontinuation.dataset.original, discontinuation.dataset.newer)
+# 
+# egfr.dataset.original <- set_up_data_sglt2_glp1(dataset.type="egfr.dataset")
+# egfr.dataset.newer <- set_up_data(dataset.type="egfr.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(egfr.dataset.original, egfr.dataset.newer)
+# 
+# ckd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="ckd.dataset")
+# ckd.dataset.newer <- set_up_data(dataset.type="ckd.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(ckd.dataset.original, ckd.dataset.newer)
+# 
+# cvd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="cvd.dataset")
+# cvd.dataset.newer <- set_up_data(dataset.type="cvd.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(cvd.dataset.original, cvd.dataset.newer)
+# 
+# hf.dataset.original <- set_up_data_sglt2_glp1(dataset.type="hf.dataset")
+# hf.dataset.newer <- set_up_data(dataset.type="hf.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(hf.dataset.original, hf.dataset.newer)
+# 
+# no_co.dataset.original <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset")
+# no_co.dataset.newer <- set_up_data(dataset.type="no_co.dataset", drugs = c("GLP1", "SGLT2"))
+# identical(no_co.dataset.original, no_co.dataset.newer)
+
+
 ###############################################################################
 ###############################################################################
 ############################### Functions #####################################
@@ -20,8 +73,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset")
   }
   if (missing(drugs)) {stop("'drugs' needs to be supplied")}
   if (!is.character(drugs)) {stop("'drugs' must be a character string")}
@@ -31,10 +84,11 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     }
   }
   
+  if (dataset.type == "ckd.dataset") {stop("outcome variables for 'ckd.dataset' hasn't been coded")}
   
     
   # load original dataset # name - t2d_1stinstance
-  load("/slade/CPRD_data/mastermind_2022/20221110_t2d_1stinstance.Rda")
+  load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
   
@@ -310,7 +364,77 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     #####   - Transient Ischaemic Attack: predrug_earliest_tia
     mutate(pretia = factor(predrug_tia, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - Atrial fibrillation: predrug_earliest_af
-    mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes")))
+    mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    #####   - CKD stages
+    mutate(preckd = factor(preckdstage)) %>%
+    #####   - Pre-existing CVD
+    mutate(predrug_cvd = ifelse(predrug_angina==1 | predrug_ihd==1 | predrug_myocardialinfarction==1 | predrug_pad==1 | predrug_revasc==1 | predrug_stroke==1, 1, 0)) %>%
+    mutate(predrug_cvd = factor(predrug_cvd, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    #####   - Date of CV / HF death for later outcomes
+    mutate(cv_death_date_any_cause=if_else(!is.na(death_date) & !is.na(cv_death_any_cause) & cv_death_any_cause==1, death_date, as.Date(NA)),
+           cv_death_date_primary_cause=if_else(!is.na(death_date) & !is.na(cv_death_primary_cause) & cv_death_primary_cause==1, death_date, as.Date(NA)),
+           hf_death_date_any_cause=if_else(!is.na(death_date) & !is.na(hf_death_any_cause) & hf_death_any_cause==1, death_date, as.Date(NA)),
+           hf_death_date_primary_cause=if_else(!is.na(death_date) & !is.na(hf_death_primary_cause) & hf_death_primary_cause==1, death_date, as.Date(NA))) %>%
+    #####   - Define 5 years post-drug start date for later censoring
+    mutate(five_years_post_dstart=dstartdate+(365.25*5))
+  
+  
+  
+  ################################################
+  ##### Add in later GLP1/SGLT2/TZD drug starts needed for censoring
+  ################################################
+  
+  
+  
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+    
+    # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
+    load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
+    
+    later_sglt2 <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="SGLT2") %>%
+                    select(patid, next_sglt2=dstartdate)), by="patid") %>%
+      filter(next_sglt2>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    later_glp1 <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="GLP1") %>%
+                    select(patid, next_glp1=dstartdate)), by="patid") %>%
+      filter(next_glp1>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    later_tzd <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="TZD") %>%
+                    select(patid, next_tzd=dstartdate)), by="patid") %>%
+      filter(next_tzd>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    cprd <- cprd %>%
+      left_join(later_sglt2, by=c("patid", "dstartdate")) %>%
+      left_join(later_glp1, by=c("patid", "dstartdate")) %>%
+      left_join(later_tzd, by=c("patid", "dstartdate"))
+    
+    
+    
+    
+  }
+  
+  
   
   
   ###############################################################################
@@ -322,32 +446,78 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  final.dataset <- cprd %>%
-    select(
-      # information regarding patient
-      patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
-      # response hba1c
-      posthba1cfinal,
-      # therapies of interest
-      drugclass,
-      # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
-      # Diabetes treatment 
-      drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
-      # Biomarkers
-      prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
-      prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
-      # Comorbidities
-      preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
-      # Weight analysis
-      preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
-      # eGFR analysis
-      postegfr12m, postegfr6m,
-      # discontinuation
-      stopdrug_6m_3mFU
-    ) %>%
-    as.data.frame()
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+    
+    final.dataset <- cprd %>%
+      select(
+        # information regarding patient
+        patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
+        # response hba1c
+        posthba1cfinal,
+        # therapies of interest
+        drugclass,
+        # background
+        MFN, DPP4, GLP1, SGLT2, SU, TZD,
+        # Sociodemographic features
+        agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
+        # Diabetes treatment 
+        drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
+        # Biomarkers
+        prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+        prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+        # Comorbidities
+        preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+        preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
+        # Weight analysis
+        preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
+        # eGFR analysis
+        postegfr12m, postegfr6m,
+        # discontinuation
+        stopdrug_6m_3mFU,
+        # CKD
+        preckdstage,
+        # CVD
+        predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
+        five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
+        # HF
+        postdrug_first_primary_hhf, hf_death_date_primary_cause,
+        # No comorbidities
+        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, hf_death_date_any_cause
+      ) %>%
+      as.data.frame()
+    
+  } else {
+    
+    final.dataset <- cprd %>%
+      select(
+        # information regarding patient
+        patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
+        # response hba1c
+        posthba1cfinal,
+        # therapies of interest
+        drugclass,
+        # background
+        MFN, DPP4, GLP1, SGLT2, SU, TZD,
+        # Sociodemographic features
+        agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
+        # Diabetes treatment 
+        drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
+        # Biomarkers
+        prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+        prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+        # Comorbidities
+        preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+        preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
+        # Weight analysis
+        preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
+        # eGFR analysis
+        postegfr12m, postegfr6m,
+        # discontinuation
+        stopdrug_6m_3mFU,
+      ) %>%
+      as.data.frame()
+    
+  }
   
   # printing inclusion patients
   if (dataset.type == "diagnostics") {
@@ -1246,6 +1416,851 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   }
   
   
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ######################### CKD outcome population ##############################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CKD outcome model")
+    print("################################################")
+    
+  }
+  
+  ckd.dataset <- final.dataset
+  
+  ################################################
+  ##### Drop if no CKD
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(no_ckd = ifelse(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"), 1, 0))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no CKD")
+    print("################################################")
+    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"))
+  
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(ckd.dataset$multi_drug_start))
+    print(table(ckd.dataset$multi_drug_start, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(ckd.dataset$timeprevcombo_less61))
+    print(table(ckd.dataset$timeprevcombo_less61, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(ckd.dataset$hb_extreme_53))
+    print(table(ckd.dataset$hb_extreme_53, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(ckd.dataset$prehba1c)))
+    print(table(is.na(ckd.dataset$prehba1c), ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(ckd.dataset$TZD, ckd.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(ckd.dataset$GLP1, ckd.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(ckd.dataset$SGLT2, ckd.dataset$drugclass))
+    
+  }
+  
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  # ckd.dataset <- ckd.dataset %>%
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.ckd.dataset <- ckd.dataset %>%
+    # select(
+    #   # information regarding patient
+    #   patid, pated,
+    #   # response hba1c
+    #   posthba1cfinal,
+    #   # therapies of interest
+    #   drugclass,
+    #   # Sociodemographic features
+    #   agetx, sex, t2dmduration, 
+    #   # Diabetes treatment 
+    #   drugline, ncurrtx, hba1cmonth,
+  #   # Biomarkers
+  #   prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin,
+  #   prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+  #   # Comorbidities
+  #   preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+  #   preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+  #   # eGFR analysis
+  #   postegfr
+  # ) %>%
+  as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CKD model - final")
+    print("################################################")
+    print(nrow(final.ckd.dataset))
+    print(table(final.ckd.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "ckd.dataset") {
+    return(final.ckd.dataset)
+  }
+  
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ######################### CVD outcome population ##############################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD outcome model")
+    print("################################################")
+    
+  }
+  
+  cvd.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no CVD
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no CVD")
+    print("################################################")
+    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(predrug_cvd == "Yes")
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(cvd.dataset$multi_drug_start))
+    print(table(cvd.dataset$multi_drug_start, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  cvd.dataset <- cvd.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(cvd.dataset$timeprevcombo_less61))
+    print(table(cvd.dataset$timeprevcombo_less61, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  cvd.dataset <- cvd.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(cvd.dataset$hb_extreme_53))
+    print(table(cvd.dataset$hb_extreme_53, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(cvd.dataset$prehba1c)))
+    print(table(is.na(cvd.dataset$prehba1c), cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(cvd.dataset$TZD, cvd.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(cvd.dataset$GLP1, cvd.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(cvd.dataset$SGLT2, cvd.dataset$drugclass))
+    
+  }
+  
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  
+  ################################################
+  ##### Outcome variables
+  ################################################
+  
+  ## MACE: narrow definition (hospitalisation/death): narrow ('incident') MI/stroke HES codes (primary cause only) + CV death in ONS death (primary cause only)
+  
+  cvd.dataset <- cvd.dataset %>%
+    
+    mutate(postdrug_mace=pmin(postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_mace_censdate=if_else(drugclass=="GLP1",
+                                          pmin(five_years_post_dstart,
+                                               death_date,
+                                               next_sglt2_start,
+                                               next_tzd_start,
+                                               gp_record_end,
+                                               postdrug_mace, na.rm=TRUE),
+                                          
+                                          if_else(drugclass=="SGLT2",
+                                                  pmin(five_years_post_dstart,
+                                                       death_date,
+                                                       next_glp1_start,
+                                                       next_tzd_start,
+                                                       gp_record_end,
+                                                       postdrug_mace, na.rm=TRUE),
+                                                  as.Date(NA))),
+           
+           postdrug_mace_censvar=ifelse(!is.na(postdrug_mace) & postdrug_mace_censdate==postdrug_mace, 1, 0),
+           
+           postdrug_mace_censtime_yrs=as.numeric(difftime(postdrug_mace_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.cvd.dataset <- cvd.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.cvd.dataset))
+    print(table(final.cvd.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "cvd.dataset") {
+    return(final.cvd.dataset)
+  }
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ##################### Heart Failure outcome population ########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Heart Failure outcome model")
+    print("################################################")
+    
+  }
+  
+  hf.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no heart failure
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no heart failure")
+    print("################################################")
+    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(preheartfailure == "Yes")
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(hf.dataset$multi_drug_start))
+    print(table(hf.dataset$multi_drug_start, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(hf.dataset$timeprevcombo_less61))
+    print(table(hf.dataset$timeprevcombo_less61, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(hf.dataset$hb_extreme_53))
+    print(table(hf.dataset$hb_extreme_53, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(hf.dataset$prehba1c)))
+    print(table(is.na(hf.dataset$prehba1c), hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(hf.dataset$TZD, hf.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(hf.dataset$GLP1, hf.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(hf.dataset$SGLT2, hf.dataset$drugclass))
+    
+  }
+  
+  
+  hf.dataset <- hf.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    
+    ## HF: narrow definition (hospitalisation/death): HF HES codes (primary cause only) + HF death in ONS death (primary cause only)
+    
+    
+    mutate(postdrug_hf=pmin(postdrug_first_primary_hhf, hf_death_date_primary_cause, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_hf_censdate=if_else(drugclass=="GLP1",
+                                        pmin(five_years_post_dstart,
+                                             death_date,
+                                             next_sglt2_start,
+                                             next_tzd_start,
+                                             gp_record_end,
+                                             postdrug_hf, na.rm=TRUE),
+                                        
+                                        if_else(drugclass=="SGLT2",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_glp1_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_hf, na.rm=TRUE),
+                                                as.Date(NA))),
+           
+           postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
+           
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.hf.dataset <- hf.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.hf.dataset))
+    print(table(final.hf.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "hf.dataset") {
+    return(final.hf.dataset)
+  }
+  
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ################# No comorbidities outcome population ########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### No comorbidities outcome model")
+    print("################################################")
+    
+  }
+  
+  no_co.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no heart failure
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(no_comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckdstage) | (preckdstage!="stage_3a" & preckdstage!="stage_3b" & preckdstage!="stage_4")), 1, 0))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(no_co.dataset$no_comorbidities, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(no_comorbidities == 1)
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(no_co.dataset$multi_drug_start))
+    print(table(no_co.dataset$multi_drug_start, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(no_co.dataset$timeprevcombo_less61))
+    print(table(no_co.dataset$timeprevcombo_less61, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(no_co.dataset$hb_extreme_53))
+    print(table(no_co.dataset$hb_extreme_53, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(no_co.dataset$prehba1c)))
+    print(table(is.na(no_co.dataset$prehba1c), no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(no_co.dataset$TZD, no_co.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(no_co.dataset$GLP1, no_co.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(no_co.dataset$SGLT2, no_co.dataset$drugclass))
+    
+  }
+  
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome variables
+  ################################################
+  
+  
+  no_co.dataset <- no_co.dataset %>%
+    
+    
+    mutate(postdrug_mace=pmin(postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, na.rm=TRUE),
+           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE)) %>%
+    
+    
+    # Mace: broad definition: MI/stroke GP codes + broad MI/stroke HES codes (any cause) + CV death in ONS death (any cause)
+    
+    
+    mutate(postdrug_mace_censdate=if_else(drugclass=="GLP1",
+                                          pmin(five_years_post_dstart,
+                                               death_date,
+                                               next_sglt2_start,
+                                               next_tzd_start,
+                                               gp_record_end,
+                                               postdrug_mace, na.rm=TRUE),
+                                          
+                                          if_else(drugclass=="SGLT2",
+                                                  pmin(five_years_post_dstart,
+                                                       death_date,
+                                                       next_glp1_start,
+                                                       next_tzd_start,
+                                                       gp_record_end,
+                                                       postdrug_mace, na.rm=TRUE),
+                                                  as.Date(NA))),
+           
+           postdrug_mace_censvar=ifelse(!is.na(postdrug_mace) & postdrug_mace_censdate==postdrug_mace, 1, 0),
+           
+           postdrug_mace_censtime_yrs=as.numeric(difftime(postdrug_mace_censdate, dstartdate, unit="days"))/365.25,
+           
+           
+           ## HF: broad definition: HF GP codes + HF HES codes (any cause) + HF death in ONS death (any cause)
+           
+           
+           postdrug_hf_censdate=if_else(drugclass=="GLP1",
+                                        pmin(five_years_post_dstart,
+                                             death_date,
+                                             next_sglt2_start,
+                                             next_tzd_start,
+                                             gp_record_end,
+                                             postdrug_hf, na.rm=TRUE),
+                                        
+                                        if_else(drugclass=="SGLT2",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_glp1_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_hf, na.rm=TRUE),
+                                                as.Date(NA))),
+           
+           postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
+           
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
+  
+  ## CKD: TBD
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.no_co.dataset <- no_co.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.no_co.dataset))
+    print(table(final.no_co.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "hf.dataset") {
+    return(final.no_co.dataset)
+  }
+  
+  
+  
+  
 }
 
 
@@ -1256,13 +2271,14 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset")
   }
   
+  if (dataset.type == "ckd.dataset") {stop("outcome variables for 'ckd.dataset' hasn't been coded")}
   
   # load original dataset # name - t2d_1stinstance
-  load("/slade/CPRD_data/mastermind_2022/20221110_t2d_1stinstance.Rda")
+  load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
   
@@ -1581,7 +2597,75 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     #####   - Atrial fibrillation: predrug_earliest_af
     mutate(preaf = factor(predrug_af, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     #####   - CKD stages
-    mutate(preckd = factor(preckdstage))
+    mutate(preckd = factor(preckdstage)) %>%
+    #####   - Pre-existing CVD
+    mutate(predrug_cvd = ifelse(predrug_angina==1 | predrug_ihd==1 | predrug_myocardialinfarction==1 | predrug_pad==1 | predrug_revasc==1 | predrug_stroke==1, 1, 0)) %>%
+    mutate(predrug_cvd = factor(predrug_cvd, levels = c(0, 1), labels = c("No", "Yes"))) %>%
+    #####   - Date of CV / HF death for later outcomes
+    mutate(cv_death_date_any_cause=if_else(!is.na(death_date) & !is.na(cv_death_any_cause) & cv_death_any_cause==1, death_date, as.Date(NA)),
+           cv_death_date_primary_cause=if_else(!is.na(death_date) & !is.na(cv_death_primary_cause) & cv_death_primary_cause==1, death_date, as.Date(NA)),
+           hf_death_date_any_cause=if_else(!is.na(death_date) & !is.na(hf_death_any_cause) & hf_death_any_cause==1, death_date, as.Date(NA)),
+           hf_death_date_primary_cause=if_else(!is.na(death_date) & !is.na(hf_death_primary_cause) & hf_death_primary_cause==1, death_date, as.Date(NA))) %>%
+    #####   - Define 5 years post-drug start date for later censoring
+    mutate(five_years_post_dstart=dstartdate+(365.25*5))
+  
+  
+  
+  ################################################
+  ##### Add in later GLP1/SGLT2/TZD drug starts needed for censoring
+  ################################################
+  
+  
+  
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+    
+    # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
+    load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
+    
+    later_sglt2 <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="SGLT2") %>%
+                    select(patid, next_sglt2=dstartdate)), by="patid") %>%
+      filter(next_sglt2>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    later_glp1 <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="GLP1") %>%
+                    select(patid, next_glp1=dstartdate)), by="patid") %>%
+      filter(next_glp1>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    later_tzd <- cprd %>%
+      select(patid, dstartdate) %>%
+      inner_join((t2d_all_drug_periods %>%
+                    filter(drugclass=="TZD") %>%
+                    select(patid, next_tzd=dstartdate)), by="patid") %>%
+      filter(next_tzd>dstartdate) %>%
+      group_by(patid, dstartdate) %>%
+      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE)) %>%
+      ungroup()
+    
+    
+    cprd <- cprd %>%
+      left_join(later_sglt2, by=c("patid", "dstartdate")) %>%
+      left_join(later_glp1, by=c("patid", "dstartdate")) %>%
+      left_join(later_tzd, by=c("patid", "dstartdate"))
+    
+      
+    
+    
+  }
+  
+  
   
   
   ###############################################################################
@@ -1593,34 +2677,78 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  final.dataset <- cprd %>%
-    select(
-      # information regarding patient
-      patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
-      # response hba1c
-      posthba1cfinal,
-      # therapies of interest
-      drugclass,
-      # background
-      MFN, DPP4, GLP1, SGLT2, SU, TZD,
-      # Sociodemographic features
-      agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
-      # Diabetes treatment 
-      drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
-      # Biomarkers
-      prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
-      prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
-      # Comorbidities
-      preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-      preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
-      # Weight analysis
-      preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
-      # eGFR analysis
-      postegfr12m, postegfr6m,
-      # discontinuation
-      stopdrug_6m_3mFU
-    ) %>%
-    as.data.frame()
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+    
+    final.dataset <- cprd %>%
+      select(
+        # information regarding patient
+        patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
+        # response hba1c
+        posthba1cfinal,
+        # therapies of interest
+        drugclass,
+        # background
+        MFN, DPP4, GLP1, SGLT2, SU, TZD,
+        # Sociodemographic features
+        agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
+        # Diabetes treatment 
+        drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
+        # Biomarkers
+        prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+        prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+        # Comorbidities
+        preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+        preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
+        # Weight analysis
+        preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
+        # eGFR analysis
+        postegfr12m, postegfr6m,
+        # discontinuation
+        stopdrug_6m_3mFU,
+        # CKD
+        preckdstage,
+        # CVD
+        predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
+        five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
+        # HF
+        postdrug_first_primary_hhf, hf_death_date_primary_cause,
+        # No comorbidities
+        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, hf_death_date_any_cause
+      ) %>%
+      as.data.frame()
+    
+  } else {
+    
+    final.dataset <- cprd %>%
+      select(
+        # information regarding patient
+        patid, pated, multi_drug_start, timeprevcombo, drugsubstances,
+        # response hba1c
+        posthba1cfinal,
+        # therapies of interest
+        drugclass,
+        # background
+        MFN, DPP4, GLP1, SGLT2, SU, TZD,
+        # Sociodemographic features
+        agetx, sex, t2dmduration, ethnicity, deprivation, smoke, prehospitalisation,
+        # Diabetes treatment 
+        drugline, ncurrtx, hba1cmonth, dstartdate, dstopdate, yrdrugstart,
+        # Biomarkers
+        prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin, prefastingglucose,
+        prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+        # Comorbidities
+        preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+        preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf, preckd,
+        # Weight analysis
+        preweight, postweight12m, postweight6m, postweight12mdate, postweight6mdate,
+        # eGFR analysis
+        postegfr12m, postegfr6m,
+        # discontinuation
+        stopdrug_6m_3mFU,
+      ) %>%
+      as.data.frame()
+    
+  }
   
   # printing inclusion patients
   if (dataset.type == "diagnostics") {
@@ -2519,5 +3647,853 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ######################### CKD outcome population ##############################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CKD outcome model")
+    print("################################################")
+    
+  }
+  
+  ckd.dataset <- final.dataset
+  
+  ################################################
+  ##### Drop if no CKD
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(no_ckd = ifelse(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"), 1, 0))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no CKD")
+    print("################################################")
+    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"))
+  
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(ckd.dataset$multi_drug_start))
+    print(table(ckd.dataset$multi_drug_start, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(ckd.dataset$timeprevcombo_less61))
+    print(table(ckd.dataset$timeprevcombo_less61, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(ckd.dataset$hb_extreme_53))
+    print(table(ckd.dataset$hb_extreme_53, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(ckd.dataset$prehba1c)))
+    print(table(is.na(ckd.dataset$prehba1c), ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(ckd.dataset$TZD, ckd.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(ckd.dataset$GLP1, ckd.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(ckd.dataset$SGLT2, ckd.dataset$drugclass))
+    
+  }
+  
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  # ckd.dataset <- ckd.dataset %>%
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.ckd.dataset <- ckd.dataset %>%
+    # select(
+    #   # information regarding patient
+    #   patid, pated,
+    #   # response hba1c
+    #   posthba1cfinal,
+    #   # therapies of interest
+    #   drugclass,
+    #   # Sociodemographic features
+    #   agetx, sex, t2dmduration, 
+    #   # Diabetes treatment 
+    #   drugline, ncurrtx, hba1cmonth,
+    #   # Biomarkers
+    #   prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin,
+    #   prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
+    #   # Comorbidities
+    #   preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
+    #   preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
+    #   # eGFR analysis
+    #   postegfr
+    # ) %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CKD model - final")
+    print("################################################")
+    print(nrow(final.ckd.dataset))
+    print(table(final.ckd.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "ckd.dataset") {
+    return(final.ckd.dataset)
+  }
+  
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ######################### CVD outcome population ##############################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD outcome model")
+    print("################################################")
+    
+  }
+  
+  cvd.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no CVD
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no CVD")
+    print("################################################")
+    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(predrug_cvd == "Yes")
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(cvd.dataset$multi_drug_start))
+    print(table(cvd.dataset$multi_drug_start, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  cvd.dataset <- cvd.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(cvd.dataset$timeprevcombo_less61))
+    print(table(cvd.dataset$timeprevcombo_less61, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  cvd.dataset <- cvd.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(cvd.dataset$hb_extreme_53))
+    print(table(cvd.dataset$hb_extreme_53, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(cvd.dataset$prehba1c)))
+    print(table(is.na(cvd.dataset$prehba1c), cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(cvd.dataset$TZD, cvd.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(cvd.dataset$GLP1, cvd.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(cvd.dataset$SGLT2, cvd.dataset$drugclass))
+    
+  }
+  
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  
+  ################################################
+  ##### Outcome variables
+  ################################################
+  
+  ## MACE: narrow definition (hospitalisation/death): narrow ('incident') MI/stroke HES codes (primary cause only) + CV death in ONS death (primary cause only)
+  
+  cvd.dataset <- cvd.dataset %>%
+    
+    mutate(postdrug_mace=pmin(postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_mace_censdate=if_else(drugclass=="GLP1",
+                                          pmin(five_years_post_dstart,
+                                               death_date,
+                                               next_sglt2_start,
+                                               next_tzd_start,
+                                               gp_record_end,
+                                               postdrug_mace, na.rm=TRUE),
+                                          
+                                          if_else(drugclass=="SGLT2",
+                                                  pmin(five_years_post_dstart,
+                                                       death_date,
+                                                       next_glp1_start,
+                                                       next_tzd_start,
+                                                       gp_record_end,
+                                                       postdrug_mace, na.rm=TRUE),
+                                                  as.Date(NA))),
+           
+           postdrug_mace_censvar=ifelse(!is.na(postdrug_mace) & postdrug_mace_censdate==postdrug_mace, 1, 0),
+           
+           postdrug_mace_censtime_yrs=as.numeric(difftime(postdrug_mace_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.cvd.dataset <- cvd.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.cvd.dataset))
+    print(table(final.cvd.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "cvd.dataset") {
+    return(final.cvd.dataset)
+  }
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ##################### Heart Failure outcome population ########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Heart Failure outcome model")
+    print("################################################")
+    
+  }
+  
+  hf.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no heart failure
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if no heart failure")
+    print("################################################")
+    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(preheartfailure == "Yes")
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(hf.dataset$multi_drug_start))
+    print(table(hf.dataset$multi_drug_start, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(hf.dataset$timeprevcombo_less61))
+    print(table(hf.dataset$timeprevcombo_less61, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(hf.dataset$hb_extreme_53))
+    print(table(hf.dataset$hb_extreme_53, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(hf.dataset$prehba1c)))
+    print(table(is.na(hf.dataset$prehba1c), hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(hf.dataset$TZD, hf.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(hf.dataset$GLP1, hf.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(hf.dataset$SGLT2, hf.dataset$drugclass))
+    
+  }
+  
+  
+  hf.dataset <- hf.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  hf.dataset <- hf.dataset %>%
+    
+    ## HF: narrow definition (hospitalisation/death): HF HES codes (primary cause only) + HF death in ONS death (primary cause only)
+    
+    
+    mutate(postdrug_hf=pmin(postdrug_first_primary_hhf, hf_death_date_primary_cause, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_hf_censdate=if_else(drugclass=="GLP1",
+                                        pmin(five_years_post_dstart,
+                                             death_date,
+                                             next_sglt2_start,
+                                             next_tzd_start,
+                                             gp_record_end,
+                                             postdrug_hf, na.rm=TRUE),
+                                        
+                                        if_else(drugclass=="SGLT2",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_glp1_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_hf, na.rm=TRUE),
+                                                as.Date(NA))),
+           
+           postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
+           
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.hf.dataset <- hf.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.hf.dataset))
+    print(table(final.hf.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "hf.dataset") {
+    return(final.hf.dataset)
+  }
+  
+  
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ################# No comorbidities outcome population ########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### No comorbidities outcome model")
+    print("################################################")
+    
+  }
+  
+  no_co.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop if no heart failure
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(no_comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckdstage) | (preckdstage!="stage_3a" & preckdstage!="stage_3b" & preckdstage!="stage_4")), 1, 0))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(no_co.dataset$no_comorbidities, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(no_comorbidities == 1)
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(no_co.dataset$multi_drug_start))
+    print(table(no_co.dataset$multi_drug_start, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(no_co.dataset$timeprevcombo_less61))
+    print(table(no_co.dataset$timeprevcombo_less61, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(no_co.dataset$hb_extreme_53))
+    print(table(no_co.dataset$hb_extreme_53, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(no_co.dataset$prehba1c)))
+    print(table(is.na(no_co.dataset$prehba1c), no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(no_co.dataset$TZD, no_co.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(no_co.dataset$GLP1, no_co.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(no_co.dataset$SGLT2, no_co.dataset$drugclass))
+    
+  }
+  
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome variables
+  ################################################
+  
+  
+  no_co.dataset <- no_co.dataset %>%
+
+
+    mutate(postdrug_mace=pmin(postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, na.rm=TRUE),
+           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE)) %>%
+
+
+    # Mace: broad definition: MI/stroke GP codes + broad MI/stroke HES codes (any cause) + CV death in ONS death (any cause)
+
+
+    mutate(postdrug_mace_censdate=if_else(drugclass=="GLP1",
+                                          pmin(five_years_post_dstart,
+                                               death_date,
+                                               next_sglt2_start,
+                                               next_tzd_start,
+                                               gp_record_end,
+                                               postdrug_mace, na.rm=TRUE),
+
+                                          if_else(drugclass=="SGLT2",
+                                                  pmin(five_years_post_dstart,
+                                                       death_date,
+                                                       next_glp1_start,
+                                                       next_tzd_start,
+                                                       gp_record_end,
+                                                       postdrug_mace, na.rm=TRUE),
+                                                  as.Date(NA))),
+
+           postdrug_mace_censvar=ifelse(!is.na(postdrug_mace) & postdrug_mace_censdate==postdrug_mace, 1, 0),
+
+           postdrug_mace_censtime_yrs=as.numeric(difftime(postdrug_mace_censdate, dstartdate, unit="days"))/365.25,
+
+
+           ## HF: broad definition: HF GP codes + HF HES codes (any cause) + HF death in ONS death (any cause)
+
+
+           postdrug_hf_censdate=if_else(drugclass=="GLP1",
+                                        pmin(five_years_post_dstart,
+                                             death_date,
+                                             next_sglt2_start,
+                                             next_tzd_start,
+                                             gp_record_end,
+                                             postdrug_hf, na.rm=TRUE),
+
+                                        if_else(drugclass=="SGLT2",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_glp1_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_hf, na.rm=TRUE),
+                                                as.Date(NA))),
+
+           postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
+
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
+
+  ## CKD: TBD
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.no_co.dataset <- no_co.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.no_co.dataset))
+    print(table(final.no_co.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "hf.dataset") {
+    return(final.no_co.dataset)
+  }
+  
+  
+  
 }
+
+
+
 
