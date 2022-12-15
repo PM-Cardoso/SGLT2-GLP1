@@ -178,6 +178,8 @@ calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_dif
   # breakdown - variables used to compare quality of matching
   # adjust - variables to adjust linear regression of effects
   
+  require(rlang)
+  
   # split predicted treatment effects into deciles
   predicted_treatment_effect <- data %>%
     plyr::ddply(quantile_var, dplyr::summarise,
@@ -196,10 +198,34 @@ calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_dif
   # iterate through deciles
   for (i in mnumber) {
     
-    data.new <- data[data[,quantile_var] == levels(unique(data[,quantile_var]))[i],]
+    # do this differently if quantile_var is categorical
+    if (is.factor(data[,quantile_var])) {
+      # dataset being used in this quantile
+      data.new <- data[data[,quantile_var] == levels(data[,quantile_var])[i],]
+    } else {
+      # dataset being used in this quantile
+      data.new <- data[data[,quantile_var] == i,]
+    }
+    
+    # variables used in adjustment
+    breakdown_adjust <- breakdown
+    # categorical variables in breakdown
+    factors <- sapply(data.new[,breakdown_adjust], is.factor)
+    # variables with only one variable represented
+    one_category_factors <- sapply(data.new[, breakdown_adjust[factors]], function(x) length(unique(x)) == 1)
+    
+    if (!is_empty(breakdown_adjust[factors][one_category_factors])) {
+      # which variables in breakdown_adjust only have one category represented
+      for (l in 1:length(breakdown_adjust[factors][one_category_factors])) {
+        # position
+        position <- which(breakdown_adjust == breakdown_adjust[factors][one_category_factors][l])
+        # remove var from breakdown_adjust
+        breakdown_adjust <- breakdown_adjust[-position]
+      }
+    }
     
     if (adjust == TRUE) {
-      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust, collapse = "+"))
     } else {
       formula <- "posthba1cfinal ~ factor(drugclass)"
     }
@@ -241,6 +267,8 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # order - which side we start matching individuals, "largest", "smallest", "random"
   # breakdown - variables used to compare quality of matching
   # adjust - variables to adjust linear regression of effects
+  
+  require(rlang)
   
   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
   prop_score <- 1 - prop_scores
@@ -303,6 +331,26 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
     n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
     n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
     
+    if (!is.null(breakdown) & adjust == TRUE) {
+      
+      # variables used in adjustment
+      breakdown_adjust <- breakdown
+      # categorical variables in breakdown
+      factors <- sapply(data.new[,breakdown_adjust], is.factor)
+      # variables with only one variable represented
+      one_category_factors <- sapply(data.new[, breakdown_adjust[factors]], function(x) length(unique(x)) == 1)
+      
+      if (!is_empty(breakdown_adjust[factors][one_category_factors])) {
+        # which variables in breakdown_adjust only have one category represented
+        for (l in 1:length(breakdown_adjust[factors][one_category_factors])) {
+          # position
+          position <- which(breakdown_adjust == breakdown_adjust[factors][one_category_factors][l])
+          # remove var from breakdown_adjust
+          breakdown_adjust <- breakdown_adjust[-position]
+        }
+      }
+      
+    }
     
     if (adjust == TRUE) {
       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
