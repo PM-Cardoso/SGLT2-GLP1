@@ -482,7 +482,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
         # HF
         postdrug_first_primary_hhf, hf_death_date_primary_cause,
         # No comorbidities
-        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, hf_death_date_any_cause
+        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, 
+        hf_death_date_any_cause, qrisk2_10yr_score
       ) %>%
       as.data.frame()
     
@@ -514,6 +515,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
         postegfr12m, postegfr6m,
         # discontinuation
         stopdrug_6m_3mFU,
+        # No comorbidities
+        qrisk2_10yr_score
       ) %>%
       as.data.frame()
     
@@ -2254,7 +2257,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     
   }
   
-  if (dataset.type == "hf.dataset") {
+  if (dataset.type == "no_co.dataset") {
     return(final.no_co.dataset)
   }
   
@@ -2713,7 +2716,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
         # HF
         postdrug_first_primary_hhf, hf_death_date_primary_cause,
         # No comorbidities
-        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, hf_death_date_any_cause
+        postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, 
+        hf_death_date_any_cause, qrisk2_10yr_score
       ) %>%
       as.data.frame()
     
@@ -2745,6 +2749,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
         postegfr12m, postegfr6m,
         # discontinuation
         stopdrug_6m_3mFU,
+        # No comorbidities
+        qrisk2_10yr_score
       ) %>%
       as.data.frame()
     
@@ -4486,7 +4492,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     
   }
   
-  if (dataset.type == "hf.dataset") {
+  if (dataset.type == "no_co.dataset") {
     return(final.no_co.dataset)
   }
   
