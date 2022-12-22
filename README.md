@@ -20,10 +20,12 @@ Collection of functions and scripts to investigate how clinical features can be 
     - Plot predicted CATE vs ATE for several ntiles of predicted treatment effect:
         - Propensity score matching 1:1 (check whether matched individuals are well balanced)
         - Propensity score matching 1:1 whilst adjusting for all variables used in the propensity score and the BCF model.
+        - Adjust for all variables used in the propensity score and the BCF model.
 
 
 ---
 (Developed in CPRD: GOLD download)
+
 Files:
 - 0.0: Functions
     - .1: Functions for plotting and some calculations.
@@ -85,6 +87,7 @@ Files:
     - .5: Model heterogeneity.
     - .6: Risks/Benefits: weight change, eGFR change, discontinuation.
     - .7: Differential treatment effects.
+    - .8: Paper plots.
 
 
     
