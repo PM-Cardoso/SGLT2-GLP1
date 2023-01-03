@@ -386,7 +386,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -429,9 +429,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
       left_join(later_glp1, by=c("patid", "dstartdate")) %>%
       left_join(later_tzd, by=c("patid", "dstartdate"))
     
-    
-    
-    
   }
   
   
@@ -446,7 +443,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
     
     final.dataset <- cprd %>%
       select(
@@ -475,7 +472,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
         # discontinuation
         stopdrug_6m_3mFU,
         # CKD
-        preckdstage,
+        preckd, predrug_cvd,
         # CVD
         predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
         five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
@@ -1438,27 +1435,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   ckd.dataset <- final.dataset
   
-  ################################################
-  ##### Drop if no CKD
-  ################################################
-  
-  ckd.dataset <- ckd.dataset %>%
-    mutate(no_ckd = ifelse(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"), 1, 0))
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no CKD")
-    print("################################################")
-    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
-    
-  }
-  
-  ckd.dataset <- ckd.dataset %>%
-    filter(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"))
-  
-  
   
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
@@ -1540,6 +1516,28 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   ckd.dataset <- ckd.dataset %>%
     filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if CKD
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(no_ckd = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if CKD")
+    print("################################################")
+    print(table(ckd.dataset$no_ckd))
+    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(no_ckd))
+  
   
   
   ################################################
@@ -1641,24 +1639,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   ################################################
-  ##### Drop if no CVD
-  ################################################
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no CVD")
-    print("################################################")
-    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
-    
-  }
-  
-  cvd.dataset <- cvd.dataset %>%
-    filter(predrug_cvd == "Yes")
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -1738,6 +1718,25 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   cvd.dataset <- cvd.dataset %>%
     filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if CVD
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if CVD")
+    print("################################################")
+    print(table(cvd.dataset$predrug_cvd))
+    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(predrug_cvd == "No")
+  
   
   
   ################################################
@@ -1844,24 +1843,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   ################################################
-  ##### Drop if no heart failure
-  ################################################
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no heart failure")
-    print("################################################")
-    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
-    
-  }
-  
-  hf.dataset <- hf.dataset %>%
-    filter(preheartfailure == "Yes")
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -1941,6 +1922,26 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   hf.dataset <- hf.dataset %>%
     filter(!is.na(prehba1c))
+  
+  
+  
+  ################################################
+  ##### Drop if heart failure
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if heart failure")
+    print("################################################")
+    print(table(hf.dataset$preheartfailure))
+    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(preheartfailure == "No")
   
   
   ################################################
@@ -2048,27 +2049,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   ################################################
-  ##### Drop if no heart failure
-  ################################################
-  
-  no_co.dataset <- no_co.dataset %>%
-    mutate(no_comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckdstage) | (preckdstage!="stage_3a" & preckdstage!="stage_3b" & preckdstage!="stage_4")), 1, 0))
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if comorbidities")
-    print("################################################")
-    print(table(no_co.dataset$no_comorbidities, no_co.dataset$drugclass))
-    
-  }
-  
-  no_co.dataset <- no_co.dataset %>%
-    filter(no_comorbidities == 1)
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -2148,6 +2128,28 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   no_co.dataset <- no_co.dataset %>%
     filter(!is.na(prehba1c))
+  
+  
+  
+  ################################################
+  ##### Drop if comorbidity
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckd) | (preckd!="stage_3a" & preckd!="stage_3b" & preckd!="stage_4")), NA_real_, 1))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(no_co.dataset$comorbidities, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(comorbidities))
   
   
   ################################################
@@ -2620,7 +2622,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -2680,7 +2682,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
     
     final.dataset <- cprd %>%
       select(
@@ -2709,7 +2711,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
         # discontinuation
         stopdrug_6m_3mFU,
         # CKD
-        preckdstage,
+        preckd, predrug_cvd,
         # CVD
         predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
         five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
@@ -3674,28 +3676,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ckd.dataset <- final.dataset
   
   ################################################
-  ##### Drop if no CKD
-  ################################################
-  
-  ckd.dataset <- ckd.dataset %>%
-    mutate(no_ckd = ifelse(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"), 1, 0))
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no CKD")
-    print("################################################")
-    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
-    
-  }
-  
-  ckd.dataset <- ckd.dataset %>%
-    filter(!is.na(preckdstage) & (preckdstage=="stage_3a" | preckdstage=="stage_3b" | preckdstage=="stage_4"))
-  
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -3775,6 +3755,29 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   ckd.dataset <- ckd.dataset %>%
     filter(!is.na(prehba1c))
+  
+  
+  ################################################
+  ##### Drop if CKD
+  ################################################
+  
+  ckd.dataset <- ckd.dataset %>%
+    mutate(no_ckd = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if CKD")
+    print("################################################")
+    print(table(ckd.dataset$no_ckd))
+    print(table(ckd.dataset$no_ckd, ckd.dataset$drugclass))
+    
+  }
+  
+  ckd.dataset <- ckd.dataset %>%
+    filter(is.na(no_ckd))
+  
   
   
   ################################################
@@ -3876,24 +3879,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   ################################################
-  ##### Drop if no CVD
-  ################################################
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no CVD")
-    print("################################################")
-    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
-    
-  }
-  
-  cvd.dataset <- cvd.dataset %>%
-    filter(predrug_cvd == "Yes")
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -3973,6 +3958,24 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cvd.dataset <- cvd.dataset %>%
     filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if CVD
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if CVD")
+    print("################################################")
+    print(table(cvd.dataset$predrug_cvd))
+    print(table(cvd.dataset$predrug_cvd, cvd.dataset$drugclass))
+    
+  }
+  
+  cvd.dataset <- cvd.dataset %>%
+    filter(predrug_cvd == "No")
   
   
   ################################################
@@ -4078,23 +4081,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   hf.dataset <- final.dataset
   
   
-  ################################################
-  ##### Drop if no heart failure
-  ################################################
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if no heart failure")
-    print("################################################")
-    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
-    
-  }
-  
-  hf.dataset <- hf.dataset %>%
-    filter(preheartfailure == "Yes")
-  
   
   ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
@@ -4176,6 +4162,24 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   hf.dataset <- hf.dataset %>%
     filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if heart failure
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if heart failure")
+    print("################################################")
+    print(table(hf.dataset$preheartfailure))
+    print(table(hf.dataset$preheartfailure, hf.dataset$drugclass))
+    
+  }
+  
+  hf.dataset <- hf.dataset %>%
+    filter(preheartfailure == "No")
   
   
   ################################################
@@ -4283,27 +4287,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   ################################################
-  ##### Drop if no heart failure
-  ################################################
-  
-  no_co.dataset <- no_co.dataset %>%
-    mutate(no_comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckdstage) | (preckdstage!="stage_3a" & preckdstage!="stage_3b" & preckdstage!="stage_4")), 1, 0))
-  
-  # printing inclusion patients
-  if (dataset.type == "diagnostics") {
-    
-    print("################################################")
-    print("##### Drop if comorbidities")
-    print("################################################")
-    print(table(no_co.dataset$no_comorbidities, no_co.dataset$drugclass))
-    
-  }
-  
-  no_co.dataset <- no_co.dataset %>%
-    filter(no_comorbidities == 1)
-  
-  
-  ################################################
   ##### Drop duplicates (i.e. started treatment on same day)
   ################################################
   
@@ -4383,6 +4366,26 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   no_co.dataset <- no_co.dataset %>%
     filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if comorbidity
+  ################################################
+  
+  no_co.dataset <- no_co.dataset %>%
+    mutate(comorbidities = ifelse(predrug_cvd == "No" & preheartfailure == "No" & (is.na(preckd) | (preckd!="stage_3a" & preckd!="stage_3b" & preckd!="stage_4")), NA_real_, 1))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(no_co.dataset$comorbidities, no_co.dataset$drugclass))
+    
+  }
+  
+  no_co.dataset <- no_co.dataset %>%
+    filter(is.na(comorbidities))
   
   
   ################################################
