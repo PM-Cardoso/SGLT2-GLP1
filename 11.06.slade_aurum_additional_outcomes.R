@@ -6,6 +6,11 @@
 ##    - Discontinuation
 ####################
 
+###
+## Need to try discontinuationw without rcs
+###
+
+
 library(tidyverse)
 library(margins)
 library(forestplot)
@@ -13,8 +18,7 @@ library(grid)
 library(rms)
 
 ## Analysis of outcomes
-# library(rstanarm)
-# library(bcf)
+library(rstanarm)
 
 
 ## increase memery usage to 50gb of RAM
@@ -60,6 +64,15 @@ source("11.01.slade_aurum_functions.R")
 source("11.02.slade_aurum_set_data.R")
 
 
+
+###############################################################################
+###############################################################################
+########################## General variables ##################################
+###############################################################################
+###############################################################################
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
 ## Read in propensity scores
 patient_prop_scores <- readRDS(paste0(output_path, "/ps_model/patient_prop_scores.rds"))
 
@@ -73,93 +86,392 @@ variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.
 
 model_variables <- unique(c(variables_mu, variables_tau))[which(unique(c(variables_mu, variables_tau)) != "sex")]
 
+
+
+
+
 #:--------------------------------------------------------
 # HbA1c grouping
 hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(patient_prop_scores, by = c("patid", "pated")) %>%
   left_join(treatment_effects, by = c("patid", "pated"))
 
-breaks_hba1c <- c(-5, -3, 0, 3, 5)
-
 group.hba1c.dataset <- group_values(data = hba1c.train,
                                     variable = "effects",
-                                    breaks = breaks_hba1c) %>%
+                                    breaks = interval_breaks) %>%
   drop_na(intervals) %>%
   rename("hba1c_diff" = "effects")
 
 group.hba1c.dataset.male <- group.hba1c.dataset %>% filter(sex == "Male")
 group.hba1c.dataset.female <- group.hba1c.dataset %>% filter(sex == "Female")
 
-ATE_hba1c_male <- calc_ATE_validation_adjust(group.hba1c.dataset.male, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+# Propensity score matching
+ATE_psm_1_1_hba1c <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
 
-ATE_hba1c_female <- calc_ATE_validation_adjust(group.hba1c.dataset.female, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+ATE_psm_1_1_hba1c_male <- calc_ATE_validation_prop_matching(group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.male$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
 
-hba1c_axis_min <- plyr::round_any(floor(min(c(ATE_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% min(), ATE_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% min()))), 2, f = floor)
+ATE_psm_1_1_hba1c_female <- calc_ATE_validation_prop_matching(group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.female$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
 
-hba1c_axis_max <- plyr::round_any(ceiling(max(c(ATE_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% max(), ATE_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% max()))), 2, f = ceiling)
+# Propensity score matching + adjust
+ATE_psm_1_1_adjust_hba1c <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+
+ATE_psm_1_1_adjust_hba1c_male <- calc_ATE_validation_prop_matching(group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.male$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+
+ATE_psm_1_1_adjust_hba1c_female <- calc_ATE_validation_prop_matching(group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.female$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+
+# Adjust
+ATE_adjust_hba1c <- calc_ATE_validation_adjust(group.hba1c.dataset, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+
+ATE_adjust_hba1c_male <- calc_ATE_validation_adjust(group.hba1c.dataset.male, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+
+ATE_adjust_hba1c_female <- calc_ATE_validation_adjust(group.hba1c.dataset.female, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+
+
+# Axis
+hba1c_overall_axis_min <- plyr::round_any(floor(min(c(ATE_psm_1_1_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_psm_1_1_adjust_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_adjust_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% min()))), 2, f = floor)
+
+hba1c_overall_axis_max <- plyr::round_any(ceiling(max(c(ATE_psm_1_1_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_psm_1_1_adjust_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_adjust_hba1c[["effects"]] %>% select(c("obs","lci","uci")) %>% max()))), 2, f = ceiling)
+
+
+hba1c_strata_axis_min <- plyr::round_any(floor(min(c(ATE_psm_1_1_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                     ATE_psm_1_1_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                     ATE_psm_1_1_adjust_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                     ATE_psm_1_1_adjust_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                     ATE_adjust_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                     ATE_adjust_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% min()))), 2, f = floor)
+
+hba1c_strata_axis_max <- plyr::round_any(ceiling(max(c(ATE_psm_1_1_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                       ATE_psm_1_1_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                       ATE_psm_1_1_adjust_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                       ATE_psm_1_1_adjust_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                       ATE_adjust_hba1c_male[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                       ATE_adjust_hba1c_female[["effects"]] %>% select(c("obs","lci","uci")) %>% max()))), 2, f = ceiling)
 
 
 
-plot_hba1c_male <- rbind(
-  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", N = NA, hba1c_diff.pred = NA, obs = NA, lci = NA, uci = NA),
-  ATE_hba1c_male[["effects"]][1:3,],
-  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", N = NA, hba1c_diff.pred = NA, obs = NA, lci = NA, uci = NA),
-  ATE_hba1c_male[["effects"]][4:6,]
+# Propensity score matching
+plot_psm_1_1_overall_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
 ) %>%
   as.data.frame() %>%
   mutate(obs = as.numeric(obs),
          lci = as.numeric(lci),
          uci = as.numeric(uci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=1602)", ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=2315)", ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=6474)", ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=5285)", ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=1084)", ifelse(intervals == "(5,31]", ">5 mmol/mol (n=569)", intervals))))))) %>%
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
   rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
   forestplot(labeltext = intervals,
              ci.vertices = TRUE,
-             xticks = seq(hba1c_axis_min, hba1c_axis_max, 2),
+             title = "Propensity score matching",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
              ci.vertices.height = 0.05,
              boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
              xlab = "Average treatment effect (mmol/mol)") %>%
-  fp_add_header("Male (n=17329")
-  
-plot_hba1c_female <- rbind(
-  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", N = NA, hba1c_diff.pred = NA, obs = NA, lci = NA, uci = NA),
-  ATE_hba1c_female[["effects"]][1:3,],
-  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", N = NA, hba1c_diff.pred = NA, obs = NA, lci = NA, uci = NA),
-  ATE_hba1c_female[["effects"]][4:6,]
+  fp_add_header(paste0("Overall population (n=", sum(ATE_psm_1_1_hba1c[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_male_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
 ) %>%
   as.data.frame() %>%
   mutate(obs = as.numeric(obs),
          lci = as.numeric(lci),
          uci = as.numeric(uci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=591)", ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=538)", ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=2267)", ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=3779)", ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=2694)", ifelse(intervals == "(5,31]", ">5 mmol/mol (n=1487)", intervals))))))) %>%
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
   rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
   forestplot(labeltext = intervals,
              ci.vertices = TRUE,
-             xticks = seq(hba1c_axis_min, hba1c_axis_max, 2),
+             title = "",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
              ci.vertices.height = 0.05,
              boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
              xlab = "Average treatment effect (mmol/mol)") %>%
-  fp_add_header("Female (n=11356)")
+  fp_add_header(paste0("Male (n=", sum(ATE_psm_1_1_hba1c_male[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_female_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Female (n=", sum(ATE_psm_1_1_hba1c_female[["effects"]]$n_drug1)*2, ")"))
+
+# Propensity score matching + adjust
+plot_psm_1_1_adjust_overall_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjust",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Overall population (n=", sum(ATE_psm_1_1_adjust_hba1c[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_adjust_male_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_male[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Male (n=", sum(ATE_psm_1_1_adjust_hba1c_male[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_adjust_female_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_psm_1_1_adjust_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_psm_1_1_adjust_hba1c_female[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjust",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Female (n=", sum(ATE_psm_1_1_adjust_hba1c_female[["effects"]]$n_drug1)*2, ")"))
+
+# Adjust
+plot_adjust_overall_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hba1c.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[1])%>%nrow(), ")"), 
+                            ifelse(intervals == levels(group.hba1c.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.hba1c.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[3])%>%nrow(), ")"), 
+                                          ifelse(intervals == levels(group.hba1c.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[4])%>%nrow(), ")"), 
+                                                 ifelse(intervals == levels(group.hba1c.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[5])%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hba1c.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hba1c.dataset%>%filter(intervals == levels(group.hba1c.dataset$intervals)[6])%>%nrow(), ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Adjust",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Overall population (n=", group.hba1c.dataset%>%nrow(), ")"))
+
+plot_adjust_male_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c_male[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hba1c.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[1])%>%nrow(), ")"), 
+                            ifelse(intervals == levels(group.hba1c.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.hba1c.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[3])%>%nrow(), ")"), 
+                                          ifelse(intervals == levels(group.hba1c.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[4])%>%nrow(), ")"), 
+                                                 ifelse(intervals == levels(group.hba1c.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[5])%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hba1c.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hba1c.dataset.male%>%filter(intervals == levels(group.hba1c.dataset.male$intervals)[6])%>%nrow(), ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Male (n=", group.hba1c.dataset.male%>%nrow(), ")"))
+
+plot_adjust_female_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_adjust_hba1c_female[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hba1c.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[1])%>%nrow(), ")"), 
+                            ifelse(intervals == levels(group.hba1c.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.hba1c.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[3])%>%nrow(), ")"), 
+                                          ifelse(intervals == levels(group.hba1c.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[4])%>%nrow(), ")"), 
+                                                 ifelse(intervals == levels(group.hba1c.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[5])%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hba1c.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hba1c.dataset.female%>%filter(intervals == levels(group.hba1c.dataset.female$intervals)[6])%>%nrow(), ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Adjust",
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Female (n=", group.hba1c.dataset.female%>%nrow(), ")"))
 
 
-pdf(width = 14, height = 3.5, "Plots/hba1c_grouping.pdf")
+
+pdf(width = 7, height = 12, "Plots/hba1c_grouping_overall.pdf")
 
 grid.newpage()
-pushViewport(viewport(layout = grid.layout(nrow = 2,
-                                           ncol = 2, heights = unit(c(0.5, 5), "null"))))
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HbA1c treatment effect", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_psm_1_1_overall_hba1c
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_psm_1_1_adjust_overall_hba1c
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_adjust_overall_hba1c
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/hba1c_grouping_strata.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
 # title
 grid.text("HbA1c treatment effect", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
 
 # first plot
 pushViewport(viewport(layout.pos.row = 2,
                       layout.pos.col = 1))
-plot_hba1c_male
+plot_psm_1_1_female_hba1c
 upViewport()
 # second plot
 pushViewport(viewport(layout.pos.row = 2,
                       layout.pos.col = 2))
-plot_hba1c_female
+plot_psm_1_1_male_hba1c
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_psm_1_1_adjust_female_hba1c
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_psm_1_1_adjust_male_hba1c
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_adjust_female_hba1c
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_adjust_male_hba1c
+upViewport()
 
 dev.off()
+
+
+
+
+
 
 #:--------------------------------------------------------
 # Weight change
@@ -171,300 +483,16 @@ weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
   mutate(w.change = postweight - preweight)
 
 
-breaks_weight <- c(-5, -3, 0, 3, 5)
-
 group.weight.dataset <- group_values(data = weight.dataset,
                                      variable = "effects",
-                                     breaks = breaks_weight) %>%
+                                     breaks = interval_breaks) %>%
   drop_na(intervals)
 
-
-## Fit a bcf for the weight change
-# if (class(try(
-#   
-#   weight_bcf <- readRDS(paste0(output_path, "/additional_outcomes/weight_bcf.rds"))
-#   
-#   , silent = TRUE)) == "try-error") {
-#   
-#   weight_bcf <- bcf::bcf(y = group.weight.dataset$w.change,
-#                          z = group.weight.dataset %>%
-#                            select(drugclass) %>%
-#                            mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
-#                            unlist(),
-#                          x_control = group.weight.dataset %>%
-#                            select(
-#                              all_of(c(variables_mu, variables_tau)), "intervals", "preweight"
-#                            ) %>%
-#                            mutate_all(funs(as.numeric(.))) %>%
-#                            as.matrix(),
-#                          x_moderate = group.weight.dataset %>%
-#                            select(
-#                              all_of(c(variables_mu, variables_tau)), "intervals", "preweight"
-#                            ) %>%
-#                            mutate_all(funs(as.numeric(.))) %>%
-#                            as.matrix(),
-#                          pihat = rep(0.5, nrow(group.weight.dataset)),
-#                          nburn = 40000,
-#                          nsim = 2000,
-#                          nthin = 5,
-#                          n_chains = 2,
-#                          # n_threads was max((RcppParallel::defaultNumThreads() - 2)/n_cores, 1) (this uses all of the server)
-#                          n_threads = 4,
-#                          update_interval = 500,
-#                          ntree_control = 200,
-#                          sd_control = 2 * sd(group.weight.dataset$w.change),
-#                          base_control = 0.95,
-#                          power_control = 2,
-#                          ntree_moderate = 200,
-#                          sd_moderate = 2 * sd(group.weight.dataset$w.change),
-#                          base_moderate = 0.95,
-#                          power_moderate = 2,
-#                          use_muscale = FALSE,
-#                          use_tauscale = FALSE,
-#                          include_pi = "none",
-#                          save_tree_directory = paste0(output_path, "/additional_outcomes/trees_weight"))
-#   
-#   saveRDS(weight_bcf, paste0(output_path, "/additional_outcomes/weight_bcf.rds"))
-#   
-#   
-# }
-# 
-# plot_sigma_weight_bcf <- ggplot() +
-#   geom_path(aes(x = 1:length(weight_bcf$sigma), y = weight_bcf$sigma)) +
-#   ggtitle("Sigma") +
-#   ylab("Sigma") +
-#   theme(axis.title.x = element_blank())
-# 
-# 
-# w.changes_bcf <- colMeans(weight_bcf$mu)
-# 
-# # maximum number of deciles being tested
-# quantiles <- length(levels(group.weight.dataset[,"intervals"]))
-# predictions_weight_bcf <- vector()
-# mnumber = c(1:quantiles)
-# 
-# for (i in mnumber) {
-# 
-#   group_w.changes_male_sglt2 <- w.changes_bcf[which(group.weight.dataset$intervals == levels(group.weight.dataset$intervals)[i] &
-#                                                 group.weight.dataset$sex == "Male" &
-#                                                 group.weight.dataset$drugclass == "SGLT2")]
-# 
-#   predictions_weight_bcf <- rbind(predictions_weight_bcf, cbind(mean = mean(group_w.changes_male_sglt2, na.rm = TRUE),
-#                                           lci = quantile(group_w.changes_male_sglt2, probs = c(0.05)),
-#                                           uci = quantile(group_w.changes_male_sglt2, probs = c(0.95)),
-#                                           sex = "Male",
-#                                           drugclass = "SGLT2i",
-#                                           intervals = levels(group.weight.dataset$intervals)[i]))
-# 
-#   group_w.changes_male_glp1 <- w.changes_bcf[which(group.weight.dataset$intervals == levels(group.weight.dataset$intervals)[i] &
-#                                                       group.weight.dataset$sex == "Male" &
-#                                                       group.weight.dataset$drugclass == "GLP1")]
-# 
-#   predictions_weight_bcf <- rbind(predictions_weight_bcf, cbind(mean = mean(group_w.changes_male_glp1, na.rm = TRUE),
-#                                           lci = quantile(group_w.changes_male_glp1, probs = c(0.05)),
-#                                           uci = quantile(group_w.changes_male_glp1, probs = c(0.95)),
-#                                           sex = "Male",
-#                                           drugclass = "GLP1-RA",
-#                                           intervals = levels(group.weight.dataset$intervals)[i]))
-# 
-#   group_w.changes_female_sglt2 <- w.changes_bcf[which(group.weight.dataset$intervals == levels(group.weight.dataset$intervals)[i] &
-#                                                       group.weight.dataset$sex == "Female" &
-#                                                       group.weight.dataset$drugclass == "SGLT2")]
-# 
-#   predictions_weight_bcf <- rbind(predictions_weight_bcf, cbind(mean = mean(group_w.changes_female_sglt2, na.rm = TRUE),
-#                                           lci = quantile(group_w.changes_female_sglt2, probs = c(0.05)),
-#                                           uci = quantile(group_w.changes_female_sglt2, probs = c(0.95)),
-#                                           sex = "Female",
-#                                           drugclass = "SGLT2i",
-#                                           intervals = levels(group.weight.dataset$intervals)[i]))
-# 
-# 
-#   group_w.changes_female_glp1 <- w.changes_bcf[which(group.weight.dataset$intervals == levels(group.weight.dataset$intervals)[i] &
-#                                                      group.weight.dataset$sex == "Female" &
-#                                                      group.weight.dataset$drugclass == "GLP1")]
-# 
-#   predictions_weight_bcf <- rbind(predictions_weight_bcf, cbind(mean = mean(group_w.changes_female_glp1, na.rm = TRUE),
-#                                           lci = quantile(group_w.changes_female_glp1, probs = c(0.05)),
-#                                           uci = quantile(group_w.changes_female_glp1, probs = c(0.95)),
-#                                           sex = "Female",
-#                                           drugclass = "GLP1-RA",
-#                                           intervals = levels(group.weight.dataset$intervals)[i]))
-# 
-# }
-# 
-# 
-# predictions_weight_bcf <- predictions_weight_bcf %>%
-#   as.data.frame()
-# 
-# plot_weight_male <- rbind(
-#   # cbind(mean = NA, lci = NA, uci = NA, sex = "Male", drugclass = "SGLT2i", intervals = "Predicted HbA1c benefit on SGLT2i"),
-#   predictions_weight_bcf %>%
-#     filter(sex == "Male") %>%
-#     slice(c(1:6)),
-#   # cbind(mean = NA, lci = NA, uci = NA, sex = "Male", drugclass = NA, intervals = "Predicted HbA1c benefit on GLP1-RA"),
-#   predictions_weight_bcf %>%
-#     filter(sex == "Male") %>%
-#     slice(-c(1:6))
-# ) %>%
-#   as.data.frame() %>%
-#   mutate(mean = as.numeric(mean),
-#          lci = as.numeric(lci),
-#          intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=2155)", ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=3252)", ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=9124)", ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=7276)", ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=1484)", ifelse(intervals == "(5,31]", ">5 mmol/mol (n=731)", intervals)))))),
-#          uci = as.numeric(uci)) %>%
-#   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
-#   group_by(group) %>%
-#   forestplot(ci.vertices = TRUE,
-#              ci.vertices.height = 0.1,
-#              boxsize = .2,
-#              xlab = "Weight change (kg)") %>%
-#   fp_add_header("Male (n=24022)") %>%
-#   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
-#                default = gpar(vertices = TRUE))
-# 
-# 
-# plot_weight_female <- rbind(
-#   # cbind(mean = NA, lci = NA, uci = NA, sex = "Male", drugclass = "SGLT2i", intervals = "Predicted HbA1c benefit on SGLT2i"),
-#   predictions_weight_bcf %>%
-#     filter(sex == "Female") %>%
-#     slice(c(1:6)),
-#   # cbind(mean = NA, lci = NA, uci = NA, sex = "Male", drugclass = NA, intervals = "Predicted HbA1c benefit on GLP1-RA"),
-#   predictions_weight_bcf %>%
-#     filter(sex == "Female") %>%
-#     slice(-c(1:6))
-# ) %>%
-#   as.data.frame() %>%
-#   mutate(mean = as.numeric(mean),
-#          lci = as.numeric(lci),
-#          intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=815)", ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=704)", ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=3155)", ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=5285)", ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=3554)", ifelse(intervals == "(5,31]", ">5 mmol/mol (n=2019)", intervals)))))),
-#          uci = as.numeric(uci)) %>%
-#   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
-#   group_by(group) %>%
-#   forestplot(ci.vertices = TRUE,
-#              ci.vertices.height = 0.1,
-#              boxsize = .2,
-#              xlab = "Weight change (kg)") %>%
-#   fp_add_header("Female (n=15532)") %>%
-#   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
-#                default = gpar(vertices = TRUE))
-# 
-# 
-# pdf(width = 14, height = 4, "Plots/bcf_weight.pdf")
-# # grid.newpage()
-# # pushViewport(viewport(layout = grid.layout(nrow = 1,
-# #                                            ncol = 2)))
-# # # first plot
-# # pushViewport(viewport(layout.pos.row = 1,
-# #                       layout.pos.col = 1))
-# # plot_weight_male
-# # upViewport()
-# # # second plot
-# # pushViewport(viewport(layout.pos.row = 1,
-# #                       layout.pos.col = 2))
-# # plot_weight_female
-# dev.off()
-
-## Adjustment
-
-# maximum number of deciles being tested
-quantiles <- length(levels(group.weight.dataset[,"intervals"]))
-# create lists with results
-mnumber = c(1:quantiles)
-predictions_weight_stan_adjusted <- vector()
-
 breakdown_adjust <- unique(c(variables_mu, variables_tau))
 # categorical variables in breakdown
 factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
 
-formula <- paste0("w.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + rcs(preweight, 3) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(hba1cmonth, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) +", paste(breakdown_adjust[factors], collapse = " + "))
-
-## Fit a bcf for the weight change
-if (class(try(
-  
-  predictions_weight_stan_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted.rds"))
-  
-  , silent = TRUE)) == "try-error") {
-  
-  models_weight_adjusted <- stan_glm(formula, 
-                     data = group.weight.dataset,
-                     family = gaussian(link = "identity"),
-                     prior = normal(0, 2),
-                     prior_intercept = normal(0, 2))
-  
-  saveRDS(models_weight_adjusted, paste0(output_path, "/additional_outcomes/models_weight_adjusted.rds"))
-  
-  for (i in mnumber) {
-    
-    male_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                            filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                            filter(sex == "Male") %>%
-                            filter(drugclass == "SGLT2"))
-    
-    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                    lci = quantile(male_sglt2, probs = c(0.05)),
-                                                                    uci = quantile(male_sglt2, probs = c(0.95)),
-                                                                    sex = "Male",
-                                                                    drugclass = "SGLT2",
-                                                                    intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    male_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                           filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                           filter(sex == "Male") %>%
-                           filter(drugclass == "GLP1"))
-    
-    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                    lci = quantile(male_glp1, probs = c(0.05)),
-                                                                    uci = quantile(male_glp1, probs = c(0.95)),
-                                                                    sex = "Male",
-                                                                    drugclass = "GLP1",
-                                                                    intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    female_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                              filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                              filter(sex == "Female") %>%
-                              filter(drugclass == "SGLT2"))
-    
-    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                    lci = quantile(female_sglt2, probs = c(0.05)),
-                                                                    uci = quantile(female_sglt2, probs = c(0.95)),
-                                                                    sex = "Female",
-                                                                    drugclass = "SGLT2",
-                                                                    intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    female_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                             filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                             filter(sex == "Female") %>%
-                             filter(drugclass == "GLP1"))
-    
-    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                    lci = quantile(female_glp1, probs = c(0.05)),
-                                                                    uci = quantile(female_glp1, probs = c(0.95)),
-                                                                    sex = "Female",
-                                                                    drugclass = "GLP1",
-                                                                    intervals = levels(group.weight.dataset$intervals)[i]))
-    
-  }
-  
-  predictions_weight_stan_adjusted <- predictions_weight_stan_adjusted %>%
-    as.data.frame()
-  
-  saveRDS(predictions_weight_stan_adjusted, paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted.rds"))
-  
-}
-
-
-## Propensity score matching
-
-# maximum number of deciles being tested
-quantiles <- length(levels(group.weight.dataset[,"intervals"]))
-# create lists with results
-mnumber = c(1:quantiles)
-predictions_weight_stan_psm_1_1 <- vector()
-
-breakdown_adjust <- unique(c(variables_mu, variables_tau))
-# categorical variables in breakdown
-factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
-
-formula <- "w.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + rcs(preweight, 3) + sex"
+formula <- "w.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + rcs(preweight, 3) + sex*factor(drugclass)"
 
 
 matching_weight <- MatchIt::matchit(
@@ -486,17 +514,26 @@ n_drug <- 2*sum(!is.na(matching_weight$match.matrix))
 group.weight.dataset.matched <- group.weight.dataset %>%
   slice(which(matching_weight$weights == 1))
 
+
+## Propensity score matching
 if (class(try(
   
+  # predictions for the weight adjusted model sex strata
   predictions_weight_stan_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1.rds"))
   
   , silent = TRUE)) == "try-error") {
   
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_psm_1_1 <- vector()
+  
   models_weight_psm_1_1 <- stan_glm(formula, 
-                                     data = group.weight.dataset.matched,
-                                     family = gaussian(link = "identity"),
-                                     prior = normal(0, 2),
-                                     prior_intercept = normal(0, 2))
+                                    data = group.weight.dataset.matched,
+                                    family = gaussian(link = "identity"),
+                                    prior = normal(0, 2),
+                                    prior_intercept = normal(0, 2))
   
   saveRDS(models_weight_psm_1_1, paste0(output_path, "/additional_outcomes/models_weight_psm_1_1.rds"))
   
@@ -505,152 +542,45 @@ if (class(try(
     male_sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
                             filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            filter(drugclass == "SGLT2"))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
     
     predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                                      lci = quantile(male_sglt2, probs = c(0.05)),
-                                                                                      uci = quantile(male_sglt2, probs = c(0.95)),
-                                                                                      sex = "Male",
-                                                                                      drugclass = "SGLT2",
-                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    male_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                           filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                           filter(sex == "Male") %>%
-                           filter(drugclass == "GLP1"))
-    
-    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                                      lci = quantile(male_glp1, probs = c(0.05)),
-                                                                                      uci = quantile(male_glp1, probs = c(0.95)),
-                                                                                      sex = "Male",
-                                                                                      drugclass = "GLP1",
-                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    female_sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                              filter(sex == "Female") %>%
-                              filter(drugclass == "SGLT2"))
-    
-    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                                      lci = quantile(female_sglt2, probs = c(0.05)),
-                                                                                      uci = quantile(female_sglt2, probs = c(0.95)),
-                                                                                      sex = "Female",
-                                                                                      drugclass = "SGLT2",
-                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
-    
-    female_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                             filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                             filter(sex == "Female") %>%
-                             filter(drugclass == "GLP1"))
-    
-    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                                      lci = quantile(female_glp1, probs = c(0.05)),
-                                                                                      uci = quantile(female_glp1, probs = c(0.95)),
-                                                                                      sex = "Female",
-                                                                                      drugclass = "GLP1",
-                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
-    
-  }
-  
-  predictions_weight_stan_psm_1_1 <- predictions_weight_stan_psm_1_1 %>%
-    as.data.frame()
-  
-  saveRDS(predictions_weight_stan_psm_1_1, paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1.rds"))
-  
-}
-
-
-## Propensity score matching + adjustment
-
-# maximum number of deciles being tested
-quantiles <- length(levels(group.weight.dataset[,"intervals"]))
-# create lists with results
-mnumber = c(1:quantiles)
-predictions_weight_stan_psm_1_1_adjusted <- vector()
-
-breakdown_adjust <- unique(c(variables_mu, variables_tau))
-# categorical variables in breakdown
-factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
-
-formula <- paste0("w.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + rcs(preweight, 3) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(hba1cmonth, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) +", paste(breakdown_adjust[factors], collapse = "+"))
-
-matching_weight <- MatchIt::matchit(
-  formula = formula(paste0("drugclass ~ preweight + agetx + t2dmduration + hba1cmonth + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
-  data = group.weight.dataset,
-  method = "nearest",
-  distance = group.weight.dataset[,"prop.score"],
-  replace = FALSE,
-  m.order = "largest",
-  caliper = 0.05,
-  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
-)
-
-# require(cobalt)
-# cobalt::love.plot(matching_weight, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
-
-n_drug <- 2*sum(!is.na(matching_weight$match.matrix))
-
-group.weight.dataset.matched <- group.weight.dataset %>%
-  slice(which(matching_weight$weights == 1))
-
-if (class(try(
-  
-  predictions_weight_stan_psm_1_1_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted.rds"))
-  
-  , silent = TRUE)) == "try-error") {
-  
-  models_weight_psm_1_1_adjusted <- stan_glm(formula, 
-                                    data = group.weight.dataset.matched,
-                                    family = gaussian(link = "identity"),
-                                    prior = normal(0, 2),
-                                    prior_intercept = normal(0, 2))
-  
-  saveRDS(models_weight_psm_1_1_adjusted, paste0(output_path, "/additional_outcomes/models_weight_psm_1_1_adjusted.rds"))
-  
-  for (i in mnumber) {
-    
-    male_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
-                            filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                            filter(sex == "Male") %>%
-                            filter(drugclass == "SGLT2"))
-    
-    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
                                                                                     lci = quantile(male_sglt2, probs = c(0.05)),
                                                                                     uci = quantile(male_sglt2, probs = c(0.95)),
                                                                                     sex = "Male",
                                                                                     drugclass = "SGLT2",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    male_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
                            filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           filter(drugclass == "GLP1"))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
     
-    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
+    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(male_glp1, na.rm = TRUE),
                                                                                     lci = quantile(male_glp1, probs = c(0.05)),
                                                                                     uci = quantile(male_glp1, probs = c(0.95)),
                                                                                     sex = "Male",
                                                                                     drugclass = "GLP1",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    female_sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
                               filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              filter(drugclass == "SGLT2"))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
     
-    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
+    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_sglt2, na.rm = TRUE),
                                                                                     lci = quantile(female_sglt2, probs = c(0.05)),
                                                                                     uci = quantile(female_sglt2, probs = c(0.95)),
                                                                                     sex = "Female",
                                                                                     drugclass = "SGLT2",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    female_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             filter(drugclass == "GLP1"))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
     
-    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
+    predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_glp1, na.rm = TRUE),
                                                                                     lci = quantile(female_glp1, probs = c(0.05)),
                                                                                     uci = quantile(female_glp1, probs = c(0.95)),
                                                                                     sex = "Female",
@@ -659,10 +589,328 @@ if (class(try(
     
   }
   
+  predictions_weight_stan_psm_1_1 <- predictions_weight_stan_psm_1_1 %>%
+    as.data.frame()
+  
+  saveRDS(predictions_weight_stan_psm_1_1, paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1.rds"))
+  
+  
+}
+
+if (class(try(
+  
+  # predictions for the weight adjusted model
+  predictions_weight_stan_psm_1_1_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_overall.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  models_weight_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_psm_1_1.rds"))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_psm_1_1_overall <- vector()
+  
+  for (i in mnumber) {
+    
+    sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                       filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_overall <- rbind(predictions_weight_stan_psm_1_1_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
+                                                                                                    lci = quantile(sglt2, probs = c(0.05)),
+                                                                                                    uci = quantile(sglt2, probs = c(0.95)),
+                                                                                                    drugclass = "SGLT2",
+                                                                                                    intervals = levels(group.weight.dataset.matched$intervals)[i]))
+    
+    glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                      filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_overall <- rbind(predictions_weight_stan_psm_1_1_overall, cbind(mean = mean(glp1, na.rm = TRUE),
+                                                                                                    lci = quantile(glp1, probs = c(0.05)),
+                                                                                                    uci = quantile(glp1, probs = c(0.95)),
+                                                                                                    drugclass = "GLP1",
+                                                                                                    intervals = levels(group.weight.dataset.matched$intervals)[i]))
+    
+  }
+  
+  predictions_weight_stan_psm_1_1_overall <- predictions_weight_stan_psm_1_1_overall %>%
+    as.data.frame()
+  
+  saveRDS(predictions_weight_stan_psm_1_1_overall, paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_overall.rds"))
+  
+  
+}
+
+
+## Propensity score matching + adjustment
+if (class(try(
+  
+  # predictions for the weight adjusted model sex strata
+  predictions_weight_stan_psm_1_1_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_psm_1_1_adjusted <- vector()
+  
+  models_weight_psm_1_1_adjusted <- stan_glm(formula, 
+                                             data = group.weight.dataset.matched,
+                                             family = gaussian(link = "identity"),
+                                             prior = normal(0, 2),
+                                             prior_intercept = normal(0, 2))
+  
+  saveRDS(models_weight_psm_1_1_adjusted, paste0(output_path, "/additional_outcomes/models_weight_psm_1_1_adjusted.rds"))
+  
+  for (i in mnumber) {
+    
+    male_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                            filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                            filter(sex == "Male") %>%
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
+                                                                                                      lci = quantile(male_sglt2, probs = c(0.05)),
+                                                                                                      uci = quantile(male_sglt2, probs = c(0.95)),
+                                                                                                      sex = "Male",
+                                                                                                      drugclass = "SGLT2",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    male_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                           filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                           filter(sex == "Male") %>%
+                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
+                                                                                                      lci = quantile(male_glp1, probs = c(0.05)),
+                                                                                                      uci = quantile(male_glp1, probs = c(0.95)),
+                                                                                                      sex = "Male",
+                                                                                                      drugclass = "GLP1",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    female_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                              filter(sex == "Female") %>%
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
+                                                                                                      lci = quantile(female_sglt2, probs = c(0.05)),
+                                                                                                      uci = quantile(female_sglt2, probs = c(0.95)),
+                                                                                                      sex = "Female",
+                                                                                                      drugclass = "SGLT2",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    female_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                             filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                             filter(sex == "Female") %>%
+                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
+                                                                                                      lci = quantile(female_glp1, probs = c(0.05)),
+                                                                                                      uci = quantile(female_glp1, probs = c(0.95)),
+                                                                                                      sex = "Female",
+                                                                                                      drugclass = "GLP1",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+  }
+  
   predictions_weight_stan_psm_1_1_adjusted <- predictions_weight_stan_psm_1_1_adjusted %>%
     as.data.frame()
   
   saveRDS(predictions_weight_stan_psm_1_1_adjusted, paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted.rds"))
+  
+  
+  
+}
+ 
+
+if (class(try(
+  
+  # predictions for the weight adjusted model
+  predictions_weight_stan_psm_1_1_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted_overall.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  models_weight_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_psm_1_1.rds"))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_psm_1_1_adjusted_overall <- vector()
+  
+  for (i in mnumber) {
+    
+    sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                       filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted_overall <- rbind(predictions_weight_stan_psm_1_1_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
+                                                                                                                      lci = quantile(sglt2, probs = c(0.05)),
+                                                                                                                      uci = quantile(sglt2, probs = c(0.95)),
+                                                                                                                      drugclass = "SGLT2",
+                                                                                                                      intervals = levels(group.weight.dataset.matched$intervals)[i]))
+    
+    glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                      filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_psm_1_1_adjusted_overall <- rbind(predictions_weight_stan_psm_1_1_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
+                                                                                                                      lci = quantile(glp1, probs = c(0.05)),
+                                                                                                                      uci = quantile(glp1, probs = c(0.95)),
+                                                                                                                      drugclass = "GLP1",
+                                                                                                                      intervals = levels(group.weight.dataset.matched$intervals)[i]))
+    
+  }
+  
+  predictions_weight_stan_psm_1_1_adjusted_overall <- predictions_weight_stan_psm_1_1_adjusted_overall %>%
+    as.data.frame()
+  
+  saveRDS(predictions_weight_stan_psm_1_1_adjusted_overall, paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted_overall.rds"))
+  
+  
+}
+
+
+ 
+## Adjustment
+if (class(try(
+  
+  # predictions for the weight adjusted model sex strata
+  predictions_weight_stan_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_adjusted <- vector()
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
+  
+  formula <- paste0("w.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(preweight, 3) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(hba1cmonth, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_weight_adjusted <- stan_glm(formula, 
+                                     data = group.weight.dataset,
+                                     family = gaussian(link = "identity"),
+                                     prior = normal(0, 2),
+                                     prior_intercept = normal(0, 2))
+  
+  saveRDS(models_weight_adjusted, paste0(output_path, "/additional_outcomes/models_weight_adjusted.rds"))
+  
+  for (i in mnumber) {
+    
+    male_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                            filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                            filter(sex == "Male") %>%
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
+                                                                                      lci = quantile(male_sglt2, probs = c(0.05)),
+                                                                                      uci = quantile(male_sglt2, probs = c(0.95)),
+                                                                                      sex = "Male",
+                                                                                      drugclass = "SGLT2",
+                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    male_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                           filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                           filter(sex == "Male") %>%
+                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
+                                                                                      lci = quantile(male_glp1, probs = c(0.05)),
+                                                                                      uci = quantile(male_glp1, probs = c(0.95)),
+                                                                                      sex = "Male",
+                                                                                      drugclass = "GLP1",
+                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    female_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                              filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                              filter(sex == "Female") %>%
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
+                                                                                      lci = quantile(female_sglt2, probs = c(0.05)),
+                                                                                      uci = quantile(female_sglt2, probs = c(0.95)),
+                                                                                      sex = "Female",
+                                                                                      drugclass = "SGLT2",
+                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    female_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                             filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                             filter(sex == "Female") %>%
+                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
+                                                                                      lci = quantile(female_glp1, probs = c(0.05)),
+                                                                                      uci = quantile(female_glp1, probs = c(0.95)),
+                                                                                      sex = "Female",
+                                                                                      drugclass = "GLP1",
+                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+  }
+  
+  predictions_weight_stan_adjusted <- predictions_weight_stan_adjusted %>%
+    as.data.frame()
+  
+  saveRDS(predictions_weight_stan_adjusted, paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted.rds"))
+  
+  
+  
+}
+
+if (class(try(
+  
+  # predictions for the weight adjusted model
+  predictions_weight_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted_overall.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  models_weight_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_adjusted.rds"))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.weight.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_weight_stan_adjusted_overall <- vector()
+  
+  for (i in mnumber) {
+    
+    sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                       filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted_overall <- rbind(predictions_weight_stan_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
+                                                                                                      lci = quantile(sglt2, probs = c(0.05)),
+                                                                                                      uci = quantile(sglt2, probs = c(0.95)),
+                                                                                                      drugclass = "SGLT2",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+    glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+                      filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
+                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    
+    predictions_weight_stan_adjusted_overall <- rbind(predictions_weight_stan_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
+                                                                                                      lci = quantile(glp1, probs = c(0.05)),
+                                                                                                      uci = quantile(glp1, probs = c(0.95)),
+                                                                                                      drugclass = "GLP1",
+                                                                                                      intervals = levels(group.weight.dataset$intervals)[i]))
+    
+  }
+  
+  predictions_weight_stan_adjusted_overall <- predictions_weight_stan_adjusted_overall %>%
+    as.data.frame()
+  
+  saveRDS(predictions_weight_stan_adjusted_overall, paste0(output_path, "/additional_outcomes/predictions_weight_stan_adjusted_overall.rds"))
+  
   
 }
 
@@ -672,92 +920,60 @@ if (class(try(
 
 ## limits
 
-weight_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
-                                               predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
-                                               predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
+weight_overall_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
+                                                       predictions_weight_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                       predictions_weight_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
 
-weight_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
-                                                 predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
-                                                 predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
-
-
-#:---- Adjusted
-
-plot_weight_adjusted_male <- rbind(
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  predictions_weight_stan_adjusted %>%
-    filter(sex == "Male") %>%
-    slice(c(1:6)),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  predictions_weight_stan_adjusted %>%
-    filter(sex == "Male") %>%
-    slice(-c(1:6))
-) %>%
-  as.data.frame() %>%
-  mutate(mean = as.numeric(mean),
-         lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=2155)", 
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=3252)", 
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=9124)", 
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=7276)", 
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=1484)", 
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=731)", intervals)))))),
-         uci = as.numeric(uci)) %>%
-  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
-  group_by(group) %>%
-  forestplot(ci.vertices = TRUE,
-             ci.vertices.height = 0.1,
-             title = "",
-             clip = c(weight_axis_min, weight_axis_max),
-             xticks = seq(weight_axis_min, weight_axis_max, 2),
-             boxsize = .2,
-             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Male (n=24022)") %>%
-  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
-               default = gpar(vertices = TRUE))
+weight_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
+                                                         predictions_weight_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                         predictions_weight_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
 
 
-plot_weight_adjusted_female <- rbind(
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  predictions_weight_stan_adjusted %>%
-    filter(sex == "Female") %>%
-    slice(c(1:6)),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  predictions_weight_stan_adjusted %>%
-    filter(sex == "Female") %>%
-    slice(-c(1:6))
-) %>%
-  as.data.frame() %>%
-  mutate(mean = as.numeric(mean),
-         lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=815)", 
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=704)",
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=3155)", 
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=5285)", 
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=3554)", 
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=2019)", intervals)))))),
-         uci = as.numeric(uci)) %>%
-  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
-  group_by(group) %>%
-  forestplot(ci.vertices = TRUE,
-             ci.vertices.height = 0.1,
-             title = "Adjusted",
-             clip = c(weight_axis_min, weight_axis_max),
-             xticks = seq(weight_axis_min, weight_axis_max, 2),
-             boxsize = .2,
-             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Female (n=15532)") %>%
-  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
-               default = gpar(vertices = TRUE))
+weight_strata_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
+                                                       predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                       predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
+
+weight_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
+                                                         predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                         predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
 
 
+  
 #:---- PSM 1:1
+plot_weight_psm_1_1_overall <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_psm_1_1_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_psm_1_1_overall %>%
+    slice(-c(1:6))
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "Propensity score matching",
+             clip = c(weight_axis_min, weight_axis_max),
+             xticks = seq(weight_axis_min, weight_axis_max, 2),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Overall population (n=", group.weight.dataset.matched%>%nrow(), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE))
+
 
 plot_weight_psm_1_1_male <- rbind(
   cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
@@ -774,12 +990,12 @@ plot_weight_psm_1_1_male <- rbind(
   as.data.frame() %>%
   mutate(mean = as.numeric(mean),
          lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=987)",
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=1406)", 
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=3298)",
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=2219)", 
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=479)",
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=260)", intervals)))))),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
          uci = as.numeric(uci)) %>%
   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
   group_by(group) %>%
@@ -790,20 +1006,19 @@ plot_weight_psm_1_1_male <- rbind(
              xticks = seq(weight_axis_min, weight_axis_max, 2),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Male (n=8649)") %>%
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Male (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%nrow(), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE))
 
-
 plot_weight_psm_1_1_female <- rbind(
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
   predictions_weight_stan_psm_1_1 %>%
     filter(sex == "Female") %>%
     slice(c(1:6)),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
   predictions_weight_stan_psm_1_1 %>%
     filter(sex == "Female") %>%
     slice(-c(1:6))
@@ -811,12 +1026,12 @@ plot_weight_psm_1_1_female <- rbind(
   as.data.frame() %>%
   mutate(mean = as.numeric(mean),
          lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=439)", 
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=356)", 
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=1510)", 
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=2173)",
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=1348)",
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=823)", intervals)))))),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
          uci = as.numeric(uci)) %>%
   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
   group_by(group) %>%
@@ -827,13 +1042,47 @@ plot_weight_psm_1_1_female <- rbind(
              xticks = seq(weight_axis_min, weight_axis_max, 2),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Female (n=6649)") %>%
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Female (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%nrow(), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE))
 
 
-#:---- PSM 1:1 adjusted
+#:---- PSM 1:1 + adjusted
+plot_weight_psm_1_1_adjusted_overall <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_psm_1_1_adjusted_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_psm_1_1_adjusted_overall %>%
+    slice(-c(1:6))
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "Propensity score matching + adjusted",
+             clip = c(weight_axis_min, weight_axis_max),
+             xticks = seq(weight_axis_min, weight_axis_max, 2),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Overall population (n=", group.weight.dataset.matched%>%nrow(), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE))
+
 
 plot_weight_psm_1_1_adjusted_male <- rbind(
   cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
@@ -850,12 +1099,12 @@ plot_weight_psm_1_1_adjusted_male <- rbind(
   as.data.frame() %>%
   mutate(mean = as.numeric(mean),
          lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=987)",
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=1406)", 
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=3298)",
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=2219)", 
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=479)",
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=260)", intervals)))))),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
          uci = as.numeric(uci)) %>%
   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
   group_by(group) %>%
@@ -866,20 +1115,19 @@ plot_weight_psm_1_1_adjusted_male <- rbind(
              xticks = seq(weight_axis_min, weight_axis_max, 2),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Male (n=8649)") %>%
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Male (n=", group.weight.dataset.matched%>%filter(sex=="Male")%>%nrow(), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE))
 
-
 plot_weight_psm_1_1_adjusted_female <- rbind(
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
   predictions_weight_stan_psm_1_1_adjusted %>%
     filter(sex == "Female") %>%
     slice(c(1:6)),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
-  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
   predictions_weight_stan_psm_1_1_adjusted %>%
     filter(sex == "Female") %>%
     slice(-c(1:6))
@@ -887,12 +1135,12 @@ plot_weight_psm_1_1_adjusted_female <- rbind(
   as.data.frame() %>%
   mutate(mean = as.numeric(mean),
          lci = as.numeric(lci),
-         intervals = ifelse(intervals == "(-20,-5]", ">5 mmol/mol (n=439)", 
-                            ifelse(intervals == "(-5,-3]", "3-5 mmol/mol (n=356)", 
-                                   ifelse(intervals == "(-3,0]", "0-3 mmol/mol (n=1510)", 
-                                          ifelse(intervals == "(0,3]", "0-3 mmol/mol (n=2173)",
-                                                 ifelse(intervals == "(3,5]", "3-5 mmol/mol (n=1348)",
-                                                        ifelse(intervals == "(5,31]", ">5 mmol/mol (n=823)", intervals)))))),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),")"), intervals)))))),
          uci = as.numeric(uci)) %>%
   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
   group_by(group) %>%
@@ -903,18 +1151,155 @@ plot_weight_psm_1_1_adjusted_female <- rbind(
              xticks = seq(weight_axis_min, weight_axis_max, 2),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Weight change (kg)") %>%
-  fp_add_header("Female (n=6649)") %>%
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Female (n=", group.weight.dataset.matched%>%filter(sex=="Female")%>%nrow(), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE))
 
 
-pdf(width = 14, height = 12, "Plots/weight.pdf")
+#:---- Adjusted
+plot_weight_adjusted_overall <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_adjusted_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_adjusted_overall %>%
+    slice(-c(1:6))
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[6])%>%nrow(),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "Adjusted",
+             clip = c(weight_axis_min, weight_axis_max),
+             xticks = seq(weight_axis_min, weight_axis_max, 2),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Overall population (n=", group.weight.dataset%>%nrow(), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE))
+
+
+plot_weight_adjusted_male <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_adjusted %>%
+    filter(sex == "Male") %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Male", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_adjusted %>%
+    filter(sex == "Male") %>%
+    slice(-c(1:6))
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Male")%>%filter(intervals==levels(group.weight.dataset$intervals)[6])%>%nrow(),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "",
+             clip = c(weight_axis_min, weight_axis_max),
+             xticks = seq(weight_axis_min, weight_axis_max, 2),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Male (n=", group.weight.dataset%>%filter(sex=="Male")%>%nrow(), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE))
+
+plot_weight_adjusted_female <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_adjusted %>%
+    filter(sex == "Female") %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, sex = "Female", drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_adjusted %>%
+    filter(sex == "Female") %>%
+    slice(-c(1:6))
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[1])%>%nrow(),")"),
+                            ifelse(intervals == levels(group.weight.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[2])%>%nrow(), ")"), 
+                                   ifelse(intervals == levels(group.weight.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[3])%>%nrow(),")"),
+                                          ifelse(intervals == levels(group.weight.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[4])%>%nrow(),")"), 
+                                                 ifelse(intervals == levels(group.weight.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[5])%>%nrow(),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.weight.dataset%>%filter(sex=="Female")%>%filter(intervals==levels(group.weight.dataset$intervals)[6])%>%nrow(),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "Adjusted",
+             clip = c(weight_axis_min, weight_axis_max),
+             xticks = seq(weight_axis_min, weight_axis_max, 2),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Female (n=", group.weight.dataset%>%filter(sex=="Female")%>%nrow(), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE))
+
+
+pdf(width = 7, height = 12, "Plots/weight_overall.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("Weight change", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_weight_psm_1_1_overall
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_weight_psm_1_1_adjusted_overall
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_weight_adjusted_overall
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/weight_strata.pdf")
+
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(nrow = 4,
                                            ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
 # title
 grid.text("Weight change", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
+
 # first plot
 pushViewport(viewport(layout.pos.row = 2,
                       layout.pos.col = 1))
@@ -930,7 +1315,7 @@ pushViewport(viewport(layout.pos.row = 3,
                       layout.pos.col = 1))
 plot_weight_psm_1_1_adjusted_female
 upViewport()
-# fourth plot
+# forth plot
 pushViewport(viewport(layout.pos.row = 3,
                       layout.pos.col = 2))
 plot_weight_psm_1_1_adjusted_male
@@ -945,7 +1330,41 @@ pushViewport(viewport(layout.pos.row = 4,
                       layout.pos.col = 2))
 plot_weight_adjusted_male
 upViewport()
+
 dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #:--------------------------------------------------------
@@ -1675,13 +2094,13 @@ breakdown_adjust <- unique(c(variables_mu, variables_tau))
 # categorical variables in breakdown
 factors <- sapply(group.discontinuation.dataset[,breakdown_adjust], is.factor)
 
-formula <- "stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex"
+formula <- "stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass)"
 
 matching_discontinuation <- MatchIt::matchit(
   formula = formula(paste0("drugclass ~ agetx + t2dmduration + hba1cmonth + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
   data = group.discontinuation.dataset,
   method = "nearest",
-  distance = group.discontinuation.dataset[,"prop.score"],
+  distance = group.discontinuation.dataset[,"prop.score"], 
   replace = FALSE,
   m.order = "largest",
   caliper = 0.05,
@@ -2115,6 +2534,7 @@ plot_discontinuation_psm_1_1_adjusted_female <- rbind(
   rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
   group_by(group) %>%
   forestplot(ci.vertices = TRUE,
+             # zero = 1,
              ci.vertices.height = 0.1,
              title = "Propensity score matching + adjusted",
              clip = c(0, discontinuation_axis_max),
