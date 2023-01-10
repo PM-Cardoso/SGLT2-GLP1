@@ -19,6 +19,7 @@ library(rms)
 
 ## Analysis of outcomes
 # library(rstanarm)
+# library(brms)
 
 
 ## increase memery usage to 50gb of RAM
@@ -3395,6 +3396,30 @@ if (class(try(
   # create lists with results
   mnumber = c(1:quantiles)
   predictions_no_co_cvd_stan_psm_1_1 <- vector()
+  
+  
+  ###:-------------------------
+  ## test - comparison with male, interval 1
+  
+  # interim.dataset <- group.no_co.dataset.matched %>%
+  #   select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+  #   cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+  #         censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+  #         qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+  #         qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+  #   as.data.frame() %>%
+  #   drop_na() %>%
+  #   mutate(sex = relevel(sex, ref = "Male"),
+  #          intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[1]))
+  # 
+  # formula <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  # 
+  # models_test <- brms::brm(formula = formula(formula),
+  #                          data = interim.dataset,
+  #                          family = gaussian(),
+  #                          chains = 1)
+  
+  ###:-------------------------
   
   # formula <- 'postdrug_mace_censtime_yrs | cens(postdrug_mace_censvar) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(qrisk2_10yr_score, 3)'
   # 
