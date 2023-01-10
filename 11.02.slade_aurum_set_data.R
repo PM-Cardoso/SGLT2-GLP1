@@ -386,7 +386,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -443,7 +443,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
     
     final.dataset <- cprd %>%
       select(
@@ -2622,7 +2622,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -2682,7 +2682,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
     
     final.dataset <- cprd %>%
       select(
