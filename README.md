@@ -22,17 +22,13 @@ Collection of functions and scripts to investigate how clinical features can be 
         - Propensity score matching 1:1 whilst adjusting for all variables used in the propensity score and the BCF model.
         - Adjust for all variables used in the propensity score and the BCF model.
 
-<details>
-  <summary>Click me</summary>
-  
-  ## Testing testing
-  
-</details>
 
 ---
 (Developed in CPRD: GOLD download)
 
-Files:
+<details>
+  <summary>Files:</summary>
+  
 - 0.0: Functions
     - .1: Functions for plotting and some calculations.
     - .2: Functions for _bartMachine_ tree analysis. Slightly modified _bartMan_ R package (not kept up to date) (package requirements were modified).
@@ -81,7 +77,11 @@ Files:
 - 10.0: Modelling accompanying data
     - .1: Weight reduction
     - .2: Discontinuation
-    
+  
+</details>
+
+
+Files:
 ---
 (Developed in CPRD: Aurum download)
 
