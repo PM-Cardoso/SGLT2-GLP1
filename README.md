@@ -22,6 +22,12 @@ Collection of functions and scripts to investigate how clinical features can be 
         - Propensity score matching 1:1 whilst adjusting for all variables used in the propensity score and the BCF model.
         - Adjust for all variables used in the propensity score and the BCF model.
 
+<details>
+  <summary>Click me</summary>
+  
+  ## Testing testing
+  
+</details>
 
 ---
 (Developed in CPRD: GOLD download)
