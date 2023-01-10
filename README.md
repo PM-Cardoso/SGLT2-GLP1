@@ -19,8 +19,8 @@ Collection of functions and scripts to investigate how clinical features can be 
 7. Check model fit for the treatment effects: (model fitted in observational data)
     - Plot predicted CATE vs ATE for several ntiles of predicted treatment effect:
         - Propensity score matching 1:1 (check whether matched individuals are well balanced)
-        - Propensity score matching 1:1 whilst adjusting for all variables used in the propensity score and the BCF model.
-        - Adjust for all variables used in the propensity score and the BCF model.
+        - Propensity score matching 1:1 whilst adjusting for all variables used in the BCF model.
+        - Adjust for all variables used in the BCF model.
 
 
 ---
@@ -91,9 +91,10 @@ Files:
     - .3: Descriptive analysis of datasets.
     - .4: Propensity score model.
     - .5: Model heterogeneity.
-    - .6: Risks/Benefits: weight change, eGFR change, discontinuation.
+    - .6: Risks/Benefits: weight change, eGFR change, discontinuation, CVD/HF/CKD outcomes.
     - .7: Differential treatment effects.
     - .8: Paper plots.
+    - .9: Comparison of SGLT2vsGLP1 BCF model to SGLT2vsDPP4 linear model (John Dennis).
 
 
     
