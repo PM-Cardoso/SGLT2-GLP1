@@ -298,12 +298,389 @@ dev.off()
 
 
 
+#:------------------------------------------------------------------------------
+# Validation of BCF model (population with/without CVD/HF/CKD)
+
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+patient_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# load variables used in the BCF model
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+# Population without CVD/HF/CKD
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(patient_effects, by = c("patid", "pated"))
+
+predicted_no_co.dataset <- no_co.dataset %>%
+  rename("hba1c_diff" = "effects") %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10)) %>%
+  drop_na(posthba1cfinal, hba1c_diff)
+
+
+# Population with CVD/HF/CKD
+full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+
+co.dataset <- full.cohort[!(full.cohort$pated %in% no_co.dataset$pated),] %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(patient_effects, by = c("patid", "pated"))
+
+predicted_co.dataset <- co.dataset %>%
+  rename("hba1c_diff" = "effects") %>%
+  mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
+         hba1c_diff.q = ntile(hba1c_diff, 10)) %>%
+  drop_na(posthba1cfinal, hba1c_diff)
+
+
+##:-- No comorbidities
+# PSM 1:1
+ATE_matching_1_1_no_co.dataset <- calc_ATE_validation_prop_matching(predicted_no_co.dataset, "posthba1cfinal", predicted_no_co.dataset$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+plot_ATE_matching_1_1_no_co.dataset <- ATE_plot(ATE_matching_1_1_no_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+# PSM 1:1 + adjusted
+ATE_matching_1_1_adjusted_no_co.dataset <- calc_ATE_validation_prop_matching(predicted_no_co.dataset, "posthba1cfinal", predicted_no_co.dataset$prop.score, order = "largest", breakdown = c("agetx", "sex", "ncurrtx", "prehba1c", "prebmi", "preegfr", "preneuropathy", "preretinopathy", "t2dmduration", "drugline", "hba1cmonth", "prealt"), adjust = TRUE)
+
+plot_ATE_matching_1_1_adjusted_no_co.dataset <- ATE_plot(ATE_matching_1_1_adjusted_no_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+# Adjusted
+ATE_adjusted_no_co.dataset <- calc_ATE_validation_adjust(predicted_no_co.dataset, "posthba1cfinal", breakdown = c("agetx", "sex", "ncurrtx", "prehba1c", "prebmi", "preegfr", "preneuropathy", "preretinopathy", "t2dmduration", "drugline", "hba1cmonth", "prealt"), adjust = TRUE)
+
+plot_ATE_adjusted_no_co.dataset <- ATE_plot(ATE_adjusted_no_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+##:-- Comorbidities
+# PSM 1:1
+ATE_matching_1_1_co.dataset <- calc_ATE_validation_prop_matching(predicted_co.dataset, "posthba1cfinal", predicted_co.dataset$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+plot_ATE_matching_1_1_co.dataset <- ATE_plot(ATE_matching_1_1_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+# PSM 1:1 + adjusted
+ATE_matching_1_1_adjusted_co.dataset <- calc_ATE_validation_prop_matching(predicted_co.dataset, "posthba1cfinal", predicted_co.dataset$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+
+plot_ATE_matching_1_1_adjusted_co.dataset <- ATE_plot(ATE_matching_1_1_adjusted_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+# Adjusted
+ATE_adjusted_co.dataset <- calc_ATE_validation_adjust(predicted_co.dataset, "posthba1cfinal", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+
+plot_ATE_adjusted_co.dataset <- ATE_plot(ATE_adjusted_co.dataset[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
+
+
+# No comorbidities plots
+plot_7.1 <- patchwork::wrap_plots(list(plot_ATE_matching_1_1_no_co.dataset + ggtitle("Match 1:1"),
+                                   plot_ATE_matching_1_1_adjusted_no_co.dataset + ggtitle("Match 1:1 adjusted"),
+                                   plot_ATE_adjusted_no_co.dataset + ggtitle("Adjusted")), ncol = 3) +
+  patchwork::plot_layout(guides = "collect") +
+  patchwork::plot_annotation(tag_levels = "A",
+                             title = paste0("No comorbidities cohort: Treatment effect validation (n=", predicted_no_co.dataset%>%nrow(),")"), # title of full plot
+                             theme = theme(plot.title = element_text(hjust = 0.5),
+                                           legend.position = "bottom")) # center title of full plot
+
+# Comorbidities plots
+plot_7.2 <- patchwork::wrap_plots(list(plot_ATE_matching_1_1_co.dataset + ggtitle("Match 1:1"),
+                                       plot_ATE_matching_1_1_adjusted_co.dataset + ggtitle("Match 1:1 adjusted"),
+                                       plot_ATE_adjusted_co.dataset + ggtitle("Adjusted")), ncol = 3) +
+  patchwork::plot_layout(guides = "collect") +
+  patchwork::plot_annotation(tag_levels = "A",
+                             title = paste0("Comorbidities cohort: Treatment effect validation (n=", predicted_co.dataset%>%nrow(),")"), # title of full plot
+                             theme = theme(plot.title = element_text(hjust = 0.5),
+                                           legend.position = "bottom")) # center title of full plot
+
+pdf(width = 12, height = 5, "Plots/Plot_7.pdf")
+plot_7.1
+plot_7.2
+dev.off()
+
+
+#:------------------------------------------------------------------------------
+# HbA1c grouping (population with/without CVD/HF/CKD)
+
+require(forestplot)
+
+
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+patient_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# load variables used in the BCF model
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+# Population without CVD/HF/CKD
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(patient_effects, by = c("patid", "pated"))
+
+group.hba1c.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals, posthba1cfinal) %>%
+  rename("hba1c_diff" = "effects")
+
+
+# Population with CVD/HF/CKD
+full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+
+co.dataset <- full.cohort[!(full.cohort$pated %in% no_co.dataset$pated),] %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(patient_effects, by = c("patid", "pated"))
+
+group.hba1c.co.dataset <- group_values(data = co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals, posthba1cfinal) %>%
+  rename("hba1c_diff" = "effects")
+
+
+##:-- No comorbidities
+# PSM 1:1
+ATE_matching_1_1_no_co.dataset <- calc_ATE_validation_prop_matching(group.hba1c.no_co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.no_co.dataset$prop.score, quantile_var = "intervals", order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+# PSM 1:1 + adjusted
+ATE_matching_1_1_adjusted_no_co.dataset <- calc_ATE_validation_prop_matching(group.hba1c.no_co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.no_co.dataset$prop.score, quantile_var = "intervals", order = "largest", breakdown = c("agetx", "sex", "ncurrtx", "prehba1c", "prebmi", "preegfr", "preneuropathy", "preretinopathy", "t2dmduration", "drugline", "hba1cmonth", "prealt"), adjust = TRUE)
+
+# Adjusted
+ATE_adjusted_no_co.dataset <- calc_ATE_validation_adjust(group.hba1c.no_co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", quantile_var = "intervals", breakdown = c("agetx", "sex", "ncurrtx", "prehba1c", "prebmi", "preegfr", "preneuropathy", "preretinopathy", "t2dmduration", "drugline", "hba1cmonth", "prealt"), adjust = TRUE)
+
+##:-- Comorbidities
+# PSM 1:1
+ATE_matching_1_1_co.dataset <- calc_ATE_validation_prop_matching(group.hba1c.co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.co.dataset$prop.score, quantile_var = "intervals", order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+# PSM 1:1 + adjusted
+ATE_matching_1_1_adjusted_co.dataset <- calc_ATE_validation_prop_matching(group.hba1c.co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.co.dataset$prop.score, quantile_var = "intervals", order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+
+# Adjusted
+ATE_adjusted_co.dataset <- calc_ATE_validation_adjust(group.hba1c.co.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", quantile_var = "intervals", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+
+
+hba1c_overall_axis_min <- plyr::round_any(floor(min(c(ATE_matching_1_1_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_matching_1_1_adjusted_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_adjusted_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_matching_1_1_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_matching_1_1_adjusted_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+                                                      ATE_adjusted_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% min()))), 2, f = floor)
+
+hba1c_overall_axis_max <- plyr::round_any(ceiling(max(c(ATE_matching_1_1_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_matching_1_1_adjusted_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_adjusted_no_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_matching_1_1_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_matching_1_1_adjusted_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+                                                        ATE_adjusted_co.dataset[["effects"]] %>% select(c("obs","lci","uci")) %>% max()))), 2, f = ceiling)
+
+
+# Propensity score matching
+plot_psm_1_1_no_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_matching_1_1_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("No comorbidities population (n=", sum(ATE_matching_1_1_no_co.dataset[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_matching_1_1_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Comorbidities population (n=", sum(ATE_matching_1_1_co.dataset[["effects"]]$n_drug1)*2, ")"))
+
+
+# Propensity score matching + adjusted
+plot_psm_1_1_adjusted_no_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_adjusted_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_adjusted_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjusted",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("No comorbidities population (n=", sum(ATE_matching_1_1_adjusted_no_co.dataset[["effects"]]$n_drug1)*2, ")"))
+
+plot_psm_1_1_adjusted_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_adjusted_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_matching_1_1_adjusted_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(1)%>%unlist()*2, ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(2)%>%unlist()*2, ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(3)%>%unlist()*2, ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(4)%>%unlist()*2, ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(5)%>%unlist()*2, ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_matching_1_1_adjusted_co.dataset[["effects"]]%>%select(n_drug1)%>%slice(6)%>%unlist()*2, ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjusted",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Comorbidities population (n=", sum(ATE_matching_1_1_adjusted_co.dataset[["effects"]]$n_drug1)*2, ")"))
+
+
+# Adjusted
+plot_adjusted_no_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_adjusted_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_adjusted_no_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(1)%>%unlist(), ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(2)%>%unlist(), ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(3)%>%unlist(), ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(4)%>%unlist(), ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(5)%>%unlist(), ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_adjusted_no_co.dataset[["effects"]]%>%select(N)%>%slice(6)%>%unlist(), ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjusted",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("No comorbidities population (n=", sum(ATE_adjusted_no_co.dataset[["effects"]]$N), ")"))
+
+plot_adjusted_co_hba1c <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", obs = NA, lci = NA, uci = NA),
+  ATE_adjusted_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", obs = NA, lci = NA, uci = NA),
+  ATE_adjusted_co.dataset[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6)
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(1)%>%unlist(), ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(2)%>%unlist(), ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(3)%>%unlist(), ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(4)%>%unlist(), ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(5)%>%unlist(), ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_adjusted_co.dataset[["effects"]]%>%select(N)%>%slice(6)%>%unlist(), ")"), intervals))))))) %>%
+  rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
+  forestplot(labeltext = intervals,
+             ci.vertices = TRUE,
+             title = "Propensity score matching + adjusted",
+             xticks = seq(hba1c_overall_axis_min, hba1c_overall_axis_max, 2),
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(paste0("Comorbidities population (n=", sum(ATE_adjusted_co.dataset[["effects"]]$N), ")"))
 
 
 
+pdf(width = 15, height = 12, "Plots/Plot_8.pdf")
 
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HbA1c treatment effect", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
 
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_psm_1_1_no_co_hba1c
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_psm_1_1_co_hba1c
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_psm_1_1_adjusted_no_co_hba1c
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_psm_1_1_adjusted_co_hba1c
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_adjusted_no_co_hba1c
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_adjusted_co_hba1c
+upViewport()
 
+dev.off()
 
 
 
