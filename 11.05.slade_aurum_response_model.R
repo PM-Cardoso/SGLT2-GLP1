@@ -1063,6 +1063,7 @@ interim.dataset <- full.cohort[!(full.cohort$pated %in% patient_effects$pated),]
   # select variables to make prediction
   select(patid, pated, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
   # this results in a lot of missing hba1cmonth, should I set these to 12 months?
+  mutate(hba1cmonth = ifelse(is.na(hba1cmonth), 12, hba1cmonth)) %>%
   drop_na()
 
 
@@ -1105,6 +1106,108 @@ if (class(try(
   saveRDS(patient_effects, paste0(output_path, "/response_model_bcf/patient_effects.rds"))
 
 }
+
+
+#:-------------------------------------------------------------------------------------
+# Create table with patid, pated, predicted SGLT2 HbA1c, predicted GLP1 HbA1c, treatment effects difference
+
+# patients which already have a calculated effect
+patient_predicted_outcomes <- hba1c.train.complete.vs %>%
+  select(patid, pated, drugclass) %>%
+  cbind(effects.diff = colMeans(bcf_model$tau)) %>%
+  cbind(pred = colMeans(bcf_model$yhat)) %>%
+  # add SGLT2 prediction
+  mutate(pred.SGLT2 = ifelse(drugclass == "SGLT2", pred, NA)) %>%
+  # add GLP1 prediction 
+  mutate(pred.GLP1 = ifelse(drugclass == "GLP1", pred, NA)) %>%
+  # add SGLT2 predictions for those NA
+  mutate(pred.SGLT2 = ifelse(is.na(pred.SGLT2), pred.GLP1+effects.diff, pred.SGLT2)) %>%
+  # add GLP1 predictions for those NA
+  mutate(pred.GLP1 = ifelse(is.na(pred.GLP1), pred.SGLT2-effects.diff, pred.GLP1)) %>%
+  # remove pred, drugclass %>%
+  select(-pred, -drugclass) %>%
+  rbind(
+    hba1c.test.complete.vs %>%
+      select(patid, pated, drugclass) %>%
+      cbind(effects.diff = colMeans(predictions.hba1c.test$tau)) %>%
+      cbind(pred = colMeans(predictions.hba1c.test$yhat)) %>%
+      # add SGLT2 prediction
+      mutate(pred.SGLT2 = ifelse(drugclass == "SGLT2", pred, NA)) %>%
+      # add GLP1 prediction 
+      mutate(pred.GLP1 = ifelse(drugclass == "GLP1", pred, NA)) %>%
+      # add SGLT2 predictions for those NA
+      mutate(pred.SGLT2 = ifelse(is.na(pred.SGLT2), pred.GLP1+effects.diff, pred.SGLT2)) %>%
+      # add GLP1 predictions for those NA
+      mutate(pred.GLP1 = ifelse(is.na(pred.GLP1), pred.SGLT2-effects.diff, pred.GLP1)) %>%
+      # remove pred, drugclass %>%
+      select(-pred, -drugclass)
+  )
+
+
+# patients not yet calculated
+full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+
+interim.dataset <- full.cohort[!(full.cohort$pated %in% patient_predicted_outcomes$pated),] %>%
+  # left_join propensity scores%>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  # select variables to make prediction
+  select(patid, pated, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
+  # this results in a lot of missing hba1cmonth, should I set these to 12 months?
+  mutate(hba1cmonth = ifelse(is.na(hba1cmonth), 12, hba1cmonth)) %>%
+  drop_na()
+
+
+if (class(try(
+  
+  patient_predicted_outcomes <- readRDS(paste0(output_path, "/response_model_bcf/patient_predicted_outcomes.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  predictions.interim <- predict(object = bcf_model,
+                                 x_predict_control = interim.dataset %>%
+                                   select(
+                                     all_of(variables_mu)
+                                   ) %>%
+                                   mutate_all(funs(as.numeric(.))) %>%
+                                   as.matrix(),
+                                 x_predict_moderate = interim.dataset %>%
+                                   select(
+                                     all_of(variables_tau)
+                                   ) %>%
+                                   mutate_all(funs(as.numeric(.))) %>%
+                                   as.matrix(),
+                                 pi_pred = 1-interim.dataset$prop.score,
+                                 z_pred = interim.dataset %>%
+                                   select(drugclass) %>%
+                                   mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
+                                   unlist(),
+                                 save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
+  
+  
+  
+  patient_predicted_outcomes <- patient_predicted_outcomes %>%
+    rbind(
+      interim.dataset %>%
+        select(patid, pated, drugclass) %>%
+        cbind(effects.diff = colMeans(predictions.interim$tau)) %>%
+        cbind(pred = colMeans(predictions.interim$yhat)) %>%
+        # add SGLT2 prediction
+        mutate(pred.SGLT2 = ifelse(drugclass == "SGLT2", pred, NA)) %>%
+        # add GLP1 prediction 
+        mutate(pred.GLP1 = ifelse(drugclass == "GLP1", pred, NA)) %>%
+        # add SGLT2 predictions for those NA
+        mutate(pred.SGLT2 = ifelse(is.na(pred.SGLT2), pred.GLP1+effects.diff, pred.SGLT2)) %>%
+        # add GLP1 predictions for those NA
+        mutate(pred.GLP1 = ifelse(is.na(pred.GLP1), pred.SGLT2-effects.diff, pred.GLP1)) %>%
+        # remove pred, drugclass %>%
+        select(-pred, -drugclass)
+    )
+  
+  
+  saveRDS(patient_predicted_outcomes, paste0(output_path, "/response_model_bcf/patient_predicted_outcomes.rds"))
+  
+}
+
 
 
 
