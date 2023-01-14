@@ -73,8 +73,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset")
   }
   if (missing(drugs)) {stop("'drugs' needs to be supplied")}
   if (!is.character(drugs)) {stop("'drugs' must be a character string")}
@@ -215,8 +215,13 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     
   }
   
-  cprd <- cprd %>%
-    filter(is.na(semaglutide_drug))
+  if (dataset.type == "semaglutide.dataset") {
+    cprd <- cprd %>%
+      filter(!is.na(semaglutide_drug))
+  } else {
+    cprd <- cprd %>%
+      filter(is.na(semaglutide_drug))
+  }
   
   ###############################################################################
   ###############################################################################
@@ -531,7 +536,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
     return(final.dataset)
   }
   
@@ -2276,8 +2281,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset")
   }
   
   if (dataset.type == "ckd.dataset") {stop("outcome variables for 'ckd.dataset' hasn't been coded")}
@@ -2449,8 +2454,13 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     
   }
   
-  cprd <- cprd %>%
-    filter(is.na(semaglutide_drug))
+  if (dataset.type == "semaglutide.dataset") {
+    cprd <- cprd %>%
+      filter(!is.na(semaglutide_drug))
+  } else {
+    cprd <- cprd %>%
+      filter(is.na(semaglutide_drug))
+  }
   
   ###############################################################################
   ###############################################################################
@@ -2770,7 +2780,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
     return(final.dataset)
   }
   
