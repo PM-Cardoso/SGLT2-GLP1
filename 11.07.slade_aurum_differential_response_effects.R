@@ -62,7 +62,7 @@ plot_sex_strata <- hba1c.train %>%
   ggplot(aes(x = sex, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
   geom_point() +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.15) +
   ylim(-10, 10) +
   ggtitle("Sex") +
   ylab("Predicted treatment effects (mmol/mol)") +
@@ -83,7 +83,7 @@ plot_ncurrtx_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = ncurrtx, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.8) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -107,7 +107,7 @@ plot_prepad_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = prepad, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -131,7 +131,7 @@ plot_preihd_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = preihd, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -155,7 +155,7 @@ plot_preneuropathy_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = preneuropathy, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -179,7 +179,7 @@ plot_preretinopathy_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = preretinopathy, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -203,7 +203,7 @@ plot_preheartfailure_strata <- hba1c.train %>%
   unique() %>%
   ggplot(aes(x = preheartfailure, y = mean)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
   geom_point() +
   facet_wrap(~sex) +
   ylim(-10, 10) +
@@ -335,6 +335,37 @@ plot_prebmi_strata <- group_values(data = hba1c.train,
         axis.text.x = element_text(angle = 45, hjust=1),
         strip.background = element_rect(fill="white"))
 
+# hba1cmonth
+breaks_hba1cmonth <- quantile(hba1c.train$hba1cmonth, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_hba1cmonth_strata <- group_values(data = hba1c.train,
+                                       variable = "hba1cmonth",
+                                       breaks = breaks_hba1cmonth) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Month of outcome") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.background = element_rect(fill="white"))
+
+
 
 # Combine all
 plot_strata <- patchwork::wrap_plots(
@@ -350,7 +381,8 @@ plot_strata <- patchwork::wrap_plots(
     plot_prepad_strata,
     plot_preneuropathy_strata,
     plot_preihd_strata,
-    plot_preheartfailure_strata
+    plot_preheartfailure_strata,
+    plot_hba1cmonth_strata
 )) +
   patchwork::plot_annotation(
     title = "IQR of treatment effects for covariate strata"
