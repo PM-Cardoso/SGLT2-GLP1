@@ -85,16 +85,18 @@ Files:
 ---
 (Developed in CPRD: Aurum download)
 
-- 11.0: Aurum download modelling
-    - .1: Functions used specifically for this portion.
-    - .2: Detailed explanation of the selection of cohorts.
-    - .3: Descriptive analysis of datasets.
-    - .4: Propensity score model.
-    - .5: Model heterogeneity.
-    - .6: Risks/Benefits: weight change, eGFR change, discontinuation, CVD/HF/CKD outcomes.
-    - .7: Differential treatment effects.
-    - .8: Paper plots.
-    - .9: Comparison of SGLT2vsGLP1 BCF model to SGLT2vsDPP4 linear model (John Dennis).
+- 11.00: Aurum download modelling
+    - .01: Functions used specifically for this portion.
+    - .02: Detailed explanation of the selection of cohorts.
+    - .03: Descriptive analysis of datasets.
+    - .04: Propensity score model.
+    - .05: Model heterogeneity.
+    - .06: Risks/Benefits: weight change, eGFR change, discontinuation, CVD/HF/CKD outcomes.
+    - .07: Differential treatment effects.
+    - .08: Paper plots.
+    - .09: Comparison of SGLT2vsGLP1 BCF model to SGLT2vsDPP4 linear model (John Dennis).
+    - .10: Validation of treatment effects splitting by ethnicity.
+    - .11: Validation of the excluded individuals that were prescribed semaglutide.
 
 
     
