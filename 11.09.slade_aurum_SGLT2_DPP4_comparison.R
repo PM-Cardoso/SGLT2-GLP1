@@ -64,6 +64,7 @@ full.cohort.updated <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
          hba1cmonth = ifelse(is.na(hba1cmonth), 12, hba1cmonth)) %>%
   drop_na() %>%
   filter(prehba1cmmol < 120) %>%
+  filter(prehba1cmmol >= 53)
   filter(egfr_ckdepi > 45)
 
 
@@ -142,28 +143,6 @@ pdf(width = 7, height = 7, "Plots/11.09.plot_2.pdf")
 plot_bar
 dev.off()
 
-# # Using SGLT2 Linear
-# plot_bar <- patient_predicted_outcomes %>%
-#   select(-pred.SGLT2) %>%
-#   left_join(full.cohort.updated %>%
-#               select(patid, pated) %>%
-#               cbind(pred.DPP4 = predictions.dpp4,
-#                     pred.SGLT2 = predictions.sglt2), by = c("patid", "pated")) %>%
-#   drop_na() %>%
-#   mutate(best_drug = ifelse(pred.SGLT2 < pred.GLP1 & pred.SGLT2 < pred.DPP4, "SGLT2i",
-#                             ifelse(pred.GLP1 < pred.SGLT2 & pred.GLP1 < pred.DPP4, "GLP1-RA",
-#                                    ifelse(pred.DPP4 < pred.SGLT2 & pred.DPP4 < pred.GLP1, "DPP4i", NA))),
-#          best_drug = factor(best_drug)) %>%
-#   select(best_drug) %>%
-#   count(best_drug) %>%
-#   ggplot(aes(x = best_drug, y = n, fill = best_drug)) +
-#   geom_bar(stat="identity") +
-#   xlab("Optimal predicted therapy") +
-#   ylab("Number of patients") +
-#   scale_fill_manual(values = c("red", "dodgerblue2", "#f1a340")) +
-#   theme_bw() +
-#   theme(legend.position = "none")
-  
 
 #---------------
 interim.dataset <- patient_predicted_outcomes %>%
@@ -201,14 +180,72 @@ plot_histogram
 dev.off()
 
 
+#---------------
+## Decision tree for the covariates used
+
+# load in variables used in the model
+variables_mu <- readRDS(paste0(output_path, "/response_model_bcf/variables_mu.rds"))
+
+variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.rds"))
+
+interim.dataset <- patient_predicted_outcomes %>%
+  left_join(full.cohort.updated %>%
+              select(patid, pated) %>%
+              cbind(pred.DPP4 = predictions.dpp4), by = c("patid", "pated")) %>%
+  drop_na() %>%
+  mutate(best_drug = ifelse(pred.SGLT2 < pred.GLP1 & pred.SGLT2 < pred.DPP4, "Favours SGLT2i",
+                            ifelse(pred.GLP1 < pred.SGLT2 & pred.GLP1 < pred.DPP4, "Favours GLP1-RA",
+                                   ifelse(pred.DPP4 < pred.SGLT2 & pred.DPP4 < pred.GLP1, "Favours DPP4i", NA))),
+         best_drug = factor(best_drug),
+         effect = ifelse(best_drug == "Favours SGLT2i" & pred.GLP1 < pred.DPP4, pred.SGLT2 - pred.GLP1,
+                         ifelse(best_drug == "Favours SGLT2i" & pred.DPP4 < pred.GLP1, pred.SGLT2 - pred.DPP4,
+                                ifelse(best_drug == "Favours GLP1-RA" & pred.SGLT2 < pred.DPP4, pred.GLP1 - pred.SGLT2,
+                                       ifelse(best_drug == "Favours GLP1-RA" & pred.DPP4 < pred.SGLT2, pred.GLP1 - pred.DPP4,
+                                              ifelse(best_drug == "Favours DPP4i" & pred.SGLT2 < pred.GLP1, pred.DPP4 - pred.SGLT2,
+                                                     ifelse(best_drug == "Favours DPP4i" & pred.GLP1 < pred.SGLT2, pred.DPP4 - pred.GLP1, NA))))))) %>%
+  select(patid, pated, best_drug)
+
+full.cohort.decision <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  select(all_of(c("patid", "pated", unique(c(variables_mu, variables_tau))))) %>%
+  left_join(interim.dataset, by = c("patid", "pated")) %>%
+  drop_na(best_drug) %>%
+  select(-hba1cmonth, -patid, -pated)
+
+
+library(rpart)
+library(rattle)
+library(rpart.plot)
+
+
+fit <- rpart(best_drug ~ agetx + t2dmduration + prehba1c + preegfr + prealt + prepad + sex + prebmi + preheartfailure + preihd + preneuropathy + preretinopathy, data = full.cohort.decision)
+
+pdf(width = 10, height = 8, file = "Plots/11.09.plot_4.pdf")
+
+prp(fit, pal.thresh = 0, extra = "auto", main = "Decision tree for treatment effects using development cohort", box.palette = list("dodgerblue2", "#f1a340"))
+
+dev.off()
+
+
+
+
+#---------------
+## Table of characteristics
+
+table.best_drug <- tableone::CreateTableOne(vars = c("agetx", "t2dmduration", "prehba1c", "preegfr", "prealt", "prepad", "sex", "prebmi", "preheartfailure", "preihd", "preneuropathy", "preretinopathy"), includeNA = TRUE, strata = "best_drug", data = full.cohort.decision, test = FALSE)
+
+
+# print(table.best_drug)
+
+
 
 ## merge pdfs
 
 qpdf::pdf_combine(input = c("Plots/11.09.plot_1.pdf",
                             "Plots/11.09.plot_2.pdf",
-                            "Plots/11.09.plot_3.pdf"),
+                            "Plots/11.09.plot_3.pdf",
+                            "Plots/11.09.plot_4.pdf"),
                   output = "Plots/11.09.comparison_SGLT2_GLP1_DPP4.pdf")
 
-file.remove(c("Plots/11.09.plot_1.pdf", "Plots/11.09.plot_2.pdf", "Plots/11.09.plot_3.pdf"))
+file.remove(c("Plots/11.09.plot_1.pdf", "Plots/11.09.plot_2.pdf", "Plots/11.09.plot_3.pdf", "Plots/11.09.plot_4.pdf"))
 
 
