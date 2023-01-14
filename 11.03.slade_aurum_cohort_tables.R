@@ -21,11 +21,11 @@ set_up_data_sglt2_glp1(dataset.type = "diagnostics")
 ####
 
 # Characteristics of individuals predicted benefit >8
-hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
-  left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
-              select(patid, pated, ethnicity), by = c("patid", "pated")) %>%
-  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_)),
+  # left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  #             select(patid, pated, ethnicity), by = c("patid", "pated")) %>%
+  mutate(benefit = ifelse(effects < -8, "SGLT2i", ifelse(effects > 8, "GLP1-RA", NA_real_)),
          CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
          microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
          ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No")) %>%
