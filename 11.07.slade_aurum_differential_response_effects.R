@@ -19,6 +19,9 @@ output_path <- "Samples/SGLT2-GLP1/Aurum"
 dir.create(output_path)
 
 ## make directory for outputs
+dir.create(paste0(output_path, "/differential_response"))
+
+## make directory for outputs
 dir.create("Plots")
 
 
@@ -381,13 +384,15 @@ plot_strata <- patchwork::wrap_plots(
     plot_prepad_strata,
     plot_preneuropathy_strata,
     plot_preihd_strata,
-    plot_preheartfailure_strata,
-    plot_hba1cmonth_strata
+    plot_preheartfailure_strata
 )) +
   patchwork::plot_annotation(
     title = "IQR of treatment effects for covariate strata"
   )
 
+plot_strata <- recordPlot(plot_strata)
+
+saveRDS(plot_strata, paste0(output_path, "/differential_response/plot_strata.rds"))
 
 pdf(width = 17, height = 9, "Plots/11.07.diff_treat_effect.pdf")
 plot_strata
