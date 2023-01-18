@@ -25,15 +25,28 @@ hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
   # left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   #             select(patid, pated, ethnicity), by = c("patid", "pated")) %>%
-  mutate(benefit = ifelse(effects < -8, "SGLT2i", ifelse(effects > 8, "GLP1-RA", NA_real_)),
+  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_)),
          CV_problems = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
          microvascular_complications = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
          ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No")) %>%
   mutate(benefit = factor(benefit))
 
-vars <- c("agetx", "sex", "t2dmduration", "ethnicity", "prehba1c", "prebmi", "preegfr", "ASCVD")
 
-tab.benefits <- CreateTableOne(vars = vars, includeNA = TRUE, strata = "benefit", data = hba1c.train, test = FALSE)
+vars <- c("drugsubstances", "agetx", "sex", "t2dmduration", "ethnicity", "deprivation",
+          "smoke", "prehospitalisation", "drugline", "ncurrtx", "hba1cmonth", "preacr", "prealbuminblood",
+          "prealt", "preast", "prebilirubin", "prebmi", "prehaematocrit", "prehaemoglobin",
+          "prehba1c", "prehdl", "premap", "preegfr", "pretotalcholesterol",
+          "pretriglyceride", "preangina", "precld", "prediabeticnephropathy", 
+          "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
+          "preneuropathy", "prepad", "preretinopathy", "prerevasc", "prestroke",
+          "pretia", "preaf")
+factorvars <- c("drugsubstances", "sex", "ethnicity", "deprivation", "smoke", "drugline", "prehospitalisation", "ncurrtx", "preangina", 
+                "precld", "prediabeticnephropathy", "preheartfailure", "prehypertension", "preihd",
+                "premyocardialinfarction", "preneuropathy", "prepad", "preretinopathy", "prerevasc",
+                "prestroke", "pretia", "preaf")
+
+
+tab.benefits <- CreateTableOne(vars = c(vars, "preckd", "CV_problems", "microvascular_complications", "ASCVD", "posthba1cfinal", "MFN",  "DPP4", "GLP1", "SGLT2", "SU", "TZD"), includeNA = TRUE, strata = "benefit", data = hba1c.train, test = FALSE)
 ## Show table with SMD
 print(tab.benefits, smd = TRUE)
 
