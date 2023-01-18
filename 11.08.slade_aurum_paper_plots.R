@@ -225,12 +225,12 @@ hba1c.train.cleaned_up <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %
   cbind(effects = colMeans(bcf_model$tau))
 
 
-m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + rms::rcs(hba1cmonth, 3) + sex + ncurrtx + rms::rcs(prehba1c, 3) + rms::rcs(prebmi, 3) + rms::rcs(preegfr, 3) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = hba1c.train.cleaned_up, x = TRUE, y = TRUE)
+m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + sex + ncurrtx + rms::rcs(prehba1c, 3) + rms::rcs(prebmi, 3) + rms::rcs(preegfr, 3) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = hba1c.train.cleaned_up, x = TRUE, y = TRUE)
 
 values <- plot(anova(m1), what = 'proportion R2')
 
 plot_5 <- as.data.frame(values) %>%
-  cbind(variable = c("Number of other current glucose-lowering drugs", "Sex", "eGFR", "Current age", "BMI", "HbA1c", "Retinopathy", "Peripheral arterial disease", "Neuropathy", "Ischaemic heart disease", "Heart failure", "Month of outcome")) %>%
+  cbind(variable = c("Number of other current glucose-lowering drugs", "Sex", "eGFR", "Current age", "BMI", "HbA1c", "Retinopathy", "Peripheral arterial disease", "Neuropathy", "Ischaemic heart disease", "Heart failure")) %>%
   mutate(variable = factor(variable),
          values = values * 100) %>%
   ggplot(aes(y = forcats::fct_reorder(variable, values), x = values)) +
@@ -1168,9 +1168,459 @@ upViewport()
 dev.off()
 
 
+#:------------------------------------------------------------------------------
+# Summary of BCF model: a) histogram of treatment effects in development,
+#   b) decile calibration of treatment effects (development)
+#   c) decile calibration of treatment effects
+
+
+# Validation plot dev
+ATE_adjust_validation_dev <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_adjust_validation_dev.rds")
+
+plot_ATE_adjust_validation_dev <- ATE_plot(ATE_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12, colour_background = FALSE) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+# histogram dev
+bcf_model <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/bcf_model.rds")
+
+data_dev <- cbind(mean = colMeans(bcf_model$tau)) %>%
+  as.data.frame()
+
+plot_effect_dev <- hist_plot(data_dev, "", -15, 20)
+
+# Validation plot val
+ATE_adjust_validation_val <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_adjust_validation_val.rds")
+
+plot_ATE_adjust_validation_val <- ATE_plot(ATE_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12, colour_background = FALSE) +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+
+plot_10.1 <- (plot_effect_dev | plot_ATE_adjust_validation_dev) + plot_ATE_adjust_validation_val
+
+plot_10 <- plot_10.1 +
+  plot_annotation(tag_levels = list(c("A.1", "A.2", "B")),
+                  title = "Model development and validation",
+                  theme = theme(legend.position = "bottom")) # title of full plot
+
+pdf(width = 15, height = 6, "Plots/Plot_10.pdf")
+plot_10
+dev.off()
 
 
 
+#:------------------------------------------------------------------------------
+# Model explanability: a) relative importance for treatment effect,
+#   b) distribution of treatment effects by sex
+#   c) differential treatment effects
+
+
+### a)
+
+# load variables used in the BCF model
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+# load BCF model
+bcf_model <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/bcf_model.rds")
+
+# load development dataset
+hba1c.train.cleaned_up <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau))) %>%
+  cbind(effects = colMeans(bcf_model$tau))
+
+
+m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + sex + ncurrtx + rms::rcs(prehba1c, 3) + rms::rcs(prebmi, 3) + rms::rcs(preegfr, 3) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = hba1c.train.cleaned_up, x = TRUE, y = TRUE)
+
+values <- plot(anova(m1), what = 'proportion R2')
+
+plot_10.1 <- as.data.frame(values) %>%
+  cbind(variable = c("Number of other current glucose-lowering drugs", "Sex", "eGFR", "Current age", "BMI", "HbA1c", "Retinopathy", "Peripheral arterial disease", "Neuropathy", "Ischaemic heart disease", "Heart failure")) %>%
+  mutate(variable = factor(variable),
+         values = values * 100) %>%
+  ggplot(aes(y = forcats::fct_reorder(variable, values), x = values)) +
+  geom_segment(aes(x = 0, xend = values, yend = forcats::fct_reorder(variable, values)), linetype = "dashed") +
+  geom_point(size = 2, colour = "black") +
+  ggtitle("Relative importance for treatment effect heterogeneity") +
+  xlab("Relative Importance (%)") +
+  theme_bw() +
+  theme(axis.text.y = element_text(angle = 45),
+        axis.title.y = element_blank())
+
+### b)
+
+hba1c.train.heterogeneity <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(sex) %>%
+  cbind(mean = colMeans(bcf_model$tau))
+
+plot_10.2 <- hist_plot(hba1c.train.heterogeneity %>% filter(sex == "Female"), "Females", -15, 18) +
+  theme(legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal")
+
+plot_10.3 <- hist_plot(hba1c.train.heterogeneity %>% filter(sex == "Male"), "Males", -15, 18) +
+  theme(legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal")
+
+### c)
+
+# treatment effects
+patient_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# Full cohort for average values
+hba1c.train <- set_up_data_sglt2_glp1(dataset.type="hba1c.train") %>%
+  left_join(patient_effects, by = c("patid", "pated"))
+
+levels(hba1c.train$sex) <- c("Females", "Males")
+levels(hba1c.train$ncurrtx) <- c("0", "1", "2", "3", "4+")
+
+#:------------------------------------------------------------------------
+# Stratify data by variables
+# sex
+plot_sex_strata <- hba1c.train %>%
+  select(sex, effects) %>%
+  group_by(sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = sex, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_point() +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.15) +
+  ylim(-10, 10) +
+  ggtitle("Sex") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+# ncurrtx
+plot_ncurrtx_strata <- hba1c.train %>%
+  select(ncurrtx, effects, sex) %>%
+  group_by(ncurrtx, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = ncurrtx, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.5) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Number of other current\nglucose-lowering drugs") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# prepad
+plot_prepad_strata <- hba1c.train %>%
+  select(prepad, effects, sex) %>%
+  group_by(prepad, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = prepad, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Peripheral arterial disease") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# preihd
+plot_preihd_strata <- hba1c.train %>%
+  select(preihd, effects, sex) %>%
+  group_by(preihd, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = preihd, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Ischaemic heart disease") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# preneuropathy
+plot_preneuropathy_strata <- hba1c.train %>%
+  select(preneuropathy, effects, sex) %>%
+  group_by(preneuropathy, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = preneuropathy, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Neuropathy") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# preretinopathy
+plot_preretinopathy_strata <- hba1c.train %>%
+  select(preretinopathy, effects, sex) %>%
+  group_by(preretinopathy, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = preretinopathy, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Retinopathy") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# preheartfailure
+plot_preheartfailure_strata <- hba1c.train %>%
+  select(preheartfailure, effects, sex) %>%
+  group_by(preheartfailure, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  ggplot(aes(x = preheartfailure, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.3) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Heart failure") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        strip.background = element_rect(fill="white"))
+
+# prehba1c
+breaks_hba1c <- quantile(hba1c.train$prehba1c, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_prehba1c_strata <- group_values(data = hba1c.train,
+                                     variable = "prehba1c",
+                                     breaks = breaks_hba1c) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("HbA1c") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.background = element_rect(fill="white"))
+
+# preegfr
+breaks_egfr <- quantile(hba1c.train$preegfr, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_preegfr_strata <- group_values(data = hba1c.train,
+                                    variable = "preegfr",
+                                    breaks = breaks_egfr) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("eGFR") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.background = element_rect(fill="white"))
+
+# agetx
+breaks_agetx <- quantile(hba1c.train$agetx, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_agetx_strata <- group_values(data = hba1c.train,
+                                  variable = "agetx",
+                                  breaks = breaks_agetx) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("Current age") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.background = element_rect(fill="white"))
+
+# prebmi
+breaks_prebmi <- quantile(hba1c.train$prebmi, probs = seq(0.1, 0.9, 0.1), na.rm = TRUE)
+
+plot_prebmi_strata <- group_values(data = hba1c.train,
+                                   variable = "prebmi",
+                                   breaks = breaks_prebmi) %>%
+  select(intervals, effects, sex) %>%
+  group_by(intervals, sex) %>%
+  mutate(mean = mean(effects,  na.rm = TRUE),
+         lci = quantile(effects, probs = c(0.25), na.rm = TRUE),
+         uci = quantile(effects, probs = c(0.75),  na.rm = TRUE)) %>%
+  select(-effects) %>%
+  ungroup() %>%
+  unique() %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = mean)) +
+  geom_hline(aes(yintercept = 0), colour = "red") +
+  geom_errorbar(aes(x = intervals, y = mean, ymax = uci, ymin = lci)) +
+  geom_point() +
+  facet_wrap(~sex) +
+  ylim(-10, 10) +
+  ggtitle("BMI") +
+  ylab("Predicted treatment effects (mmol/mol)") +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust=1),
+        strip.background = element_rect(fill="white"))
+
+plot_strata <- patchwork::wrap_plots(
+  list(
+    plot_ncurrtx_strata,
+    plot_sex_strata,
+    plot_preegfr_strata,
+    plot_agetx_strata,
+    plot_prebmi_strata +
+      theme(axis.title.y = element_text(size = 12)),
+    plot_prehba1c_strata,
+    plot_preretinopathy_strata,
+    plot_prepad_strata,
+    plot_preneuropathy_strata,
+    plot_preihd_strata,
+    plot_preheartfailure_strata
+  )) +
+  patchwork::plot_annotation(
+    title = "IQR of treatment effects for covariate strata"
+  )
+
+
+plot_strata <- readRDS("Samples/SGLT2-GLP1/Aurum/differential_response/plot_strata.rds")
+
+
+### combine
+
+plot_11 <- (((plot_10.1 | (plot_10.2 | plot_10.3) + patchwork::plot_layout(guides = "collect") + plot_annotation(theme = theme(legend.position = "bottom"))) + plot_layout(widths = c(1.2, 2))) / (patchwork::wrap_plots(
+  list(
+    plot_ncurrtx_strata,
+    plot_sex_strata,
+    plot_preegfr_strata,
+    plot_agetx_strata,
+    plot_prebmi_strata +
+      theme(axis.title.y = element_text(size = 12)),
+    plot_prehba1c_strata,
+    plot_preretinopathy_strata,
+    plot_prepad_strata,
+    plot_preneuropathy_strata,
+    plot_preihd_strata,
+    plot_preheartfailure_strata
+  )))) + plot_layout(heights = c(1, 3)) +
+  plot_annotation(tag_levels = list(c("A","B.1", "B.2", "C")),
+                  title = "Model explainability") # title of full plot
+
+
+pdf(width = 17, height = 12, "Plots/Plot_11.pdf")
+plot_11
+dev.off()
 
 
 
