@@ -7,6 +7,7 @@
 
 library(rms)
 library(tidyverse)
+library(scales)
 
 ## path to output folder
 output_path <- "Samples"
@@ -64,7 +65,7 @@ full.cohort.updated <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
          hba1cmonth = ifelse(is.na(hba1cmonth), 12, hba1cmonth)) %>%
   drop_na() %>%
   filter(prehba1cmmol < 120) %>%
-  filter(prehba1cmmol >= 53)
+  filter(prehba1cmmol >= 53) %>%
   filter(egfr_ckdepi > 45)
 
 
@@ -131,13 +132,14 @@ plot_bar <- interim.dataset %>%
   rename("best_drug" = ".") %>%
   ggplot(aes(x = best_drug, y = Freq, fill = best_drug)) +
   geom_bar(stat="identity") +
-  geom_text(aes(label = Freq), vjust = -0.5) +
+  geom_text(aes(label = format(Freq,big.mark=",",scientific=FALSE)), vjust = -0.5) +
   xlab("Optimal predicted therapy") +
   ylab("Number of patients") +
-  ggtitle(paste0("Predicted optimal therapy (n=", interim.dataset%>%nrow(), ")")) +
+  ggtitle(paste0("Predicted optimal therapy (n=", format(interim.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) +
   scale_fill_manual(values = c("red", "dodgerblue2", "#f1a340")) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  scale_y_continuous(label=comma)
 
 pdf(width = 7, height = 7, "Plots/11.09.plot_2.pdf")
 plot_bar
@@ -172,7 +174,8 @@ plot_histogram <- interim.dataset %>%
   theme_classic() +
   theme(legend.position = "none",
         axis.title.y = element_blank()) +
-  facet_wrap(~best_drug, nrow = 1)
+  facet_wrap(~best_drug, nrow = 1) +
+  scale_y_continuous(label=comma)
   
   
 pdf(width = 9, height = 4, "Plots/11.09.plot_3.pdf")
