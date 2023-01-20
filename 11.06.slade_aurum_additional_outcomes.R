@@ -118,11 +118,16 @@ model_variables <- unique(c(variables_mu, variables_tau))[which(unique(c(variabl
 
 #:--------------------------------------------------------
 # HbA1c grouping
-hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+hba1c <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(patient_prop_scores, by = c("patid", "pated")) %>%
-  left_join(treatment_effects, by = c("patid", "pated"))
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  rbind(
+    set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+      left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+      left_join(treatment_effects, by = c("patid", "pated"))
+  )
 
-group.hba1c.dataset <- group_values(data = hba1c.train,
+group.hba1c.dataset <- group_values(data = hba1c,
                                     variable = "effects",
                                     breaks = interval_breaks) %>%
   drop_na(intervals) %>%
@@ -627,10 +632,12 @@ if (class(try(
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                            filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                            filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    male_sglt2 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                                    filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                                    filter(sex == "Male") %>%
+                                    mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                                  type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(male_sglt2, na.rm = TRUE),
                                                                                     lci = quantile(male_sglt2, probs = c(0.025)),
@@ -639,10 +646,12 @@ if (class(try(
                                                                                     drugclass = "SGLT2",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                           filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                           filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    male_glp1 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                                   filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                                   filter(sex == "Male") %>%
+                                   mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                                 type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(male_glp1, na.rm = TRUE),
                                                                                     lci = quantile(male_glp1, probs = c(0.025)),
@@ -651,10 +660,12 @@ if (class(try(
                                                                                     drugclass = "GLP1",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                              filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    female_sglt2 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                                      filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                                      filter(sex == "Female") %>%
+                                      mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                                    type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_sglt2, na.rm = TRUE),
                                                                                     lci = quantile(female_sglt2, probs = c(0.025)),
@@ -663,10 +674,12 @@ if (class(try(
                                                                                     drugclass = "SGLT2",
                                                                                     intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                             filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                             filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    female_glp1 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                                     filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                                     filter(sex == "Female") %>%
+                                     mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                                   type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1 <- rbind(predictions_weight_stan_psm_1_1, cbind(mean = mean(female_glp1, na.rm = TRUE),
                                                                                     lci = quantile(female_glp1, probs = c(0.025)),
@@ -702,9 +715,11 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                       filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+    sglt2 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                               filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                               mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                             type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_overall <- rbind(predictions_weight_stan_psm_1_1_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                                     lci = quantile(sglt2, probs = c(0.025)),
@@ -712,9 +727,11 @@ if (class(try(
                                                                                                     drugclass = "SGLT2",
                                                                                                     intervals = levels(group.weight.dataset.matched$intervals)[i]))
     
-    glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                      filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+    glp1 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
+                              mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_overall <- rbind(predictions_weight_stan_psm_1_1_overall, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                                     lci = quantile(glp1, probs = c(0.025)),
@@ -735,23 +752,27 @@ if (class(try(
   
   # predictions for the weight adjusted model full
   predictions_weight_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_full.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   predictions_weight_stan_psm_1_1_full <- vector()
   
   models_weight_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_psm_1_1.rds"))
   
-  sglt2 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                          mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+  sglt2 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                             mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                           type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_psm_1_1_full <- rbind(predictions_weight_stan_psm_1_1_full, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                             lci = quantile(sglt2, probs = c(0.025)),
                                                                                             uci = quantile(sglt2, probs = c(0.975)),
                                                                                             drugclass = "SGLT2"))
   
-  glp1 <- predict(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
-                          mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+  glp1 <- posterior_epred(models_weight_psm_1_1, newdata = group.weight.dataset.matched %>%
+                            mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                          type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_psm_1_1_full <- rbind(predictions_weight_stan_psm_1_1_full, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                             lci = quantile(glp1, probs = c(0.025)),
@@ -765,7 +786,7 @@ if (class(try(
   
   
 }
-  
+
 
 ## Propensity score matching + adjustment
 if (class(try(
@@ -797,10 +818,12 @@ if (class(try(
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    male_sglt2 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                             filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                          type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
                                                                                                       lci = quantile(male_sglt2, probs = c(0.025)),
@@ -809,10 +832,12 @@ if (class(try(
                                                                                                       drugclass = "SGLT2",
                                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    male_glp1 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                            filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                         type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
                                                                                                       lci = quantile(male_glp1, probs = c(0.025)),
@@ -821,10 +846,12 @@ if (class(try(
                                                                                                       drugclass = "GLP1",
                                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    female_sglt2 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                               filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
                                                                                                       lci = quantile(female_sglt2, probs = c(0.025)),
@@ -833,10 +860,12 @@ if (class(try(
                                                                                                       drugclass = "SGLT2",
                                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    female_glp1 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                              filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                           type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted <- rbind(predictions_weight_stan_psm_1_1_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
                                                                                                       lci = quantile(female_glp1, probs = c(0.025)),
@@ -855,7 +884,7 @@ if (class(try(
   
   
 }
- 
+
 
 if (class(try(
   
@@ -874,9 +903,11 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    sglt2 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                        filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                     type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted_overall <- rbind(predictions_weight_stan_psm_1_1_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                                                       lci = quantile(sglt2, probs = c(0.025)),
@@ -884,9 +915,11 @@ if (class(try(
                                                                                                                       drugclass = "SGLT2",
                                                                                                                       intervals = levels(group.weight.dataset.matched$intervals)[i]))
     
-    glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+    glp1 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
                       filter(intervals == levels(group.weight.dataset.matched$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                    type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_psm_1_1_adjusted_overall <- rbind(predictions_weight_stan_psm_1_1_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                                                       lci = quantile(glp1, probs = c(0.025)),
@@ -915,21 +948,25 @@ if (class(try(
   
   models_weight_psm_1_1_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_psm_1_1_adjusted.rds"))
   
-  sglt2 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
-                          mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+  sglt2 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                     mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                   type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_psm_1_1_adjusted_full <- rbind(predictions_weight_stan_psm_1_1_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                            lci = quantile(sglt2, probs = c(0.025)),
-                                                                                            uci = quantile(sglt2, probs = c(0.975)),
-                                                                                            drugclass = "SGLT2"))
+                                                                                                              lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                              uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                              drugclass = "SGLT2"))
   
-  glp1 <- predict(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
-                            mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+  glp1 <- posterior_epred(models_weight_psm_1_1_adjusted, newdata = group.weight.dataset.matched %>%
+                    mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                  type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_psm_1_1_adjusted_full <- rbind(predictions_weight_stan_psm_1_1_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                            lci = quantile(glp1, probs = c(0.025)),
-                                                                                            uci = quantile(glp1, probs = c(0.975)),
-                                                                                            drugclass = "GLP1"))
+                                                                                                              lci = quantile(glp1, probs = c(0.025)),
+                                                                                                              uci = quantile(glp1, probs = c(0.975)),
+                                                                                                              drugclass = "GLP1"))
   
   predictions_weight_stan_psm_1_1_adjusted_full <- predictions_weight_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -940,7 +977,7 @@ if (class(try(
 }
 
 
- 
+
 ## Adjustment
 if (class(try(
   
@@ -971,10 +1008,12 @@ if (class(try(
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    male_sglt2 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                             filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                          type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
                                                                                       lci = quantile(male_sglt2, probs = c(0.025)),
@@ -983,10 +1022,12 @@ if (class(try(
                                                                                       drugclass = "SGLT2",
                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    male_glp1 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                            filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                         type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
                                                                                       lci = quantile(male_glp1, probs = c(0.025)),
@@ -995,10 +1036,12 @@ if (class(try(
                                                                                       drugclass = "GLP1",
                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    female_sglt2 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                               filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
                                                                                       lci = quantile(female_sglt2, probs = c(0.025)),
@@ -1007,10 +1050,12 @@ if (class(try(
                                                                                       drugclass = "SGLT2",
                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    female_glp1 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                              filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                           type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted <- rbind(predictions_weight_stan_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
                                                                                       lci = quantile(female_glp1, probs = c(0.025)),
@@ -1047,9 +1092,11 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    sglt2 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                        filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))))
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset.matched$drugclass))),
+                     type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted_overall <- rbind(predictions_weight_stan_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                                       lci = quantile(sglt2, probs = c(0.025)),
@@ -1057,9 +1104,11 @@ if (class(try(
                                                                                                       drugclass = "SGLT2",
                                                                                                       intervals = levels(group.weight.dataset$intervals)[i]))
     
-    glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
+    glp1 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
                       filter(intervals == levels(group.weight.dataset$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))))
+                      mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset.matched$drugclass))),
+                    type = "response") %>%
+      rowMeans()
     
     predictions_weight_stan_adjusted_overall <- rbind(predictions_weight_stan_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                                       lci = quantile(glp1, probs = c(0.025)),
@@ -1088,21 +1137,25 @@ if (class(try(
   
   models_weight_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/models_weight_adjusted.rds"))
   
-  sglt2 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                     mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset$drugclass))))
+  sglt2 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
+                     mutate(drugclass = factor("SGLT2", levels = levels(group.weight.dataset$drugclass))),
+                   type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_adjusted_full <- rbind(predictions_weight_stan_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                              lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                              uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                              drugclass = "SGLT2"))
+                                                                                              lci = quantile(sglt2, probs = c(0.025)),
+                                                                                              uci = quantile(sglt2, probs = c(0.975)),
+                                                                                              drugclass = "SGLT2"))
   
-  glp1 <- predict(models_weight_adjusted, newdata = group.weight.dataset %>%
-                    mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset$drugclass))))
+  glp1 <- posterior_epred(models_weight_adjusted, newdata = group.weight.dataset %>%
+                    mutate(drugclass = factor("GLP1", levels = levels(group.weight.dataset$drugclass))),
+                  type = "response") %>%
+    rowMeans()
   
   predictions_weight_stan_adjusted_full <- rbind(predictions_weight_stan_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                              lci = quantile(glp1, probs = c(0.025)),
-                                                                                                              uci = quantile(glp1, probs = c(0.975)),
-                                                                                                              drugclass = "GLP1"))
+                                                                                              lci = quantile(glp1, probs = c(0.025)),
+                                                                                              uci = quantile(glp1, probs = c(0.975)),
+                                                                                              drugclass = "GLP1"))
   
   predictions_weight_stan_adjusted_full <- predictions_weight_stan_adjusted_full %>%
     as.data.frame()
@@ -1139,17 +1192,17 @@ weight_strata_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_ps
                                                       predictions_weight_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                       predictions_weight_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                       predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
-                                                       predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
-                                                       predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
+                                                      predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                      predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
 
 weight_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                         predictions_weight_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                         predictions_weight_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                         predictions_weight_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
-                                                         predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
-                                                         predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+                                                        predictions_weight_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                        predictions_weight_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
 
-  
+
 #:---- PSM 1:1
 plot_weight_psm_1_1_overall <- rbind(
   cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
@@ -1605,8 +1658,8 @@ egfr.dataset <- set_up_data_sglt2_glp1(dataset.type = "egfr.dataset") %>%
 
 
 group.egfr.dataset <- group_values(data = egfr.dataset,
-                                     variable = "effects",
-                                     breaks = interval_breaks) %>%
+                                   variable = "effects",
+                                   breaks = interval_breaks) %>%
   drop_na(intervals)
 
 
@@ -1660,10 +1713,12 @@ if (class(try(
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    male_sglt2 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                             filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                          type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1 <- rbind(predictions_egfr_stan_psm_1_1, cbind(mean = mean(male_sglt2, na.rm = TRUE),
                                                                                 lci = quantile(male_sglt2, probs = c(0.025)),
@@ -1672,10 +1727,12 @@ if (class(try(
                                                                                 drugclass = "SGLT2",
                                                                                 intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    male_glp1 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                            filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                         type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1 <- rbind(predictions_egfr_stan_psm_1_1, cbind(mean = mean(male_glp1, na.rm = TRUE),
                                                                                 lci = quantile(male_glp1, probs = c(0.025)),
@@ -1684,10 +1741,12 @@ if (class(try(
                                                                                 drugclass = "GLP1",
                                                                                 intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    female_sglt2 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                               filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1 <- rbind(predictions_egfr_stan_psm_1_1, cbind(mean = mean(female_sglt2, na.rm = TRUE),
                                                                                 lci = quantile(female_sglt2, probs = c(0.025)),
@@ -1696,10 +1755,12 @@ if (class(try(
                                                                                 drugclass = "SGLT2",
                                                                                 intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    female_glp1 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                              filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                           type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1 <- rbind(predictions_egfr_stan_psm_1_1, cbind(mean = mean(female_glp1, na.rm = TRUE),
                                                                                 lci = quantile(female_glp1, probs = c(0.025)),
@@ -1735,25 +1796,29 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    sglt2 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                        filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                     type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_overall <- rbind(predictions_egfr_stan_psm_1_1_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                    lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                    uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                    drugclass = "SGLT2",
-                                                                                                    intervals = levels(group.egfr.dataset.matched$intervals)[i]))
+                                                                                                lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                drugclass = "SGLT2",
+                                                                                                intervals = levels(group.egfr.dataset.matched$intervals)[i]))
     
-    glp1 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+    glp1 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
                       filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                    type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_overall <- rbind(predictions_egfr_stan_psm_1_1_overall, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                    lci = quantile(glp1, probs = c(0.025)),
-                                                                                                    uci = quantile(glp1, probs = c(0.975)),
-                                                                                                    drugclass = "GLP1",
-                                                                                                    intervals = levels(group.egfr.dataset.matched$intervals)[i]))
+                                                                                                lci = quantile(glp1, probs = c(0.025)),
+                                                                                                uci = quantile(glp1, probs = c(0.975)),
+                                                                                                drugclass = "GLP1",
+                                                                                                intervals = levels(group.egfr.dataset.matched$intervals)[i]))
     
   }
   
@@ -1776,22 +1841,26 @@ if (class(try(
   
   models_egfr_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/models_egfr_psm_1_1.rds"))
   
-  sglt2 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
-                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+  sglt2 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                   type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_psm_1_1_full <- rbind(predictions_egfr_stan_psm_1_1_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                              lci = quantile(sglt2, probs = c(0.025)),
-                                                                              uci = quantile(sglt2, probs = c(0.975)),
-                                                                              drugclass = "SGLT2"))
+                                                                                        lci = quantile(sglt2, probs = c(0.025)),
+                                                                                        uci = quantile(sglt2, probs = c(0.975)),
+                                                                                        drugclass = "SGLT2"))
   
-  glp1 <- predict(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
-                     mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+  glp1 <- posterior_epred(models_egfr_psm_1_1, newdata = group.egfr.dataset.matched %>%
+                    mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                  type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_psm_1_1_full <- rbind(predictions_egfr_stan_psm_1_1_full, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                         lci = quantile(glp1, probs = c(0.025)),
                                                                                         uci = quantile(glp1, probs = c(0.975)),
                                                                                         drugclass = "GLP1"))
-
+  
   predictions_egfr_stan_psm_1_1_full <- predictions_egfr_stan_psm_1_1_full %>%
     as.data.frame()
   
@@ -1821,62 +1890,70 @@ if (class(try(
   formula <- paste0("egfr.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) +", paste(breakdown_adjust[factors], collapse = " + "))
   
   models_egfr_psm_1_1_adjusted <- stan_glm(formula, 
-                                  data = group.egfr.dataset.matched,
-                                  family = gaussian(link = "identity"),
-                                  prior = normal(0, 2),
-                                  prior_intercept = normal(0, 2))
+                                           data = group.egfr.dataset.matched,
+                                           family = gaussian(link = "identity"),
+                                           prior = normal(0, 2),
+                                           prior_intercept = normal(0, 2))
   
   saveRDS(models_egfr_psm_1_1_adjusted, paste0(output_path, "/additional_outcomes/models_egfr_psm_1_1_adjusted.rds"))
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    male_sglt2 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                             filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                          type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted <- rbind(predictions_egfr_stan_psm_1_1_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                                lci = quantile(male_sglt2, probs = c(0.025)),
-                                                                                uci = quantile(male_sglt2, probs = c(0.975)),
-                                                                                sex = "Male",
-                                                                                drugclass = "SGLT2",
-                                                                                intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(male_sglt2, probs = c(0.025)),
+                                                                                                  uci = quantile(male_sglt2, probs = c(0.975)),
+                                                                                                  sex = "Male",
+                                                                                                  drugclass = "SGLT2",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    male_glp1 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                            filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                         type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted <- rbind(predictions_egfr_stan_psm_1_1_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                                lci = quantile(male_glp1, probs = c(0.025)),
-                                                                                uci = quantile(male_glp1, probs = c(0.975)),
-                                                                                sex = "Male",
-                                                                                drugclass = "GLP1",
-                                                                                intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(male_glp1, probs = c(0.025)),
+                                                                                                  uci = quantile(male_glp1, probs = c(0.975)),
+                                                                                                  sex = "Male",
+                                                                                                  drugclass = "GLP1",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    female_sglt2 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                               filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted <- rbind(predictions_egfr_stan_psm_1_1_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                                lci = quantile(female_sglt2, probs = c(0.025)),
-                                                                                uci = quantile(female_sglt2, probs = c(0.975)),
-                                                                                sex = "Female",
-                                                                                drugclass = "SGLT2",
-                                                                                intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(female_sglt2, probs = c(0.025)),
+                                                                                                  uci = quantile(female_sglt2, probs = c(0.975)),
+                                                                                                  sex = "Female",
+                                                                                                  drugclass = "SGLT2",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    female_glp1 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                              filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                           type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted <- rbind(predictions_egfr_stan_psm_1_1_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                                lci = quantile(female_glp1, probs = c(0.025)),
-                                                                                uci = quantile(female_glp1, probs = c(0.975)),
-                                                                                sex = "Female",
-                                                                                drugclass = "GLP1",
-                                                                                intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(female_glp1, probs = c(0.025)),
+                                                                                                  uci = quantile(female_glp1, probs = c(0.975)),
+                                                                                                  sex = "Female",
+                                                                                                  drugclass = "GLP1",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
   }
   
@@ -1905,25 +1982,29 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    sglt2 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                        filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                     type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted_overall <- rbind(predictions_egfr_stan_psm_1_1_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                drugclass = "SGLT2",
-                                                                                                intervals = levels(group.egfr.dataset.matched$intervals)[i]))
+                                                                                                                  lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                                  uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                                  drugclass = "SGLT2",
+                                                                                                                  intervals = levels(group.egfr.dataset.matched$intervals)[i]))
     
-    glp1 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+    glp1 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
                       filter(intervals == levels(group.egfr.dataset.matched$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                    type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_psm_1_1_adjusted_overall <- rbind(predictions_egfr_stan_psm_1_1_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                lci = quantile(glp1, probs = c(0.025)),
-                                                                                                uci = quantile(glp1, probs = c(0.975)),
-                                                                                                drugclass = "GLP1",
-                                                                                                intervals = levels(group.egfr.dataset.matched$intervals)[i]))
+                                                                                                                  lci = quantile(glp1, probs = c(0.025)),
+                                                                                                                  uci = quantile(glp1, probs = c(0.975)),
+                                                                                                                  drugclass = "GLP1",
+                                                                                                                  intervals = levels(group.egfr.dataset.matched$intervals)[i]))
     
   }
   
@@ -1944,21 +2025,25 @@ if (class(try(
   
   models_egfr_psm_1_1_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/models_egfr_psm_1_1_adjusted.rds"))
   
-  sglt2 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
-                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))))
+  sglt2 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset.matched$drugclass))),
+                   type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_psm_1_1_adjusted_full <- rbind(predictions_egfr_stan_psm_1_1_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                        lci = quantile(sglt2, probs = c(0.025)),
-                                                                                        uci = quantile(sglt2, probs = c(0.975)),
-                                                                                        drugclass = "SGLT2"))
+                                                                                                          lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                          uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                          drugclass = "SGLT2"))
   
-  glp1 <- predict(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
-                    mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))))
+  glp1 <- posterior_epred(models_egfr_psm_1_1_adjusted, newdata = group.egfr.dataset.matched %>%
+                    mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset.matched$drugclass))),
+                  type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_psm_1_1_adjusted_full <- rbind(predictions_egfr_stan_psm_1_1_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                        lci = quantile(glp1, probs = c(0.025)),
-                                                                                        uci = quantile(glp1, probs = c(0.975)),
-                                                                                        drugclass = "GLP1"))
+                                                                                                          lci = quantile(glp1, probs = c(0.025)),
+                                                                                                          uci = quantile(glp1, probs = c(0.975)),
+                                                                                                          drugclass = "GLP1"))
   
   predictions_egfr_stan_psm_1_1_adjusted_full <- predictions_egfr_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -1991,62 +2076,70 @@ if (class(try(
   formula <- paste0("egfr.change ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) +", paste(breakdown_adjust[factors], collapse = " + "))
   
   models_egfr_adjusted <- stan_glm(formula, 
-                                     data = group.egfr.dataset,
-                                     family = gaussian(link = "identity"),
-                                     prior = normal(0, 2),
-                                     prior_intercept = normal(0, 2))
+                                   data = group.egfr.dataset,
+                                   family = gaussian(link = "identity"),
+                                   prior = normal(0, 2),
+                                   prior_intercept = normal(0, 2))
   
   saveRDS(models_egfr_adjusted, paste0(output_path, "/additional_outcomes/models_egfr_adjusted.rds"))
   
   for (i in mnumber) {
     
-    male_sglt2 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    male_sglt2 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                             filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
                             filter(sex == "Male") %>%
-                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))))
+                            mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))),
+                          type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted <- rbind(predictions_egfr_stan_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                                      lci = quantile(male_sglt2, probs = c(0.025)),
-                                                                                      uci = quantile(male_sglt2, probs = c(0.975)),
-                                                                                      sex = "Male",
-                                                                                      drugclass = "SGLT2",
-                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                  lci = quantile(male_sglt2, probs = c(0.025)),
+                                                                                  uci = quantile(male_sglt2, probs = c(0.975)),
+                                                                                  sex = "Male",
+                                                                                  drugclass = "SGLT2",
+                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    male_glp1 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    male_glp1 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                            filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
                            filter(sex == "Male") %>%
-                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))))
+                           mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))),
+                         type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted <- rbind(predictions_egfr_stan_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                                      lci = quantile(male_glp1, probs = c(0.025)),
-                                                                                      uci = quantile(male_glp1, probs = c(0.975)),
-                                                                                      sex = "Male",
-                                                                                      drugclass = "GLP1",
-                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                  lci = quantile(male_glp1, probs = c(0.025)),
+                                                                                  uci = quantile(male_glp1, probs = c(0.975)),
+                                                                                  sex = "Male",
+                                                                                  drugclass = "GLP1",
+                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_sglt2 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    female_sglt2 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                               filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
                               filter(sex == "Female") %>%
-                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))))
+                              mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))),
+                            type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted <- rbind(predictions_egfr_stan_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                                      lci = quantile(female_sglt2, probs = c(0.025)),
-                                                                                      uci = quantile(female_sglt2, probs = c(0.975)),
-                                                                                      sex = "Female",
-                                                                                      drugclass = "SGLT2",
-                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                  lci = quantile(female_sglt2, probs = c(0.025)),
+                                                                                  uci = quantile(female_sglt2, probs = c(0.975)),
+                                                                                  sex = "Female",
+                                                                                  drugclass = "SGLT2",
+                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    female_glp1 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    female_glp1 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                              filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
                              filter(sex == "Female") %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))))
+                             mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))),
+                           type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted <- rbind(predictions_egfr_stan_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                                      lci = quantile(female_glp1, probs = c(0.025)),
-                                                                                      uci = quantile(female_glp1, probs = c(0.975)),
-                                                                                      sex = "Female",
-                                                                                      drugclass = "GLP1",
-                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                  lci = quantile(female_glp1, probs = c(0.025)),
+                                                                                  uci = quantile(female_glp1, probs = c(0.975)),
+                                                                                  sex = "Female",
+                                                                                  drugclass = "GLP1",
+                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
   }
   
@@ -2074,25 +2167,29 @@ if (class(try(
   
   for (i in mnumber) {
     
-    sglt2 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    sglt2 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                        filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
-                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))))
+                       mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))),
+                     type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted_overall <- rbind(predictions_egfr_stan_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                      lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                      uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                      drugclass = "SGLT2",
-                                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                  uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                  drugclass = "SGLT2",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
-    glp1 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+    glp1 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
                       filter(intervals == levels(group.egfr.dataset$intervals)[i]) %>%
-                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))))
+                      mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))),
+                    type = "response") %>%
+      rowMeans()
     
     predictions_egfr_stan_adjusted_overall <- rbind(predictions_egfr_stan_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                      lci = quantile(glp1, probs = c(0.025)),
-                                                                                                      uci = quantile(glp1, probs = c(0.975)),
-                                                                                                      drugclass = "GLP1",
-                                                                                                      intervals = levels(group.egfr.dataset$intervals)[i]))
+                                                                                                  lci = quantile(glp1, probs = c(0.025)),
+                                                                                                  uci = quantile(glp1, probs = c(0.975)),
+                                                                                                  drugclass = "GLP1",
+                                                                                                  intervals = levels(group.egfr.dataset$intervals)[i]))
     
   }
   
@@ -2115,21 +2212,25 @@ if (class(try(
   
   models_egfr_adjusted <- readRDS(paste0(output_path, "/additional_outcomes/models_egfr_adjusted.rds"))
   
-  sglt2 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
-                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))))
+  sglt2 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+                     mutate(drugclass = factor("SGLT2", levels = levels(group.egfr.dataset$drugclass))),
+                   type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_adjusted_full <- rbind(predictions_egfr_stan_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                          lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                          uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                          drugclass = "SGLT2"))
+                                                                                          lci = quantile(sglt2, probs = c(0.025)),
+                                                                                          uci = quantile(sglt2, probs = c(0.975)),
+                                                                                          drugclass = "SGLT2"))
   
-  glp1 <- predict(models_egfr_adjusted, newdata = group.egfr.dataset %>%
-                    mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))))
+  glp1 <- posterior_epred(models_egfr_adjusted, newdata = group.egfr.dataset %>%
+                    mutate(drugclass = factor("GLP1", levels = levels(group.egfr.dataset$drugclass))),
+                  type = "response") %>%
+    rowMeans()
   
   predictions_egfr_stan_adjusted_full <- rbind(predictions_egfr_stan_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                          lci = quantile(glp1, probs = c(0.025)),
-                                                                                                          uci = quantile(glp1, probs = c(0.975)),
-                                                                                                          drugclass = "GLP1"))
+                                                                                          lci = quantile(glp1, probs = c(0.025)),
+                                                                                          uci = quantile(glp1, probs = c(0.975)),
+                                                                                          drugclass = "GLP1"))
   
   predictions_egfr_stan_adjusted_full <- predictions_egfr_stan_adjusted_full %>%
     as.data.frame()
@@ -2151,30 +2252,30 @@ egfr_overall_axis_min <- plyr::round_any(floor(min(c(predictions_egfr_stan_psm_1
                                                      predictions_egfr_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                      predictions_egfr_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                      predictions_egfr_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
-                                                       predictions_egfr_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
-                                                       predictions_egfr_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
+                                                     predictions_egfr_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                     predictions_egfr_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
 
 egfr_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_egfr_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                        predictions_egfr_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                        predictions_egfr_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                        predictions_egfr_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
-                                                         predictions_egfr_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
-                                                         predictions_egfr_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+                                                       predictions_egfr_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                       predictions_egfr_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
 
 
 egfr_strata_axis_min <- plyr::round_any(floor(min(c(predictions_egfr_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                     predictions_egfr_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                     predictions_egfr_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                     predictions_egfr_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
-                                                      predictions_egfr_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
-                                                      predictions_egfr_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
+                                                    predictions_egfr_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                    predictions_egfr_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 2, f = floor)
 
 egfr_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_egfr_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                       predictions_egfr_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                       predictions_egfr_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(), 
                                                       predictions_egfr_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(), 
-                                                        predictions_egfr_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
-                                                        predictions_egfr_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+                                                      predictions_egfr_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                      predictions_egfr_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
 
 
 
@@ -2630,8 +2731,8 @@ discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuatio
   mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
 
 group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
-                                   variable = "effects",
-                                   breaks = interval_breaks) %>%
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
   drop_na(intervals)
 
 breakdown_adjust <- unique(c(variables_mu, variables_tau))
@@ -2682,12 +2783,6 @@ if (class(try(
                                              prior_intercept = normal(0, 2))
   
   saveRDS(models_discontinuation_psm_1_1, paste0(output_path, "/additional_outcomes/models_discontinuation_psm_1_1.rds"))
-  
-  # #frequentist version
-  # models_discontinuation_psm_1_1_frequentist <- glm(formula,
-  #                                                   data = group.discontinuation.dataset.matched,
-  #                                                   family = binomial(link = "logit"))
-  
   
   for (i in mnumber) {
     
@@ -2777,7 +2872,8 @@ if (class(try(
     sglt2 <- posterior_epred(models_discontinuation_psm_1_1, newdata = group.discontinuation.dataset.matched %>%
                                filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                                mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                             type = "response")
+                             type = "response") %>%
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_overall <- rbind(predictions_discontinuation_stan_psm_1_1_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                                                       lci = quantile(sglt2, probs = c(0.025)),
@@ -2788,7 +2884,8 @@ if (class(try(
     glp1 <- posterior_epred(models_discontinuation_psm_1_1, newdata = group.discontinuation.dataset.matched %>%
                               filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                               mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                            type = "response")
+                            type = "response") %>%
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_overall <- rbind(predictions_discontinuation_stan_psm_1_1_overall, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                                                       lci = quantile(glp1, probs = c(0.025)),
@@ -2819,7 +2916,8 @@ if (class(try(
   
   sglt2 <- posterior_epred(models_discontinuation_psm_1_1, newdata = group.discontinuation.dataset.matched %>%
                              mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                           type = "response")
+                           type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_psm_1_1_full <- rbind(predictions_discontinuation_stan_psm_1_1_full, cbind(mean = mean(sglt2, na.rm = TRUE),
                                                                                                               lci = quantile(sglt2, probs = c(0.025)),
@@ -2827,16 +2925,14 @@ if (class(try(
                                                                                                               drugclass = "SGLT2"))
   
   glp1 <- posterior_epred(models_discontinuation_psm_1_1, newdata = group.discontinuation.dataset.matched %>%
-                             mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                          type = "response")
+                            mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
+                          type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_psm_1_1_full <- rbind(predictions_discontinuation_stan_psm_1_1_full, cbind(mean = mean(glp1, na.rm = TRUE),
                                                                                                               lci = quantile(glp1, probs = c(0.025)),
                                                                                                               uci = quantile(glp1, probs = c(0.975)),
                                                                                                               drugclass = "GLP1"))
-  
-  
-  
   
   
   predictions_discontinuation_stan_psm_1_1_full <- predictions_discontinuation_stan_psm_1_1_full %>%
@@ -2864,17 +2960,12 @@ if (class(try(
   formula <- paste0("stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) + rcs(prebmi, 3) +", paste(breakdown_adjust[factors], collapse = "+"))
   
   models_discontinuation_psm_1_1_adjusted <- stan_glm(formula, 
-                                             data = group.discontinuation.dataset.matched,
-                                             family = binomial(link = "logit"),
-                                             prior = normal(0, 2),
-                                             prior_intercept = normal(0, 2))
+                                                      data = group.discontinuation.dataset.matched,
+                                                      family = binomial(link = "logit"),
+                                                      prior = normal(0, 2),
+                                                      prior_intercept = normal(0, 2))
   
   saveRDS(models_discontinuation_psm_1_1_adjusted, paste0(output_path, "/additional_outcomes/models_discontinuation_psm_1_1_adjusted.rds"))
-  
-  # #frequentist version
-  # models_discontinuation_psm_1_1_adjusted_frequentist <- glm(formula,
-  #                                                   data = group.discontinuation.dataset.matched,
-  #                                                   family = binomial(link = "logit"))
   
   # #not splines version
   # formula  <- paste0("stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + agetx + t2dmduration + prehba1c + preegfr + prealt + prebmi +", paste(breakdown_adjust[factors], collapse = "+"))
@@ -2895,56 +2986,56 @@ if (class(try(
                                     filter(sex == "Male") %>%
                                     mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                                   type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                                                      lci = quantile(male_sglt2, probs = c(0.025)),
-                                                                                                      uci = quantile(male_sglt2, probs = c(0.975)),
-                                                                                                      sex = "Male",
-                                                                                                      drugclass = "SGLT2",
-                                                                                                      intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(male_sglt2, probs = c(0.025)),
+                                                                                                                        uci = quantile(male_sglt2, probs = c(0.975)),
+                                                                                                                        sex = "Male",
+                                                                                                                        drugclass = "SGLT2",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     male_glp1 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                                    filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                                    filter(sex == "Male") %>%
                                    mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                                  type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                                                      lci = quantile(male_glp1, probs = c(0.025)),
-                                                                                                      uci = quantile(male_glp1, probs = c(0.975)),
-                                                                                                      sex = "Male",
-                                                                                                      drugclass = "GLP1",
-                                                                                                      intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(male_glp1, probs = c(0.025)),
+                                                                                                                        uci = quantile(male_glp1, probs = c(0.975)),
+                                                                                                                        sex = "Male",
+                                                                                                                        drugclass = "GLP1",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     female_sglt2 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                                       filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                                       filter(sex == "Female") %>%
                                       mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                                     type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                                                      lci = quantile(female_sglt2, probs = c(0.025)),
-                                                                                                      uci = quantile(female_sglt2, probs = c(0.975)),
-                                                                                                      sex = "Female",
-                                                                                                      drugclass = "SGLT2",
-                                                                                                      intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(female_sglt2, probs = c(0.025)),
+                                                                                                                        uci = quantile(female_sglt2, probs = c(0.975)),
+                                                                                                                        sex = "Female",
+                                                                                                                        drugclass = "SGLT2",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     female_glp1 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                                      filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                                      filter(sex == "Female") %>%
                                      mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                                    type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                                                      lci = quantile(female_glp1, probs = c(0.025)),
-                                                                                                      uci = quantile(female_glp1, probs = c(0.975)),
-                                                                                                      sex = "Female",
-                                                                                                      drugclass = "GLP1",
-                                                                                                      intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(female_glp1, probs = c(0.025)),
+                                                                                                                        uci = quantile(female_glp1, probs = c(0.975)),
+                                                                                                                        sex = "Female",
+                                                                                                                        drugclass = "GLP1",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
   }
   
@@ -2977,25 +3068,25 @@ if (class(try(
                                filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                                mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                              type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted_overall <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                                      lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                                      uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                                      drugclass = "SGLT2",
-                                                                                                                      intervals = levels(group.discontinuation.dataset.matched$intervals)[i]))
+                                                                                                                                        lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                                                        uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                                                        drugclass = "SGLT2",
+                                                                                                                                        intervals = levels(group.discontinuation.dataset.matched$intervals)[i]))
     
     glp1 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                               filter(intervals == levels(group.discontinuation.dataset.matched$intervals)[i]) %>%
                               mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
                             type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_psm_1_1_adjusted_overall <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                                      lci = quantile(glp1, probs = c(0.025)),
-                                                                                                                      uci = quantile(glp1, probs = c(0.975)),
-                                                                                                                      drugclass = "GLP1",
-                                                                                                                      intervals = levels(group.discontinuation.dataset.matched$intervals)[i]))
+                                                                                                                                        lci = quantile(glp1, probs = c(0.025)),
+                                                                                                                                        uci = quantile(glp1, probs = c(0.975)),
+                                                                                                                                        drugclass = "GLP1",
+                                                                                                                                        intervals = levels(group.discontinuation.dataset.matched$intervals)[i]))
     
   }
   
@@ -3020,21 +3111,23 @@ if (class(try(
   
   sglt2 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                              mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                           type = "response")
+                           type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_psm_1_1_adjusted_full <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                              lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                              uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                              drugclass = "SGLT2"))
+                                                                                                                                lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                                                uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                                                drugclass = "SGLT2"))
   
   glp1 <- posterior_epred(models_discontinuation_psm_1_1_adjusted, newdata = group.discontinuation.dataset.matched %>%
                             mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset.matched$drugclass))),
-                          type = "response")
+                          type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_psm_1_1_adjusted_full <- rbind(predictions_discontinuation_stan_psm_1_1_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                              lci = quantile(glp1, probs = c(0.025)),
-                                                                                                              uci = quantile(glp1, probs = c(0.975)),
-                                                                                                              drugclass = "GLP1"))
+                                                                                                                                lci = quantile(glp1, probs = c(0.025)),
+                                                                                                                                uci = quantile(glp1, probs = c(0.975)),
+                                                                                                                                drugclass = "GLP1"))
   
   
   
@@ -3065,17 +3158,12 @@ if (class(try(
   formula <- paste0("stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(agetx, 3) + rcs(t2dmduration, 3) + rcs(prehba1c, 3) + rcs(preegfr, 3) + rcs(prealt, 3) + rcs(prebmi, 3) +", paste(breakdown_adjust[factors], collapse = "+"))
   
   models_discontinuation_adjusted <- stan_glm(formula, 
-                                                      data = group.discontinuation.dataset,
-                                                      family = binomial(link = "logit"),
-                                                      prior = normal(0, 2),
-                                                      prior_intercept = normal(0, 2))
+                                              data = group.discontinuation.dataset,
+                                              family = binomial(link = "logit"),
+                                              prior = normal(0, 2),
+                                              prior_intercept = normal(0, 2))
   
   saveRDS(models_discontinuation_adjusted, paste0(output_path, "/additional_outcomes/models_discontinuation_adjusted.rds"))
-  
-  # #frequentist version
-  # models_discontinuation_adjusted_frequentist <- glm(formula,
-  #                                                   data = group.discontinuation.dataset,
-  #                                                   family = binomial(link = "logit"))
   
   # #not splines version
   # formula  <- paste0("stopdrug_6m_3mFU ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + agetx + t2dmduration + prehba1c + preegfr + prealt + prebmi +", paste(breakdown_adjust[factors], collapse = "+"))
@@ -3096,56 +3184,56 @@ if (class(try(
                                     filter(sex == "Male") %>%
                                     mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset$drugclass))),
                                   type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted <- rbind(predictions_discontinuation_stan_adjusted, cbind(mean = mean(male_sglt2, na.rm = TRUE),
-                                                                                                                        lci = quantile(male_sglt2, probs = c(0.025)),
-                                                                                                                        uci = quantile(male_sglt2, probs = c(0.975)),
-                                                                                                                        sex = "Male",
-                                                                                                                        drugclass = "SGLT2",
-                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                        lci = quantile(male_sglt2, probs = c(0.025)),
+                                                                                                        uci = quantile(male_sglt2, probs = c(0.975)),
+                                                                                                        sex = "Male",
+                                                                                                        drugclass = "SGLT2",
+                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     male_glp1 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                                    filter(intervals == levels(group.discontinuation.dataset$intervals)[i]) %>%
                                    filter(sex == "Male") %>%
                                    mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset$drugclass))),
                                  type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted <- rbind(predictions_discontinuation_stan_adjusted, cbind(mean = mean(male_glp1, na.rm = TRUE),
-                                                                                                                        lci = quantile(male_glp1, probs = c(0.025)),
-                                                                                                                        uci = quantile(male_glp1, probs = c(0.975)),
-                                                                                                                        sex = "Male",
-                                                                                                                        drugclass = "GLP1",
-                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                        lci = quantile(male_glp1, probs = c(0.025)),
+                                                                                                        uci = quantile(male_glp1, probs = c(0.975)),
+                                                                                                        sex = "Male",
+                                                                                                        drugclass = "GLP1",
+                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     female_sglt2 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                                       filter(intervals == levels(group.discontinuation.dataset$intervals)[i]) %>%
                                       filter(sex == "Female") %>%
                                       mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset$drugclass))),
                                     type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted <- rbind(predictions_discontinuation_stan_adjusted, cbind(mean = mean(female_sglt2, na.rm = TRUE),
-                                                                                                                        lci = quantile(female_sglt2, probs = c(0.025)),
-                                                                                                                        uci = quantile(female_sglt2, probs = c(0.975)),
-                                                                                                                        sex = "Female",
-                                                                                                                        drugclass = "SGLT2",
-                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                        lci = quantile(female_sglt2, probs = c(0.025)),
+                                                                                                        uci = quantile(female_sglt2, probs = c(0.975)),
+                                                                                                        sex = "Female",
+                                                                                                        drugclass = "SGLT2",
+                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     female_glp1 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                                      filter(intervals == levels(group.discontinuation.dataset$intervals)[i]) %>%
                                      filter(sex == "Female") %>%
                                      mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset$drugclass))),
                                    type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted <- rbind(predictions_discontinuation_stan_adjusted, cbind(mean = mean(female_glp1, na.rm = TRUE),
-                                                                                                                        lci = quantile(female_glp1, probs = c(0.025)),
-                                                                                                                        uci = quantile(female_glp1, probs = c(0.975)),
-                                                                                                                        sex = "Female",
-                                                                                                                        drugclass = "GLP1",
-                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                        lci = quantile(female_glp1, probs = c(0.025)),
+                                                                                                        uci = quantile(female_glp1, probs = c(0.975)),
+                                                                                                        sex = "Female",
+                                                                                                        drugclass = "GLP1",
+                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
   }
   
@@ -3178,25 +3266,25 @@ if (class(try(
                                filter(intervals == levels(group.discontinuation.dataset$intervals)[i]) %>%
                                mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset$drugclass))),
                              type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted_overall <- rbind(predictions_discontinuation_stan_adjusted_overall, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                                                        lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                                                        uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                                                        drugclass = "SGLT2",
-                                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                                        uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                                        drugclass = "SGLT2",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
     glp1 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                               filter(intervals == levels(group.discontinuation.dataset$intervals)[i]) %>%
                               mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset$drugclass))),
                             type = "response") %>%
-      colMeans()
+      rowMeans()
     
     predictions_discontinuation_stan_adjusted_overall <- rbind(predictions_discontinuation_stan_adjusted_overall, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                                                        lci = quantile(glp1, probs = c(0.025)),
-                                                                                                                                        uci = quantile(glp1, probs = c(0.975)),
-                                                                                                                                        drugclass = "GLP1",
-                                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
+                                                                                                                        lci = quantile(glp1, probs = c(0.025)),
+                                                                                                                        uci = quantile(glp1, probs = c(0.975)),
+                                                                                                                        drugclass = "GLP1",
+                                                                                                                        intervals = levels(group.discontinuation.dataset$intervals)[i]))
     
   }
   
@@ -3221,25 +3309,23 @@ if (class(try(
   
   sglt2 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                              mutate(drugclass = factor("SGLT2", levels = levels(group.discontinuation.dataset$drugclass))),
-                           type = "response")
+                           type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_adjusted_full <- rbind(predictions_discontinuation_stan_adjusted_full, cbind(mean = mean(sglt2, na.rm = TRUE),
-                                                                                                                                lci = quantile(sglt2, probs = c(0.025)),
-                                                                                                                                uci = quantile(sglt2, probs = c(0.975)),
-                                                                                                                                drugclass = "SGLT2"))
+                                                                                                                lci = quantile(sglt2, probs = c(0.025)),
+                                                                                                                uci = quantile(sglt2, probs = c(0.975)),
+                                                                                                                drugclass = "SGLT2"))
   
   glp1 <- posterior_epred(models_discontinuation_adjusted, newdata = group.discontinuation.dataset %>%
                             mutate(drugclass = factor("GLP1", levels = levels(group.discontinuation.dataset$drugclass))),
-                          type = "response")
+                          type = "response") %>%
+    rowMeans()
   
   predictions_discontinuation_stan_adjusted_full <- rbind(predictions_discontinuation_stan_adjusted_full, cbind(mean = mean(glp1, na.rm = TRUE),
-                                                                                                                                lci = quantile(glp1, probs = c(0.025)),
-                                                                                                                                uci = quantile(glp1, probs = c(0.975)),
-                                                                                                                                drugclass = "GLP1"))
-  
-  
-  
-  
+                                                                                                                lci = quantile(glp1, probs = c(0.025)),
+                                                                                                                uci = quantile(glp1, probs = c(0.975)),
+                                                                                                                drugclass = "GLP1"))
   
   predictions_discontinuation_stan_adjusted_full <- predictions_discontinuation_stan_adjusted_full %>%
     as.data.frame()
@@ -3259,15 +3345,15 @@ discontinuation_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_di
                                                                   predictions_discontinuation_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
                                                                   predictions_discontinuation_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
                                                                   predictions_discontinuation_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
-                                                         predictions_discontinuation_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
-                                                         predictions_discontinuation_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+                                                                  predictions_discontinuation_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                  predictions_discontinuation_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
 
 discontinuation_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
                                                                  predictions_discontinuation_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
                                                                  predictions_discontinuation_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
                                                                  predictions_discontinuation_stan_psm_1_1 %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100, 
-                                                        predictions_discontinuation_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
-                                                        predictions_discontinuation_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+                                                                 predictions_discontinuation_stan_psm_1_1_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                 predictions_discontinuation_stan_adjusted %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
 
 
 
@@ -3993,12 +4079,12 @@ models_no_co_cvd_spline_effects_psm_1_1_spline_effect_5 <- coxph(formula(formula
 
 
 dataset.used <- group.no_co.dataset.matched %>%
-               select(postdrug_mace_censtime_yrs, postdrug_mace_censvar, drugclass, effects, qrisk2_10yr_score)
+  select(postdrug_mace_censtime_yrs, postdrug_mace_censvar, drugclass, effects, qrisk2_10yr_score)
 ddist <- datadist(dataset.used); options(datadist='ddist')
 
 
 m1 <- cph(Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ drugclass*rcs(effects, 5) + rcs(qrisk2_10yr_score, 3),
-            data = dataset.used,x=T,y=T)
+          data = dataset.used,x=T,y=T)
 
 c1 <- quantile(group.no_co.dataset.matched$effects, .01, na.rm=TRUE)
 c99 <- quantile(group.no_co.dataset.matched$effects, .99, na.rm=TRUE)
@@ -4037,7 +4123,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_cvd_psm_1_1_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                  rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 m2 <- cph(Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
@@ -4080,7 +4166,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_cvd_psm_1_1_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                         rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                  rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 
@@ -4090,7 +4176,7 @@ if (class(try(
   
   # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
   predictions_no_co_cvd_stan_psm_1_1 <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   # maximum number of deciles being tested
@@ -4114,13 +4200,43 @@ if (class(try(
   #   mutate(sex = relevel(sex, ref = "Male"),
   #          intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[1]))
   # 
+  # model.interim.dataset <- model.matrix(~time + censored + drugclass, data = interim.dataset) %>%
+  #   as.data.frame()
+  # 
+  # N <- nrow(model.interim.dataset)
+  # X <- as.matrix(pull(model.interim.dataset, drugclassSGLT2))
+  # is_censored <- pull(model.interim.dataset,censored)==0
+  # times <- pull(model.interim.dataset,time)
+  # msk_censored <- is_censored == 1
+  # N_censored <- sum(msk_censored)
+  # 
+  # stan_data <- list(N_uncensored=N-N_censored, 
+  #                   N_censored=N_censored, 
+  #                   X_censored=as.matrix(X[msk_censored,]),
+  #                   X_uncensored=as.matrix(X[!msk_censored,]),
+  #                   times_censored=times[msk_censored],
+  #                   times_uncensored = times[!msk_censored],
+  #                   NC=ncol(X)
+  # )
+  # 
+  # fit <- sampling(sm, data=stan_data, seed=42, chains=4, cores=2, iter=4000)
+  # 
+  # 
+  # formula_freq <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass)"
+  # 
+  # fit_lin <- coxph(formula(formula_freq),
+  #       data = group.no_co.dataset.matched %>%
+  #         mutate(sex = relevel(sex, ref = "Male"),
+  #                intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[1])))
+  
+
   # formula <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
   # 
   # models_test <- brms::brm(formula = formula(formula),
   #                          data = interim.dataset,
-  #                          family = gaussian(),
+  #                          family = "exponential",
   #                          chains = 1)
-  
+
   ###:-------------------------
   
   # formula <- 'postdrug_mace_censtime_yrs | cens(postdrug_mace_censvar) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + rcs(qrisk2_10yr_score, 3)'
@@ -4138,9 +4254,9 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_cvd_psm_1_1_male[[i]] <- coxph(formula(formula_freq),
-                                           data = group.no_co.dataset.matched %>%
-                                             mutate(sex = relevel(sex, ref = "Male"),
-                                                    intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                data = group.no_co.dataset.matched %>%
+                                                  mutate(sex = relevel(sex, ref = "Male"),
+                                                         intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_cvd_stan_psm_1_1 <- rbind(predictions_no_co_cvd_stan_psm_1_1, cbind(mean = models_no_co_cvd_psm_1_1_male[[i]]$coefficients[1],
                                                                                           lci = confint(models_no_co_cvd_psm_1_1_male[[i]])[1,1],
@@ -4173,7 +4289,7 @@ if (class(try(
   
   # predictions for the CVD outcomes in the population with no CVD/HF/CKD
   predictions_no_co_cvd_stan_psm_1_1_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_overall.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   formula_freq <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score"
@@ -4189,13 +4305,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_cvd_psm_1_1_overall[[i]] <- coxph(formula(formula_freq),
-                                                data = group.no_co.dataset.matched %>%
-                                                  mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                   data = group.no_co.dataset.matched %>%
+                                                     mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_cvd_stan_psm_1_1_overall <- rbind(predictions_no_co_cvd_stan_psm_1_1_overall, cbind(mean = models_no_co_cvd_psm_1_1_overall[[i]]$coefficients[1],
-                                                                                          lci = confint(models_no_co_cvd_psm_1_1_overall[[i]])[1,1],
-                                                                                          uci = confint(models_no_co_cvd_psm_1_1_overall[[i]])[1,2],
-                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                                          lci = confint(models_no_co_cvd_psm_1_1_overall[[i]])[1,1],
+                                                                                                          uci = confint(models_no_co_cvd_psm_1_1_overall[[i]])[1,2],
+                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
   }
   
@@ -4211,7 +4327,7 @@ if (class(try(
   
   # predictions for the CVD outcomes in the population with no CVD/HF/CKD
   predictions_no_co_cvd_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   formula_freq <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + qrisk2_10yr_score"
@@ -4223,12 +4339,12 @@ if (class(try(
   predictions_no_co_cvd_stan_psm_1_1_full <- vector()
   
   models_no_co_cvd_psm_1_1_full <- coxph(formula(formula_freq),
-                                                 data = group.no_co.dataset.matched)
+                                         data = group.no_co.dataset.matched)
   
   predictions_no_co_cvd_stan_psm_1_1_full <- rbind(predictions_no_co_cvd_stan_psm_1_1_full, cbind(mean = models_no_co_cvd_psm_1_1_full$coefficients[1],
                                                                                                   lci = confint(models_no_co_cvd_psm_1_1_full)[1,1],
                                                                                                   uci = confint(models_no_co_cvd_psm_1_1_full)[1,2]))
-
+  
   predictions_no_co_cvd_stan_psm_1_1_full <- predictions_no_co_cvd_stan_psm_1_1_full %>%
     as.data.frame()
   
@@ -4361,11 +4477,11 @@ if (class(try(
   predictions_no_co_cvd_stan_psm_1_1_adjusted_full <- vector()
   
   models_no_co_cvd_psm_1_1_adjusted_full <- coxph(formula(formula_freq),
-                                         data = group.no_co.dataset.matched)
+                                                  data = group.no_co.dataset.matched)
   
   predictions_no_co_cvd_stan_psm_1_1_adjusted_full <- rbind(predictions_no_co_cvd_stan_psm_1_1_adjusted_full, cbind(mean = models_no_co_cvd_psm_1_1_adjusted_full$coefficients[1],
-                                                                                                  lci = confint(models_no_co_cvd_psm_1_1_adjusted_full)[1,1],
-                                                                                                  uci = confint(models_no_co_cvd_psm_1_1_adjusted_full)[1,2]))
+                                                                                                                    lci = confint(models_no_co_cvd_psm_1_1_adjusted_full)[1,1],
+                                                                                                                    uci = confint(models_no_co_cvd_psm_1_1_adjusted_full)[1,2]))
   
   predictions_no_co_cvd_stan_psm_1_1_adjusted_full <- predictions_no_co_cvd_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -4430,17 +4546,17 @@ if (class(try(
 formula_freq_1 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_cvd_spline_effects_adjusted_effect <- coxph(formula(formula_freq_1),
-                                                        data = group.no_co.dataset)
+                                                         data = group.no_co.dataset)
 
 formula_freq_2 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_cvd_spline_effects_adjusted_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                                 data = group.no_co.dataset)
+                                                                  data = group.no_co.dataset)
 
 formula_freq_3 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_cvd_spline_effects_adjusted_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                                 data = group.no_co.dataset)
+                                                                  data = group.no_co.dataset)
 
 # anova(models_no_co_cvd_spline_effects_adjusted_effect, models_no_co_cvd_spline_effects_adjusted_spline_effect_3, models_no_co_cvd_spline_effects_adjusted_spline_effect_5)
 
@@ -4489,7 +4605,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_cvd_adjusted_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                         rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                   rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 m2 <- cph(Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
@@ -4532,7 +4648,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_cvd_adjusted_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                          rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                   rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 
@@ -4661,11 +4777,11 @@ if (class(try(
   predictions_no_co_cvd_stan_adjusted_full <- vector()
   
   models_no_co_cvd_adjusted_full <- coxph(formula(formula_freq),
-                                                  data = group.no_co.dataset)
+                                          data = group.no_co.dataset)
   
   predictions_no_co_cvd_stan_adjusted_full <- rbind(predictions_no_co_cvd_stan_adjusted_full, cbind(mean = models_no_co_cvd_adjusted_full$coefficients[1],
-                                                                                                                    lci = confint(models_no_co_cvd_adjusted_full)[1,1],
-                                                                                                                    uci = confint(models_no_co_cvd_adjusted_full)[1,2]))
+                                                                                                    lci = confint(models_no_co_cvd_adjusted_full)[1,1],
+                                                                                                    uci = confint(models_no_co_cvd_adjusted_full)[1,2]))
   
   predictions_no_co_cvd_stan_adjusted_full <- predictions_no_co_cvd_stan_adjusted_full %>%
     as.data.frame()
@@ -4741,7 +4857,7 @@ plot_no_co_cvd_psm_1_1_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4777,7 +4893,7 @@ plot_no_co_cvd_psm_1_1_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4813,7 +4929,7 @@ plot_no_co_cvd_psm_1_1_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4850,7 +4966,7 @@ plot_no_co_cvd_psm_1_1_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4886,7 +5002,7 @@ plot_no_co_cvd_psm_1_1_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4922,7 +5038,7 @@ plot_no_co_cvd_psm_1_1_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4959,7 +5075,7 @@ plot_no_co_cvd_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -4995,7 +5111,7 @@ plot_no_co_cvd_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -5031,7 +5147,7 @@ plot_no_co_cvd_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -5163,17 +5279,17 @@ dev.off()
 formula_freq_1 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_psm_1_1_effect <- coxph(formula(formula_freq_1),
-                                                        data = group.no_co.dataset.matched)
+                                                       data = group.no_co.dataset.matched)
 
 formula_freq_2 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_psm_1_1_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                                 data = group.no_co.dataset.matched)
+                                                                data = group.no_co.dataset.matched)
 
 formula_freq_3 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_psm_1_1_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                                 data = group.no_co.dataset.matched)
+                                                                data = group.no_co.dataset.matched)
 
 # anova(models_no_co_hf_spline_effects_psm_1_1_effect, models_no_co_hf_spline_effects_psm_1_1_spline_effect_3, models_no_co_hf_spline_effects_psm_1_1_spline_effect_5)
 
@@ -5222,7 +5338,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_hf_psm_1_1_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                          rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                 rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 m2 <- cph(Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
@@ -5265,7 +5381,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_hf_psm_1_1_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                        rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                 rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 #--- Cox
@@ -5297,26 +5413,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_psm_1_1_male[[i]] <- coxph(formula(formula_freq),
-                                                data = group.no_co.dataset.matched %>%
-                                                  mutate(sex = relevel(sex, ref = "Male"),
-                                                         intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                               data = group.no_co.dataset.matched %>%
+                                                 mutate(sex = relevel(sex, ref = "Male"),
+                                                        intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1 <- rbind(predictions_no_co_hf_stan_psm_1_1, cbind(mean = models_no_co_hf_psm_1_1_male[[i]]$coefficients[1],
-                                                                                          lci = confint(models_no_co_hf_psm_1_1_male[[i]])[1,1],
-                                                                                          uci = confint(models_no_co_hf_psm_1_1_male[[i]])[1,2],
-                                                                                          sex = "Male",
-                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                        lci = confint(models_no_co_hf_psm_1_1_male[[i]])[1,1],
+                                                                                        uci = confint(models_no_co_hf_psm_1_1_male[[i]])[1,2],
+                                                                                        sex = "Male",
+                                                                                        intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
     models_no_co_hf_psm_1_1_female[[i]] <- coxph(formula(formula_freq),
-                                                  data = group.no_co.dataset.matched %>%
-                                                    mutate(sex = relevel(sex, ref = "Female"),
-                                                           intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                 data = group.no_co.dataset.matched %>%
+                                                   mutate(sex = relevel(sex, ref = "Female"),
+                                                          intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1 <- rbind(predictions_no_co_hf_stan_psm_1_1, cbind(mean = models_no_co_hf_psm_1_1_female[[i]]$coefficients[1],
-                                                                                          lci = confint(models_no_co_hf_psm_1_1_female[[i]])[1,1],
-                                                                                          uci = confint(models_no_co_hf_psm_1_1_female[[i]])[1,2],
-                                                                                          sex = "Female",
-                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                        lci = confint(models_no_co_hf_psm_1_1_female[[i]])[1,1],
+                                                                                        uci = confint(models_no_co_hf_psm_1_1_female[[i]])[1,2],
+                                                                                        sex = "Female",
+                                                                                        intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
   }
   
@@ -5347,13 +5463,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_psm_1_1_overall[[i]] <- coxph(formula(formula_freq),
-                                                   data = group.no_co.dataset.matched %>%
-                                                     mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                  data = group.no_co.dataset.matched %>%
+                                                    mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1_overall <- rbind(predictions_no_co_hf_stan_psm_1_1_overall, cbind(mean = models_no_co_hf_psm_1_1_overall[[i]]$coefficients[1],
-                                                                                                          lci = confint(models_no_co_hf_psm_1_1_overall[[i]])[1,1],
-                                                                                                          uci = confint(models_no_co_hf_psm_1_1_overall[[i]])[1,2],
-                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                                        lci = confint(models_no_co_hf_psm_1_1_overall[[i]])[1,1],
+                                                                                                        uci = confint(models_no_co_hf_psm_1_1_overall[[i]])[1,2],
+                                                                                                        intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
   }
   
@@ -5381,11 +5497,11 @@ if (class(try(
   predictions_no_co_hf_stan_psm_1_1_full <- vector()
   
   models_no_co_hf_psm_1_1_full <- coxph(formula(formula_freq),
-                                          data = group.no_co.dataset.matched)
+                                        data = group.no_co.dataset.matched)
   
   predictions_no_co_hf_stan_psm_1_1_full <- rbind(predictions_no_co_hf_stan_psm_1_1_full, cbind(mean = models_no_co_hf_psm_1_1_full$coefficients[1],
-                                                                                                    lci = confint(models_no_co_hf_psm_1_1_full)[1,1],
-                                                                                                    uci = confint(models_no_co_hf_psm_1_1_full)[1,2]))
+                                                                                                lci = confint(models_no_co_hf_psm_1_1_full)[1,1],
+                                                                                                uci = confint(models_no_co_hf_psm_1_1_full)[1,2]))
   
   predictions_no_co_hf_stan_psm_1_1_full <- predictions_no_co_hf_stan_psm_1_1_full %>%
     as.data.frame()
@@ -5428,26 +5544,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_psm_1_1_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                         data = group.no_co.dataset.matched %>%
-                                                           mutate(sex = relevel(sex, ref = "Male"),
-                                                                  intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                        data = group.no_co.dataset.matched %>%
+                                                          mutate(sex = relevel(sex, ref = "Male"),
+                                                                 intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1_adjusted <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted, cbind(mean = models_no_co_hf_psm_1_1_adjusted_male[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_no_co_hf_psm_1_1_adjusted_male[[i]])[1,1],
-                                                                                                            uci = confint(models_no_co_hf_psm_1_1_adjusted_male[[i]])[1,2],
-                                                                                                            sex = "Male",
-                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                                          lci = confint(models_no_co_hf_psm_1_1_adjusted_male[[i]])[1,1],
+                                                                                                          uci = confint(models_no_co_hf_psm_1_1_adjusted_male[[i]])[1,2],
+                                                                                                          sex = "Male",
+                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
     models_no_co_hf_psm_1_1_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                           data = group.no_co.dataset.matched %>%
-                                                             mutate(sex = relevel(sex, ref = "Female"),
-                                                                    intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                          data = group.no_co.dataset.matched %>%
+                                                            mutate(sex = relevel(sex, ref = "Female"),
+                                                                   intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1_adjusted <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted, cbind(mean = models_no_co_hf_psm_1_1_adjusted_female[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_no_co_hf_psm_1_1_adjusted_female[[i]])[1,1],
-                                                                                                            uci = confint(models_no_co_hf_psm_1_1_adjusted_female[[i]])[1,2],
-                                                                                                            sex = "Female",
-                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                                          lci = confint(models_no_co_hf_psm_1_1_adjusted_female[[i]])[1,1],
+                                                                                                          uci = confint(models_no_co_hf_psm_1_1_adjusted_female[[i]])[1,2],
+                                                                                                          sex = "Female",
+                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
   }
   
@@ -5482,13 +5598,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_psm_1_1_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                            data = group.no_co.dataset.matched %>%
-                                                              mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
+                                                           data = group.no_co.dataset.matched %>%
+                                                             mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])))
     
     predictions_no_co_hf_stan_psm_1_1_adjusted_overall <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_overall, cbind(mean = models_no_co_hf_psm_1_1_adjusted_overall[[i]]$coefficients[1],
-                                                                                                                            lci = confint(models_no_co_hf_psm_1_1_adjusted_overall[[i]])[1,1],
-                                                                                                                            uci = confint(models_no_co_hf_psm_1_1_adjusted_overall[[i]])[1,2],
-                                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+                                                                                                                          lci = confint(models_no_co_hf_psm_1_1_adjusted_overall[[i]])[1,1],
+                                                                                                                          uci = confint(models_no_co_hf_psm_1_1_adjusted_overall[[i]])[1,2],
+                                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
     
   }
   
@@ -5519,11 +5635,11 @@ if (class(try(
   predictions_no_co_hf_stan_psm_1_1_adjusted_full <- vector()
   
   models_no_co_hf_psm_1_1_adjusted_full <- coxph(formula(formula_freq),
-                                        data = group.no_co.dataset.matched)
+                                                 data = group.no_co.dataset.matched)
   
   predictions_no_co_hf_stan_psm_1_1_adjusted_full <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_full, cbind(mean = models_no_co_hf_psm_1_1_adjusted_full$coefficients[1],
-                                                                                                lci = confint(models_no_co_hf_psm_1_1_adjusted_full)[1,1],
-                                                                                                uci = confint(models_no_co_hf_psm_1_1_adjusted_full)[1,2]))
+                                                                                                                  lci = confint(models_no_co_hf_psm_1_1_adjusted_full)[1,1],
+                                                                                                                  uci = confint(models_no_co_hf_psm_1_1_adjusted_full)[1,2]))
   
   predictions_no_co_hf_stan_psm_1_1_adjusted_full <- predictions_no_co_hf_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -5589,17 +5705,17 @@ if (class(try(
 formula_freq_1 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_adjusted_effect <- coxph(formula(formula_freq_1),
-                                                       data = group.no_co.dataset)
+                                                        data = group.no_co.dataset)
 
 formula_freq_2 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_adjusted_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                                data = group.no_co.dataset)
+                                                                 data = group.no_co.dataset)
 
 formula_freq_3 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_no_co_hf_spline_effects_adjusted_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                                data = group.no_co.dataset)
+                                                                 data = group.no_co.dataset)
 
 # anova(models_no_co_hf_spline_effects_adjusted_effect, models_no_co_hf_spline_effects_adjusted_spline_effect_3, models_no_co_hf_spline_effects_adjusted_spline_effect_5)
 
@@ -5648,7 +5764,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_hf_adjusted_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                        rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                  rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 m2 <- cph(Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
           data = dataset.used,x=T,y=T)
@@ -5690,7 +5806,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_no_co_hf_adjusted_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                         rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                  rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 #--- Cox
 if (class(try(
@@ -5726,26 +5842,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                 data = group.no_co.dataset %>%
-                                                   mutate(sex = relevel(sex, ref = "Male"),
-                                                          intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
+                                                data = group.no_co.dataset %>%
+                                                  mutate(sex = relevel(sex, ref = "Male"),
+                                                         intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
     
     predictions_no_co_hf_stan_adjusted <- rbind(predictions_no_co_hf_stan_adjusted, cbind(mean = models_no_co_hf_adjusted_male[[i]]$coefficients[1],
-                                                                                            lci = confint(models_no_co_hf_adjusted_male[[i]])[1,1],
-                                                                                            uci = confint(models_no_co_hf_adjusted_male[[i]])[1,2],
-                                                                                            sex = "Male",
-                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+                                                                                          lci = confint(models_no_co_hf_adjusted_male[[i]])[1,1],
+                                                                                          uci = confint(models_no_co_hf_adjusted_male[[i]])[1,2],
+                                                                                          sex = "Male",
+                                                                                          intervals = levels(group.no_co.dataset$intervals)[i]))
     
     models_no_co_hf_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                   data = group.no_co.dataset %>%
-                                                     mutate(sex = relevel(sex, ref = "Female"),
-                                                            intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
+                                                  data = group.no_co.dataset %>%
+                                                    mutate(sex = relevel(sex, ref = "Female"),
+                                                           intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
     
     predictions_no_co_hf_stan_adjusted <- rbind(predictions_no_co_hf_stan_adjusted, cbind(mean = models_no_co_hf_adjusted_female[[i]]$coefficients[1],
-                                                                                            lci = confint(models_no_co_hf_adjusted_female[[i]])[1,1],
-                                                                                            uci = confint(models_no_co_hf_adjusted_female[[i]])[1,2],
-                                                                                            sex = "Female",
-                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+                                                                                          lci = confint(models_no_co_hf_adjusted_female[[i]])[1,1],
+                                                                                          uci = confint(models_no_co_hf_adjusted_female[[i]])[1,2],
+                                                                                          sex = "Female",
+                                                                                          intervals = levels(group.no_co.dataset$intervals)[i]))
     
   }
   
@@ -5780,13 +5896,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_no_co_hf_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                    data = group.no_co.dataset %>%
-                                                      mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
+                                                   data = group.no_co.dataset %>%
+                                                     mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])))
     
     predictions_no_co_hf_stan_adjusted_overall <- rbind(predictions_no_co_hf_stan_adjusted_overall, cbind(mean = models_no_co_hf_adjusted_overall[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_no_co_hf_adjusted_overall[[i]])[1,1],
-                                                                                                            uci = confint(models_no_co_hf_adjusted_overall[[i]])[1,2],
-                                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+                                                                                                          lci = confint(models_no_co_hf_adjusted_overall[[i]])[1,1],
+                                                                                                          uci = confint(models_no_co_hf_adjusted_overall[[i]])[1,2],
+                                                                                                          intervals = levels(group.no_co.dataset$intervals)[i]))
     
   }
   
@@ -5817,11 +5933,11 @@ if (class(try(
   predictions_no_co_hf_stan_adjusted_full <- vector()
   
   models_no_co_hf_adjusted_full <- coxph(formula(formula_freq),
-                                                 data = group.no_co.dataset)
+                                         data = group.no_co.dataset)
   
   predictions_no_co_hf_stan_adjusted_full <- rbind(predictions_no_co_hf_stan_adjusted_full, cbind(mean = models_no_co_hf_adjusted_full$coefficients[1],
-                                                                                                                  lci = confint(models_no_co_hf_adjusted_full)[1,1],
-                                                                                                                  uci = confint(models_no_co_hf_adjusted_full)[1,2]))
+                                                                                                  lci = confint(models_no_co_hf_adjusted_full)[1,1],
+                                                                                                  uci = confint(models_no_co_hf_adjusted_full)[1,2]))
   
   predictions_no_co_hf_stan_adjusted_full <- predictions_no_co_hf_stan_adjusted_full %>%
     as.data.frame()
@@ -5900,7 +6016,7 @@ plot_no_co_hf_psm_1_1_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -5936,7 +6052,7 @@ plot_no_co_hf_psm_1_1_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -5972,7 +6088,7 @@ plot_no_co_hf_psm_1_1_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6009,7 +6125,7 @@ plot_no_co_hf_psm_1_1_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6045,7 +6161,7 @@ plot_no_co_hf_psm_1_1_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6081,7 +6197,7 @@ plot_no_co_hf_psm_1_1_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6118,7 +6234,7 @@ plot_no_co_hf_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6154,7 +6270,7 @@ plot_no_co_hf_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6190,7 +6306,7 @@ plot_no_co_hf_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -6276,8 +6392,8 @@ cvd.dataset <- set_up_data_sglt2_glp1(dataset.type="cvd.dataset") %>%
   left_join(treatment_effects, by = c("patid", "pated"))
 
 group.cvd.dataset <- group_values(data = cvd.dataset,
-                                    variable = "effects",
-                                    breaks = interval_breaks) %>%
+                                  variable = "effects",
+                                  breaks = interval_breaks) %>%
   drop_na(intervals)
 
 matching_cvd <- MatchIt::matchit(
@@ -6356,17 +6472,17 @@ group.cvd.dataset.matched <- group.cvd.dataset %>%
 formula_freq_1 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_psm_1_1_effect <- coxph(formula(formula_freq_1),
-                                                        data = group.cvd.dataset.matched)
+                                                      data = group.cvd.dataset.matched)
 
 formula_freq_2 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_psm_1_1_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                                 data = group.cvd.dataset.matched)
+                                                               data = group.cvd.dataset.matched)
 
 formula_freq_3 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_psm_1_1_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                                 data = group.cvd.dataset.matched)
+                                                               data = group.cvd.dataset.matched)
 
 # anova(models_cvd_cvd_spline_effects_psm_1_1_effect, models_cvd_cvd_spline_effects_psm_1_1_spline_effect_3, models_cvd_cvd_spline_effects_psm_1_1_spline_effect_5)
 
@@ -6415,7 +6531,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_cvd_cvd_psm_1_1_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                         rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 m2 <- cph(Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
           data = dataset.used,x=T,y=T)
@@ -6457,7 +6573,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_cvd_cvd_psm_1_1_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                       rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 #--- Cox  
 if (class(try(
@@ -6489,26 +6605,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_psm_1_1_male[[i]] <- coxph(formula(formula_freq),
-                                                data = group.cvd.dataset.matched %>%
-                                                  mutate(sex = relevel(sex, ref = "Male"),
-                                                         intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                              data = group.cvd.dataset.matched %>%
+                                                mutate(sex = relevel(sex, ref = "Male"),
+                                                       intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1 <- rbind(predictions_cvd_cvd_stan_psm_1_1, cbind(mean = models_cvd_cvd_psm_1_1_male[[i]]$coefficients[1],
-                                                                                          lci = confint(models_cvd_cvd_psm_1_1_male[[i]])[1,1],
-                                                                                          uci = confint(models_cvd_cvd_psm_1_1_male[[i]])[1,2],
-                                                                                          sex = "Male",
-                                                                                          intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                      lci = confint(models_cvd_cvd_psm_1_1_male[[i]])[1,1],
+                                                                                      uci = confint(models_cvd_cvd_psm_1_1_male[[i]])[1,2],
+                                                                                      sex = "Male",
+                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
     models_cvd_cvd_psm_1_1_female[[i]] <- coxph(formula(formula_freq),
-                                                  data = group.cvd.dataset.matched %>%
-                                                    mutate(sex = relevel(sex, ref = "Female"),
-                                                           intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                                data = group.cvd.dataset.matched %>%
+                                                  mutate(sex = relevel(sex, ref = "Female"),
+                                                         intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1 <- rbind(predictions_cvd_cvd_stan_psm_1_1, cbind(mean = models_cvd_cvd_psm_1_1_female[[i]]$coefficients[1],
-                                                                                          lci = confint(models_cvd_cvd_psm_1_1_female[[i]])[1,1],
-                                                                                          uci = confint(models_cvd_cvd_psm_1_1_female[[i]])[1,2],
-                                                                                          sex = "Female",
-                                                                                          intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                      lci = confint(models_cvd_cvd_psm_1_1_female[[i]])[1,1],
+                                                                                      uci = confint(models_cvd_cvd_psm_1_1_female[[i]])[1,2],
+                                                                                      sex = "Female",
+                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
   }
   
@@ -6539,13 +6655,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_psm_1_1_overall[[i]] <- coxph(formula(formula_freq),
-                                                   data = group.cvd.dataset.matched %>%
-                                                     mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                                 data = group.cvd.dataset.matched %>%
+                                                   mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1_overall <- rbind(predictions_cvd_cvd_stan_psm_1_1_overall, cbind(mean = models_cvd_cvd_psm_1_1_overall[[i]]$coefficients[1],
-                                                                                                          lci = confint(models_cvd_cvd_psm_1_1_overall[[i]])[1,1],
-                                                                                                          uci = confint(models_cvd_cvd_psm_1_1_overall[[i]])[1,2],
-                                                                                                          intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                                      lci = confint(models_cvd_cvd_psm_1_1_overall[[i]])[1,1],
+                                                                                                      uci = confint(models_cvd_cvd_psm_1_1_overall[[i]])[1,2],
+                                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
   }
   
@@ -6573,12 +6689,12 @@ if (class(try(
   predictions_cvd_cvd_stan_psm_1_1_full <- vector()
   
   models_cvd_cvd_psm_1_1_full <- coxph(formula(formula_freq),
-                                                 data = group.cvd.dataset.matched)
-    
+                                       data = group.cvd.dataset.matched)
+  
   predictions_cvd_cvd_stan_psm_1_1_full <- rbind(predictions_cvd_cvd_stan_psm_1_1_full, cbind(mean = models_cvd_cvd_psm_1_1_full$coefficients[1],
-                                                                                                    lci = confint(models_cvd_cvd_psm_1_1_full)[1,1],
-                                                                                                    uci = confint(models_cvd_cvd_psm_1_1_full)[1,2]))
-    
+                                                                                              lci = confint(models_cvd_cvd_psm_1_1_full)[1,1],
+                                                                                              uci = confint(models_cvd_cvd_psm_1_1_full)[1,2]))
+  
   predictions_cvd_cvd_stan_psm_1_1_full <- predictions_cvd_cvd_stan_psm_1_1_full %>%
     as.data.frame()
   
@@ -6622,26 +6738,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_psm_1_1_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                         data = group.cvd.dataset.matched %>%
-                                                           mutate(sex = relevel(sex, ref = "Male"),
-                                                                  intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                                       data = group.cvd.dataset.matched %>%
+                                                         mutate(sex = relevel(sex, ref = "Male"),
+                                                                intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1_adjusted <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted, cbind(mean = models_cvd_cvd_psm_1_1_adjusted_male[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_cvd_cvd_psm_1_1_adjusted_male[[i]])[1,1],
-                                                                                                            uci = confint(models_cvd_cvd_psm_1_1_adjusted_male[[i]])[1,2],
-                                                                                                            sex = "Male",
-                                                                                                            intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                                        lci = confint(models_cvd_cvd_psm_1_1_adjusted_male[[i]])[1,1],
+                                                                                                        uci = confint(models_cvd_cvd_psm_1_1_adjusted_male[[i]])[1,2],
+                                                                                                        sex = "Male",
+                                                                                                        intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
     models_cvd_cvd_psm_1_1_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                           data = group.cvd.dataset.matched %>%
-                                                             mutate(sex = relevel(sex, ref = "Female"),
-                                                                    intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                                         data = group.cvd.dataset.matched %>%
+                                                           mutate(sex = relevel(sex, ref = "Female"),
+                                                                  intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1_adjusted <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted, cbind(mean = models_cvd_cvd_psm_1_1_adjusted_female[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_cvd_cvd_psm_1_1_adjusted_female[[i]])[1,1],
-                                                                                                            uci = confint(models_cvd_cvd_psm_1_1_adjusted_female[[i]])[1,2],
-                                                                                                            sex = "Female",
-                                                                                                            intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                                        lci = confint(models_cvd_cvd_psm_1_1_adjusted_female[[i]])[1,1],
+                                                                                                        uci = confint(models_cvd_cvd_psm_1_1_adjusted_female[[i]])[1,2],
+                                                                                                        sex = "Female",
+                                                                                                        intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
   }
   
@@ -6676,13 +6792,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_psm_1_1_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                            data = group.cvd.dataset.matched %>%
-                                                              mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
+                                                          data = group.cvd.dataset.matched %>%
+                                                            mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])))
     
     predictions_cvd_cvd_stan_psm_1_1_adjusted_overall <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_overall, cbind(mean = models_cvd_cvd_psm_1_1_adjusted_overall[[i]]$coefficients[1],
-                                                                                                                            lci = confint(models_cvd_cvd_psm_1_1_adjusted_overall[[i]])[1,1],
-                                                                                                                            uci = confint(models_cvd_cvd_psm_1_1_adjusted_overall[[i]])[1,2],
-                                                                                                                            intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+                                                                                                                        lci = confint(models_cvd_cvd_psm_1_1_adjusted_overall[[i]])[1,1],
+                                                                                                                        uci = confint(models_cvd_cvd_psm_1_1_adjusted_overall[[i]])[1,2],
+                                                                                                                        intervals = levels(group.cvd.dataset.matched$intervals)[i]))
     
   }
   
@@ -6713,11 +6829,11 @@ if (class(try(
   predictions_cvd_cvd_stan_psm_1_1_adjusted_full <- vector()
   
   models_cvd_cvd_psm_1_1_adjusted_full <- coxph(formula(formula_freq),
-                                       data = group.cvd.dataset.matched)
+                                                data = group.cvd.dataset.matched)
   
   predictions_cvd_cvd_stan_psm_1_1_adjusted_full <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_full, cbind(mean = models_cvd_cvd_psm_1_1_adjusted_full$coefficients[1],
-                                                                                              lci = confint(models_cvd_cvd_psm_1_1_adjusted_full)[1,1],
-                                                                                              uci = confint(models_cvd_cvd_psm_1_1_adjusted_full)[1,2]))
+                                                                                                                lci = confint(models_cvd_cvd_psm_1_1_adjusted_full)[1,1],
+                                                                                                                uci = confint(models_cvd_cvd_psm_1_1_adjusted_full)[1,2]))
   
   predictions_cvd_cvd_stan_psm_1_1_adjusted_full <- predictions_cvd_cvd_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -6782,17 +6898,17 @@ if (class(try(
 formula_freq_1 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_adjusted_effect <- coxph(formula(formula_freq_1),
-                                                      data = group.cvd.dataset)
+                                                       data = group.cvd.dataset)
 
 formula_freq_2 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_adjusted_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                               data = group.cvd.dataset)
+                                                                data = group.cvd.dataset)
 
 formula_freq_3 <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_cvd_cvd_spline_effects_adjusted_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                               data = group.cvd.dataset)
+                                                                data = group.cvd.dataset)
 
 # anova(models_cvd_cvd_spline_effects_adjusted_effect, models_cvd_cvd_spline_effects_adjusted_spline_effect_3, models_cvd_cvd_spline_effects_adjusted_spline_effect_5)
 
@@ -6840,7 +6956,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_cvd_cvd_adjusted_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                       rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                 rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 m2 <- cph(Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
           data = dataset.used,x=T,y=T)
@@ -6882,7 +6998,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_cvd_cvd_adjusted_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                        rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                                 rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 #--- Cox  
 if (class(try(
@@ -6918,26 +7034,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                 data = group.cvd.dataset %>%
-                                                   mutate(sex = relevel(sex, ref = "Male"),
-                                                          intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
+                                               data = group.cvd.dataset %>%
+                                                 mutate(sex = relevel(sex, ref = "Male"),
+                                                        intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
     
     predictions_cvd_cvd_stan_adjusted <- rbind(predictions_cvd_cvd_stan_adjusted, cbind(mean = models_cvd_cvd_adjusted_male[[i]]$coefficients[1],
-                                                                                            lci = confint(models_cvd_cvd_adjusted_male[[i]])[1,1],
-                                                                                            uci = confint(models_cvd_cvd_adjusted_male[[i]])[1,2],
-                                                                                            sex = "Male",
-                                                                                            intervals = levels(group.cvd.dataset$intervals)[i]))
+                                                                                        lci = confint(models_cvd_cvd_adjusted_male[[i]])[1,1],
+                                                                                        uci = confint(models_cvd_cvd_adjusted_male[[i]])[1,2],
+                                                                                        sex = "Male",
+                                                                                        intervals = levels(group.cvd.dataset$intervals)[i]))
     
     models_cvd_cvd_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                   data = group.cvd.dataset %>%
-                                                     mutate(sex = relevel(sex, ref = "Female"),
-                                                            intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
+                                                 data = group.cvd.dataset %>%
+                                                   mutate(sex = relevel(sex, ref = "Female"),
+                                                          intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
     
     predictions_cvd_cvd_stan_adjusted <- rbind(predictions_cvd_cvd_stan_adjusted, cbind(mean = models_cvd_cvd_adjusted_female[[i]]$coefficients[1],
-                                                                                            lci = confint(models_cvd_cvd_adjusted_female[[i]])[1,1],
-                                                                                            uci = confint(models_cvd_cvd_adjusted_female[[i]])[1,2],
-                                                                                            sex = "Female",
-                                                                                            intervals = levels(group.cvd.dataset$intervals)[i]))
+                                                                                        lci = confint(models_cvd_cvd_adjusted_female[[i]])[1,1],
+                                                                                        uci = confint(models_cvd_cvd_adjusted_female[[i]])[1,2],
+                                                                                        sex = "Female",
+                                                                                        intervals = levels(group.cvd.dataset$intervals)[i]))
     
   }
   
@@ -6972,13 +7088,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_cvd_cvd_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                    data = group.cvd.dataset %>%
-                                                      mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
+                                                  data = group.cvd.dataset %>%
+                                                    mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])))
     
     predictions_cvd_cvd_stan_adjusted_overall <- rbind(predictions_cvd_cvd_stan_adjusted_overall, cbind(mean = models_cvd_cvd_adjusted_overall[[i]]$coefficients[1],
-                                                                                                            lci = confint(models_cvd_cvd_adjusted_overall[[i]])[1,1],
-                                                                                                            uci = confint(models_cvd_cvd_adjusted_overall[[i]])[1,2],
-                                                                                                            intervals = levels(group.cvd.dataset$intervals)[i]))
+                                                                                                        lci = confint(models_cvd_cvd_adjusted_overall[[i]])[1,1],
+                                                                                                        uci = confint(models_cvd_cvd_adjusted_overall[[i]])[1,2],
+                                                                                                        intervals = levels(group.cvd.dataset$intervals)[i]))
     
   }
   
@@ -7009,11 +7125,11 @@ if (class(try(
   predictions_cvd_cvd_stan_adjusted_full <- vector()
   
   models_cvd_cvd_adjusted_full <- coxph(formula(formula_freq),
-                                                data = group.cvd.dataset)
+                                        data = group.cvd.dataset)
   
   predictions_cvd_cvd_stan_adjusted_full <- rbind(predictions_cvd_cvd_stan_adjusted_full, cbind(mean = models_cvd_cvd_adjusted_full$coefficients[1],
-                                                                                                                lci = confint(models_cvd_cvd_adjusted_full)[1,1],
-                                                                                                                uci = confint(models_cvd_cvd_adjusted_full)[1,2]))
+                                                                                                lci = confint(models_cvd_cvd_adjusted_full)[1,1],
+                                                                                                uci = confint(models_cvd_cvd_adjusted_full)[1,2]))
   
   predictions_cvd_cvd_stan_adjusted_full <- predictions_cvd_cvd_stan_adjusted_full %>%
     as.data.frame()
@@ -7092,7 +7208,7 @@ plot_cvd_cvd_psm_1_1_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7128,7 +7244,7 @@ plot_cvd_cvd_psm_1_1_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7164,7 +7280,7 @@ plot_cvd_cvd_psm_1_1_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7201,7 +7317,7 @@ plot_cvd_cvd_psm_1_1_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7237,7 +7353,7 @@ plot_cvd_cvd_psm_1_1_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7273,7 +7389,7 @@ plot_cvd_cvd_psm_1_1_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7310,7 +7426,7 @@ plot_cvd_cvd_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7346,7 +7462,7 @@ plot_cvd_cvd_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7382,7 +7498,7 @@ plot_cvd_cvd_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -7469,8 +7585,8 @@ hf.dataset <- set_up_data_sglt2_glp1(dataset.type="hf.dataset") %>%
   left_join(treatment_effects, by = c("patid", "pated"))
 
 group.hf.dataset <- group_values(data = hf.dataset,
-                                  variable = "effects",
-                                  breaks = interval_breaks) %>%
+                                 variable = "effects",
+                                 breaks = interval_breaks) %>%
   drop_na(intervals)
 
 matching_hf <- MatchIt::matchit(
@@ -7550,17 +7666,17 @@ group.hf.dataset.matched <- group.hf.dataset %>%
 formula_freq_1 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_psm_1_1_effect <- coxph(formula(formula_freq_1),
-                                                       data = group.hf.dataset.matched)
+                                                    data = group.hf.dataset.matched)
 
 formula_freq_2 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_psm_1_1_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                                data = group.hf.dataset.matched)
+                                                             data = group.hf.dataset.matched)
 
 formula_freq_3 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_psm_1_1_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                                data = group.hf.dataset.matched)
+                                                             data = group.hf.dataset.matched)
 
 # anova(models_hf_hf_spline_effects_psm_1_1_effect, models_hf_hf_spline_effects_psm_1_1_spline_effect_3, models_hf_hf_spline_effects_psm_1_1_spline_effect_5)
 
@@ -7609,7 +7725,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_hf_hf_psm_1_1_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                        rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                              rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 m2 <- cph(Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
           data = dataset.used,x=T,y=T)
@@ -7651,7 +7767,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_hf_hf_psm_1_1_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                     rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                              rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 #--- Cox
 if (class(try(
@@ -7682,26 +7798,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_psm_1_1_male[[i]] <- coxph(formula(formula_freq),
-                                               data = group.hf.dataset.matched %>%
-                                                 mutate(sex = relevel(sex, ref = "Male"),
-                                                        intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                            data = group.hf.dataset.matched %>%
+                                              mutate(sex = relevel(sex, ref = "Male"),
+                                                     intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1 <- rbind(predictions_hf_hf_stan_psm_1_1, cbind(mean = models_hf_hf_psm_1_1_male[[i]]$coefficients[1],
-                                                                                        lci = confint(models_hf_hf_psm_1_1_male[[i]])[1,1],
-                                                                                        uci = confint(models_hf_hf_psm_1_1_male[[i]])[1,2],
-                                                                                        sex = "Male",
-                                                                                        intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                  lci = confint(models_hf_hf_psm_1_1_male[[i]])[1,1],
+                                                                                  uci = confint(models_hf_hf_psm_1_1_male[[i]])[1,2],
+                                                                                  sex = "Male",
+                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
     models_hf_hf_psm_1_1_female[[i]] <- coxph(formula(formula_freq),
-                                                 data = group.hf.dataset.matched %>%
-                                                   mutate(sex = relevel(sex, ref = "Female"),
-                                                          intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                              data = group.hf.dataset.matched %>%
+                                                mutate(sex = relevel(sex, ref = "Female"),
+                                                       intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1 <- rbind(predictions_hf_hf_stan_psm_1_1, cbind(mean = models_hf_hf_psm_1_1_female[[i]]$coefficients[1],
-                                                                                        lci = confint(models_hf_hf_psm_1_1_female[[i]])[1,1],
-                                                                                        uci = confint(models_hf_hf_psm_1_1_female[[i]])[1,2],
-                                                                                        sex = "Female",
-                                                                                        intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                  lci = confint(models_hf_hf_psm_1_1_female[[i]])[1,1],
+                                                                                  uci = confint(models_hf_hf_psm_1_1_female[[i]])[1,2],
+                                                                                  sex = "Female",
+                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
   }
   
@@ -7732,13 +7848,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_psm_1_1_overall[[i]] <- coxph(formula(formula_freq),
-                                                  data = group.hf.dataset.matched %>%
-                                                    mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                               data = group.hf.dataset.matched %>%
+                                                 mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1_overall <- rbind(predictions_hf_hf_stan_psm_1_1_overall, cbind(mean = models_hf_hf_psm_1_1_overall[[i]]$coefficients[1],
-                                                                                                        lci = confint(models_hf_hf_psm_1_1_overall[[i]])[1,1],
-                                                                                                        uci = confint(models_hf_hf_psm_1_1_overall[[i]])[1,2],
-                                                                                                        intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                                  lci = confint(models_hf_hf_psm_1_1_overall[[i]])[1,1],
+                                                                                                  uci = confint(models_hf_hf_psm_1_1_overall[[i]])[1,2],
+                                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
   }
   
@@ -7766,12 +7882,12 @@ if (class(try(
   predictions_hf_hf_stan_psm_1_1_full <- vector()
   
   models_hf_hf_psm_1_1_full <- coxph(formula(formula_freq),
-                                               data = group.hf.dataset.matched)
-    
+                                     data = group.hf.dataset.matched)
+  
   predictions_hf_hf_stan_psm_1_1_full <- rbind(predictions_hf_hf_stan_psm_1_1_full, cbind(mean = models_hf_hf_psm_1_1_full$coefficients[1],
-                                                                                                lci = confint(models_hf_hf_psm_1_1_full)[1,1],
-                                                                                                uci = confint(models_hf_hf_psm_1_1_full)[1,2]))
-    
+                                                                                          lci = confint(models_hf_hf_psm_1_1_full)[1,1],
+                                                                                          uci = confint(models_hf_hf_psm_1_1_full)[1,2]))
+  
   predictions_hf_hf_stan_psm_1_1_full <- predictions_hf_hf_stan_psm_1_1_full %>%
     as.data.frame()
   
@@ -7814,26 +7930,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_psm_1_1_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                        data = group.hf.dataset.matched %>%
-                                                          mutate(sex = relevel(sex, ref = "Male"),
-                                                                 intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                                     data = group.hf.dataset.matched %>%
+                                                       mutate(sex = relevel(sex, ref = "Male"),
+                                                              intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1_adjusted <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted, cbind(mean = models_hf_hf_psm_1_1_adjusted_male[[i]]$coefficients[1],
-                                                                                                          lci = confint(models_hf_hf_psm_1_1_adjusted_male[[i]])[1,1],
-                                                                                                          uci = confint(models_hf_hf_psm_1_1_adjusted_male[[i]])[1,2],
-                                                                                                          sex = "Male",
-                                                                                                          intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                                    lci = confint(models_hf_hf_psm_1_1_adjusted_male[[i]])[1,1],
+                                                                                                    uci = confint(models_hf_hf_psm_1_1_adjusted_male[[i]])[1,2],
+                                                                                                    sex = "Male",
+                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
     models_hf_hf_psm_1_1_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                          data = group.hf.dataset.matched %>%
-                                                            mutate(sex = relevel(sex, ref = "Female"),
-                                                                   intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                                       data = group.hf.dataset.matched %>%
+                                                         mutate(sex = relevel(sex, ref = "Female"),
+                                                                intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1_adjusted <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted, cbind(mean = models_hf_hf_psm_1_1_adjusted_female[[i]]$coefficients[1],
-                                                                                                          lci = confint(models_hf_hf_psm_1_1_adjusted_female[[i]])[1,1],
-                                                                                                          uci = confint(models_hf_hf_psm_1_1_adjusted_female[[i]])[1,2],
-                                                                                                          sex = "Female",
-                                                                                                          intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                                    lci = confint(models_hf_hf_psm_1_1_adjusted_female[[i]])[1,1],
+                                                                                                    uci = confint(models_hf_hf_psm_1_1_adjusted_female[[i]])[1,2],
+                                                                                                    sex = "Female",
+                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
   }
   
@@ -7868,13 +7984,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_psm_1_1_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                           data = group.hf.dataset.matched %>%
-                                                             mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
+                                                        data = group.hf.dataset.matched %>%
+                                                          mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])))
     
     predictions_hf_hf_stan_psm_1_1_adjusted_overall <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_overall, cbind(mean = models_hf_hf_psm_1_1_adjusted_overall[[i]]$coefficients[1],
-                                                                                                                          lci = confint(models_hf_hf_psm_1_1_adjusted_overall[[i]])[1,1],
-                                                                                                                          uci = confint(models_hf_hf_psm_1_1_adjusted_overall[[i]])[1,2],
-                                                                                                                          intervals = levels(group.hf.dataset.matched$intervals)[i]))
+                                                                                                                    lci = confint(models_hf_hf_psm_1_1_adjusted_overall[[i]])[1,1],
+                                                                                                                    uci = confint(models_hf_hf_psm_1_1_adjusted_overall[[i]])[1,2],
+                                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
     
   }
   
@@ -7906,11 +8022,11 @@ if (class(try(
   predictions_hf_hf_stan_psm_1_1_adjusted_full <- vector()
   
   models_hf_hf_psm_1_1_adjusted_full <- coxph(formula(formula_freq),
-                                     data = group.hf.dataset.matched)
+                                              data = group.hf.dataset.matched)
   
   predictions_hf_hf_stan_psm_1_1_adjusted_full <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_full, cbind(mean = models_hf_hf_psm_1_1_adjusted_full$coefficients[1],
-                                                                                          lci = confint(models_hf_hf_psm_1_1_adjusted_full)[1,1],
-                                                                                          uci = confint(models_hf_hf_psm_1_1_adjusted_full)[1,2]))
+                                                                                                            lci = confint(models_hf_hf_psm_1_1_adjusted_full)[1,1],
+                                                                                                            uci = confint(models_hf_hf_psm_1_1_adjusted_full)[1,2]))
   
   predictions_hf_hf_stan_psm_1_1_adjusted_full <- predictions_hf_hf_stan_psm_1_1_adjusted_full %>%
     as.data.frame()
@@ -7976,17 +8092,17 @@ if (class(try(
 formula_freq_1 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*effects + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_adjusted_effect <- coxph(formula(formula_freq_1),
-                                                    data = group.hf.dataset)
+                                                     data = group.hf.dataset)
 
 formula_freq_2 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,3) + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_adjusted_spline_effect_3 <- coxph(formula(formula_freq_2),
-                                                             data = group.hf.dataset)
+                                                              data = group.hf.dataset)
 
 formula_freq_3 <- "Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ factor(drugclass) + factor(drugclass)*rcs(effects,5) + rcs(qrisk2_10yr_score, 3)"
 
 models_hf_hf_spline_effects_adjusted_spline_effect_5 <- coxph(formula(formula_freq_3),
-                                                             data = group.hf.dataset)
+                                                              data = group.hf.dataset)
 
 # anova(models_hf_hf_spline_effects_adjusted_effect, models_hf_hf_spline_effects_adjusted_spline_effect_3, models_hf_hf_spline_effects_adjusted_spline_effect_5)
 
@@ -8035,7 +8151,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_hf_hf_adjusted_spline_5 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                     rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                               rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 
 m2 <- cph(Surv(postdrug_hf_censtime_yrs, postdrug_hf_censvar) ~ drugclass*rcs(effects, 3) + rcs(qrisk2_10yr_score, 3),
@@ -8078,7 +8194,7 @@ x_hist <- marginal_distribution(hist.dta, "effects")
 
 # Arranging the plot using cowplot
 continuous_effects_hazard_hf_hf_adjusted_spline_3 <- plot_grid(contrast_spline_plot_1, x_hist, ncol = 1,align = 'hv',
-                                                      rel_heights = c(1,0.4), rel_widths = c(1,1))
+                                                               rel_heights = c(1,0.4), rel_widths = c(1,1))
 
 #--- Cox
 if (class(try(
@@ -8114,26 +8230,26 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_adjusted_male[[i]] <- coxph(formula(formula_freq),
-                                                data = group.hf.dataset %>%
-                                                  mutate(sex = relevel(sex, ref = "Male"),
-                                                         intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
+                                             data = group.hf.dataset %>%
+                                               mutate(sex = relevel(sex, ref = "Male"),
+                                                      intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
     
     predictions_hf_hf_stan_adjusted <- rbind(predictions_hf_hf_stan_adjusted, cbind(mean = models_hf_hf_adjusted_male[[i]]$coefficients[1],
-                                                                                          lci = confint(models_hf_hf_adjusted_male[[i]])[1,1],
-                                                                                          uci = confint(models_hf_hf_adjusted_male[[i]])[1,2],
-                                                                                          sex = "Male",
-                                                                                          intervals = levels(group.hf.dataset$intervals)[i]))
+                                                                                    lci = confint(models_hf_hf_adjusted_male[[i]])[1,1],
+                                                                                    uci = confint(models_hf_hf_adjusted_male[[i]])[1,2],
+                                                                                    sex = "Male",
+                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
     
     models_hf_hf_adjusted_female[[i]] <- coxph(formula(formula_freq),
-                                                  data = group.hf.dataset %>%
-                                                    mutate(sex = relevel(sex, ref = "Female"),
-                                                           intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
+                                               data = group.hf.dataset %>%
+                                                 mutate(sex = relevel(sex, ref = "Female"),
+                                                        intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
     
     predictions_hf_hf_stan_adjusted <- rbind(predictions_hf_hf_stan_adjusted, cbind(mean = models_hf_hf_adjusted_female[[i]]$coefficients[1],
-                                                                                          lci = confint(models_hf_hf_adjusted_female[[i]])[1,1],
-                                                                                          uci = confint(models_hf_hf_adjusted_female[[i]])[1,2],
-                                                                                          sex = "Female",
-                                                                                          intervals = levels(group.hf.dataset$intervals)[i]))
+                                                                                    lci = confint(models_hf_hf_adjusted_female[[i]])[1,1],
+                                                                                    uci = confint(models_hf_hf_adjusted_female[[i]])[1,2],
+                                                                                    sex = "Female",
+                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
     
   }
   
@@ -8168,13 +8284,13 @@ if (class(try(
   for (i in mnumber) {
     
     models_hf_hf_adjusted_overall[[i]] <- coxph(formula(formula_freq),
-                                                   data = group.hf.dataset %>%
-                                                     mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
+                                                data = group.hf.dataset %>%
+                                                  mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])))
     
     predictions_hf_hf_stan_adjusted_overall <- rbind(predictions_hf_hf_stan_adjusted_overall, cbind(mean = models_hf_hf_adjusted_overall[[i]]$coefficients[1],
-                                                                                                          lci = confint(models_hf_hf_adjusted_overall[[i]])[1,1],
-                                                                                                          uci = confint(models_hf_hf_adjusted_overall[[i]])[1,2],
-                                                                                                          intervals = levels(group.hf.dataset$intervals)[i]))
+                                                                                                    lci = confint(models_hf_hf_adjusted_overall[[i]])[1,1],
+                                                                                                    uci = confint(models_hf_hf_adjusted_overall[[i]])[1,2],
+                                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
     
   }
   
@@ -8206,11 +8322,11 @@ if (class(try(
   predictions_hf_hf_stan_adjusted_full <- vector()
   
   models_hf_hf_adjusted_full <- coxph(formula(formula_freq),
-                                              data = group.hf.dataset)
+                                      data = group.hf.dataset)
   
   predictions_hf_hf_stan_adjusted_full <- rbind(predictions_hf_hf_stan_adjusted_full, cbind(mean = models_hf_hf_adjusted_full$coefficients[1],
-                                                                                                            lci = confint(models_hf_hf_adjusted_full)[1,1],
-                                                                                                            uci = confint(models_hf_hf_adjusted_full)[1,2]))
+                                                                                            lci = confint(models_hf_hf_adjusted_full)[1,1],
+                                                                                            uci = confint(models_hf_hf_adjusted_full)[1,2]))
   
   predictions_hf_hf_stan_adjusted_full <- predictions_hf_hf_stan_adjusted_full %>%
     as.data.frame()
@@ -8288,7 +8404,7 @@ plot_hf_hf_psm_1_1_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8324,7 +8440,7 @@ plot_hf_hf_psm_1_1_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8360,7 +8476,7 @@ plot_hf_hf_psm_1_1_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8397,7 +8513,7 @@ plot_hf_hf_psm_1_1_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset.matched), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8433,7 +8549,7 @@ plot_hf_hf_psm_1_1_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8469,7 +8585,7 @@ plot_hf_hf_psm_1_1_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8506,7 +8622,7 @@ plot_hf_hf_adjusted_overall <- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8542,7 +8658,7 @@ plot_hf_hf_adjusted_male<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Male (n=", nrow(group.hf.dataset%>%filter(sex=="Male")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
@@ -8578,7 +8694,7 @@ plot_hf_hf_adjusted_female<- rbind(
              ci.vertices.height = 0.05,
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Hazards ratio") %>%
+             xlab = "Hazard Ratio") %>%
   fp_add_header(paste0("Female (n=", nrow(group.hf.dataset%>%filter(sex=="Female")), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
