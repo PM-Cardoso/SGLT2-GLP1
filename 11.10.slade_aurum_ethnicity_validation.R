@@ -324,12 +324,12 @@ plot_psm_1_1 <- rbind(
   mutate(obs = as.numeric(obs),
          lci = as.numeric(lci),
          uci = as.numeric(uci),
-         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[1])%>%nrow(),")"),
-                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[2])%>%nrow(), ")"), 
-                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[3])%>%nrow(),")"),
-                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[4])%>%nrow(),")"), 
-                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[5])%>%nrow(),")"),
-                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[6])%>%nrow(),")"), intervals)))))),
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE),")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", format(ethnicity.dataset.grouped%>%filter(intervals==levels(ethnicity.dataset.grouped$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE),")"), intervals)))))),
          group = factor(group)) %>%
   rename("lower" = "lci", "upper" = "uci", "mean" = "obs", "labeltext" = "intervals") %>%
   group_by(group) %>%
@@ -342,7 +342,7 @@ plot_psm_1_1 <- rbind(
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
              xlab = "Average treatment effect (mmol/mol)") %>%
-  fp_add_header(paste0("Overall population (n=", ethnicity.dataset.grouped%>%nrow(), ")")) %>%
+  fp_add_header(paste0("Overall population (n=", format(ethnicity.dataset.grouped%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
   fp_set_style(box = c("#E64B35B2","#4DBBD5B2", "#00A087B2", "#3C5488B2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE)) %>%
   fp_add_lines(h_2 = "black",
