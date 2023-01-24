@@ -19,9 +19,9 @@ library(rms)
 library(cowplot)
 
 # Analysis of outcomes
-library(rstanarm)
-library(brms)
-library(survminer)
+# library(rstanarm)
+# library(brms)
+# library(survminer)
 
 ## increase memery usage to 50gb of RAM
 # options(java.parameters = "-Xmx100g")
@@ -3886,8 +3886,4152 @@ dev.off()
 #:----------------------------------------------------------------------------------------------------------------------------------------
 
 
+#:--------------------------
+# No comorbidities
+
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+
+matching_no_co <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.no_co.dataset,
+  method = "nearest",
+  distance = group.no_co.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_no_co, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_no_co$match.matrix))
+
+group.no_co.dataset.matched <- group.no_co.dataset %>%
+  slice(which(matching_no_co$weights == 1))
 
 
+# CVD survival analysis
+
+
+## Propensity score matching
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_cvd_stan_psm_1_1_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_baye <- vector()
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  models_no_co_cvd_psm_1_1_male_baye <- vector("list", quantiles)
+  
+  models_no_co_cvd_psm_1_1_female_baye <- vector("list", quantiles)
+  
+  for(i in mnumber) {
+    
+    models_no_co_cvd_psm_1_1_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                         data = group.no_co.dataset.matched %>%
+                                                           select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                           cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                 censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                 qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                 qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                           as.data.frame() %>%
+                                                           drop_na() %>%
+                                                           mutate(sex = relevel(sex, ref = "Male"),
+                                                                  intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                         family = "cox",
+                                                         chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_male_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_no_co_cvd_psm_1_1_male_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_no_co_cvd_psm_1_1_male_baye[[i]])[2,4],
+                                                                                                    sex = "Male",
+                                                                                                    intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+    models_no_co_cvd_psm_1_1_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.no_co.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                             cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                   censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na() %>%
+                                                             mutate(sex = relevel(sex, ref = "Female"),
+                                                                    intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                           family = "cox",
+                                                           chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_female_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_no_co_cvd_psm_1_1_female_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_no_co_cvd_psm_1_1_female_baye[[i]])[2,4],
+                                                                                                    sex = "Female",
+                                                                                                    intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_psm_1_1_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_male_baye.rds"))
+  
+  saveRDS(models_no_co_cvd_psm_1_1_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_female_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_baye <- predictions_no_co_cvd_stan_psm_1_1_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_baye.rds"))
+  
+}
+
+# No sex strata
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_psm_1_1_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_overall_baye <- vector()
+  
+  models_no_co_cvd_psm_1_1_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_cvd_psm_1_1_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.no_co.dataset.matched %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                              cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                    censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_overall_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_overall_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_overall_baye[[i]])[2,1],
+                                                                                                          lci = fixef(models_no_co_cvd_psm_1_1_overall_baye[[i]])[2,3],
+                                                                                                          uci = fixef(models_no_co_cvd_psm_1_1_overall_baye[[i]])[2,4],
+                                                                                                          intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_overall_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_overall_baye <- predictions_no_co_cvd_stan_psm_1_1_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_overall_baye.rds"))
+  
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_psm_1_1_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_full_baye <- vector()
+  
+  models_no_co_cvd_psm_1_1_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                  data = group.no_co.dataset.matched %>%
+                                                    select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                    cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                          censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                          qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                          qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                    as.data.frame() %>%
+                                                    drop_na(),
+                                                  family = "cox",
+                                                  chains = 2)
+  
+  predictions_no_co_cvd_stan_psm_1_1_full_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_full_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_cvd_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_full_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_full_baye <- predictions_no_co_cvd_stan_psm_1_1_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full_baye.rds"))
+  
+}
+
+
+## Propensity score matching + adjusted
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_no_co_cvd_psm_1_1_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_no_co_cvd_psm_1_1_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_cvd_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                  data = group.no_co.dataset.matched %>%
+                                                                    select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                    cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                          censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                          qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                          qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                          agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                          agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                          t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                          t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                          prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                          prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                          preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                          preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                          prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                          prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                    as.data.frame() %>%
+                                                                    drop_na() %>%
+                                                                    mutate(sex = relevel(sex, ref = "Male"),
+                                                                           intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                  family = "cox",
+                                                                  chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_adjusted_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_adjusted_male_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_no_co_cvd_psm_1_1_adjusted_male_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_no_co_cvd_psm_1_1_adjusted_male_baye[[i]])[2,4],
+                                                                                                            sex = "Male",
+                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+    models_no_co_cvd_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
+                                                                     data = group.no_co.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                             censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(sex = relevel(sex, ref = "Female"),
+                                                                              intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_adjusted_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_adjusted_female_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_no_co_cvd_psm_1_1_adjusted_female_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_no_co_cvd_psm_1_1_adjusted_female_baye[[i]])[2,4],
+                                                                                                            sex = "Female",
+                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_psm_1_1_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_adjusted_male_baye.rds"))
+  
+  saveRDS(models_no_co_cvd_psm_1_1_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_adjusted_female_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye <- predictions_no_co_cvd_stan_psm_1_1_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye <- vector()
+  
+  models_no_co_cvd_psm_1_1_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_cvd_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                     data = group.no_co.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                             censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                                            lci = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                                            uci = fixef(models_no_co_cvd_psm_1_1_full_baye[[i]])[2,4],
+                                                                                                                            intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_psm_1_1_adjusted_overall_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye <- predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye <- vector()
+  
+  models_no_co_cvd_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.no_co.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                             cbind(time = group.no_co.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                   censored = group.no_co.dataset.matched$postdrug_mace_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                   agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                   agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                   t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                   t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                   prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                   prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                   preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                   preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                   prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                   prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na(),
+                                                           family = "cox",
+                                                           chains = 2)
+  
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye <- rbind(predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye, cbind(mean = fixef(models_no_co_cvd_psm_1_1_adjusted_full_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_no_co_cvd_psm_1_1_adjusted_full_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_no_co_cvd_psm_1_1_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_cvd_psm_1_1_adjusted_full_baye, paste0(output_path, "additional_outcomes/models_no_co_cvd_psm_1_1_adjusted_full_baye.rds"))
+  
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye <- predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+}
+
+
+## Adjusted
+
+#--- Cox  
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_cvd_stan_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_no_co_cvd_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_no_co_cvd_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_cvd_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                          data = group.no_co.dataset %>%
+                                                            select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                            cbind(time = group.no_co.dataset$postdrug_mace_censtime_yrs,
+                                                                  censored = group.no_co.dataset$postdrug_mace_censvar,
+                                                                  qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                  qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                  agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                  agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                  t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                  t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                  prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                  prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                  preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                  preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                  prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                  prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                            as.data.frame() %>%
+                                                            drop_na() %>%
+                                                            mutate(sex = relevel(sex, ref = "Male"),
+                                                                   intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                          family = "cox",
+                                                          chains = 2)
+    
+    predictions_no_co_cvd_stan_adjusted_baye <- rbind(predictions_no_co_cvd_stan_adjusted_baye, cbind(mean = fixef(models_no_co_cvd_adjusted_male_baye[[i]])[2,1],
+                                                                                            lci = fixef(models_no_co_cvd_adjusted_male_baye[[i]])[2,3],
+                                                                                            uci = fixef(models_no_co_cvd_adjusted_male_baye[[i]])[2,4],
+                                                                                            sex = "Male",
+                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+    models_no_co_cvd_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.no_co.dataset %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                              cbind(time = group.no_co.dataset$postdrug_mace_censtime_yrs,
+                                                                    censored = group.no_co.dataset$postdrug_mace_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                    agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                    agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                    t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                    t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                    prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                    prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                    preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                    preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                    prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                    prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(sex = relevel(sex, ref = "Female"),
+                                                                     intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_no_co_cvd_stan_adjusted_baye <- rbind(predictions_no_co_cvd_stan_adjusted_baye, cbind(mean = fixef(models_no_co_cvd_adjusted_female_baye[[i]])[2,1],
+                                                                                            lci = fixef(models_no_co_cvd_adjusted_female_baye[[i]])[2,3],
+                                                                                            uci = fixef(models_no_co_cvd_adjusted_female_baye[[i]])[2,4],
+                                                                                            sex = "Female",
+                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_adjusted_male_baye.rds"))
+  
+  saveRDS(models_no_co_cvd_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_adjusted_female_baye.rds"))
+  
+  predictions_no_co_cvd_stan_adjusted_baye <- predictions_no_co_cvd_stan_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_adjusted_overall_baye <- vector()
+  
+  models_no_co_cvd_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_cvd_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                             data = group.no_co.dataset %>%
+                                                               select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                               cbind(time = group.no_co.dataset$postdrug_mace_censtime_yrs,
+                                                                     censored = group.no_co.dataset$postdrug_mace_censvar,
+                                                                     qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                     qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                     agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                     agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                     t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                     t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                     prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                     prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                     preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                     preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                     prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                     prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                               as.data.frame() %>%
+                                                               drop_na() %>%
+                                                               mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                             family = "cox",
+                                                             chains = 2)
+    
+    predictions_no_co_cvd_stan_adjusted_overall_baye <- rbind(predictions_no_co_cvd_stan_adjusted_overall_baye, cbind(mean = fixef(models_no_co_cvd_adjusted_overall_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_no_co_cvd_adjusted_overall_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_no_co_cvd_adjusted_overall_baye[[i]])[2,4],
+                                                                                                            intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_cvd_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_adjusted_overall_baye.rds"))
+  
+  predictions_no_co_cvd_stan_adjusted_overall_baye <- predictions_no_co_cvd_stan_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_cvd_stan_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_cvd_stan_adjusted_full_baye <- vector()
+  
+  models_no_co_cvd_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                   data = group.no_co.dataset %>%
+                                                     select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                     cbind(time = group.no_co.dataset$postdrug_mace_censtime_yrs,
+                                                           censored = group.no_co.dataset$postdrug_mace_censvar,
+                                                           qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                           qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                           agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                           agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                           t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                           t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                           prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                           prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                           preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                           preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                           prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                           prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                     as.data.frame() %>%
+                                                     drop_na(),
+                                                   family = "cox",
+                                                   chains = 2)
+  
+  predictions_no_co_cvd_stan_adjusted_full_baye <- rbind(predictions_no_co_cvd_stan_adjusted_full_baye, cbind(mean = fixef(models_no_co_cvd_adjusted_full_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_no_co_cvd_adjusted_full_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_no_co_cvd_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_cvd_adjusted_full_baye, paste0(output_path, "/additional_outcomes/models_no_co_cvd_adjusted_full_baye.rds"))
+  
+  predictions_no_co_cvd_stan_adjusted_full_baye <- predictions_no_co_cvd_stan_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_cvd_stan_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_full_baye.rds"))
+  
+}
+
+#:--------------------
+#:---- PLOTS
+#:--------------------
+
+
+# Propensity score matching
+plot_no_co_cvd_psm_1_1_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_overall_baye %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_psm_1_1_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_psm_1_1_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+# Propensity score matching + adjusted
+plot_no_co_cvd_psm_1_1_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall_baye %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_psm_1_1_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_psm_1_1_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Adjusted
+plot_no_co_cvd_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_overall_baye %>% slice(4:6),
+  predictions_no_co_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_cvd_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+pdf(width = 7, height = 12, "Plots/no_co_cvd_overall_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("CVD outcomes for no CVD/HF/CKD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_no_co_cvd_psm_1_1_overall_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_no_co_cvd_psm_1_1_adjusted_overall_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_no_co_cvd_adjusted_overall_baye
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/no_co_cvd_strata_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("CVD outcomes for no CVD/HF/CKD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_no_co_cvd_psm_1_1_female_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_no_co_cvd_psm_1_1_male_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_no_co_cvd_psm_1_1_adjusted_female_baye
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_no_co_cvd_psm_1_1_adjusted_male_baye
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_no_co_cvd_adjusted_female_baye
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_no_co_cvd_adjusted_male_baye
+upViewport()
+
+dev.off()
+
+
+# Heart failure survival analysis
+
+## Propensity score matching
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_hf_stan_psm_1_1_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_baye <- vector()
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  models_no_co_hf_psm_1_1_male_baye <- vector("list", quantiles)
+  
+  models_no_co_hf_psm_1_1_female_baye <- vector("list", quantiles)
+  
+  for(i in mnumber) {
+    
+    models_no_co_hf_psm_1_1_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                         data = group.no_co.dataset.matched %>%
+                                                           select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                           cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                 censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                 qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                 qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                           as.data.frame() %>%
+                                                           drop_na() %>%
+                                                           mutate(sex = relevel(sex, ref = "Male"),
+                                                                  intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                         family = "cox",
+                                                         chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_male_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_no_co_hf_psm_1_1_male_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_no_co_hf_psm_1_1_male_baye[[i]])[2,4],
+                                                                                                    sex = "Male",
+                                                                                                    intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+    models_no_co_hf_psm_1_1_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.no_co.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                             cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                   censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na() %>%
+                                                             mutate(sex = relevel(sex, ref = "Female"),
+                                                                    intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                           family = "cox",
+                                                           chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_female_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_no_co_hf_psm_1_1_female_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_no_co_hf_psm_1_1_female_baye[[i]])[2,4],
+                                                                                                    sex = "Female",
+                                                                                                    intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_psm_1_1_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_male_baye.rds"))
+  
+  saveRDS(models_no_co_hf_psm_1_1_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_female_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_baye <- predictions_no_co_hf_stan_psm_1_1_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_baye.rds"))
+  
+}
+
+# No sex strata
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_psm_1_1_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_overall_baye <- vector()
+  
+  models_no_co_hf_psm_1_1_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_hf_psm_1_1_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.no_co.dataset.matched %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                              cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                    censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_overall_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_overall_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_overall_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_no_co_hf_psm_1_1_overall_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_no_co_hf_psm_1_1_overall_baye[[i]])[2,4],
+                                                                                                                    intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_overall_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_overall_baye <- predictions_no_co_hf_stan_psm_1_1_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_overall_baye.rds"))
+  
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_psm_1_1_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_full_baye <- vector()
+  
+  models_no_co_hf_psm_1_1_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                  data = group.no_co.dataset.matched %>%
+                                                    select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                    cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                          censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                          qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                          qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                    as.data.frame() %>%
+                                                    drop_na(),
+                                                  family = "cox",
+                                                  chains = 2)
+  
+  predictions_no_co_hf_stan_psm_1_1_full_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_full_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_hf_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_full_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_full_baye <- predictions_no_co_hf_stan_psm_1_1_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_full_baye.rds"))
+  
+}
+
+
+## Propensity score matching + adjusted
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_no_co_hf_psm_1_1_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_no_co_hf_psm_1_1_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_hf_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                  data = group.no_co.dataset.matched %>%
+                                                                    select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                    cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                          censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                          qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                          qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                          agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                          agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                          t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                          t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                          prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                          prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                          preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                          preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                          prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                          prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                    as.data.frame() %>%
+                                                                    drop_na() %>%
+                                                                    mutate(sex = relevel(sex, ref = "Male"),
+                                                                           intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                  family = "cox",
+                                                                  chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_adjusted_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_adjusted_male_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_no_co_hf_psm_1_1_adjusted_male_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_no_co_hf_psm_1_1_adjusted_male_baye[[i]])[2,4],
+                                                                                                                      sex = "Male",
+                                                                                                                      intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+    models_no_co_hf_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
+                                                                     data = group.no_co.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                             censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(sex = relevel(sex, ref = "Female"),
+                                                                              intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_adjusted_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_adjusted_female_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_no_co_hf_psm_1_1_adjusted_female_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_no_co_hf_psm_1_1_adjusted_female_baye[[i]])[2,4],
+                                                                                                                      sex = "Female",
+                                                                                                                      intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_psm_1_1_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_adjusted_male_baye.rds"))
+  
+  saveRDS(models_no_co_hf_psm_1_1_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_adjusted_female_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye <- predictions_no_co_hf_stan_psm_1_1_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye <- vector()
+  
+  models_no_co_hf_psm_1_1_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_hf_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                     data = group.no_co.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                             censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                                                      lci = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                                                      uci = fixef(models_no_co_hf_psm_1_1_full_baye[[i]])[2,4],
+                                                                                                                                      intervals = levels(group.no_co.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_psm_1_1_adjusted_overall_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye <- predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye <- vector()
+  
+  models_no_co_hf_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.no_co.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                             cbind(time = group.no_co.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                   censored = group.no_co.dataset.matched$postdrug_hf_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.no_co.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                   agetx_1 = rcs(group.no_co.dataset.matched$agetx, 3)[,1],
+                                                                   agetx_2 = rcs(group.no_co.dataset.matched$agetx, 3)[,2],
+                                                                   t2dmduration_1 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,1],
+                                                                   t2dmduration_2 = rcs(group.no_co.dataset.matched$t2dmduration, 3)[,2],
+                                                                   prehba1c_1 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,1],
+                                                                   prehba1c_2 = rcs(group.no_co.dataset.matched$prehba1c, 3)[,2],
+                                                                   preegfr_1 = rcs(group.no_co.dataset.matched$preegfr, 3)[,1],
+                                                                   preegfr_2 = rcs(group.no_co.dataset.matched$preegfr, 3)[,2],
+                                                                   prealt_1 = rcs(group.no_co.dataset.matched$prealt, 3)[,1],
+                                                                   prealt_2 = rcs(group.no_co.dataset.matched$prealt, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na(),
+                                                           family = "cox",
+                                                           chains = 2)
+  
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye <- rbind(predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye, cbind(mean = fixef(models_no_co_hf_psm_1_1_adjusted_full_baye[[i]])[2,1],
+                                                                                                                              lci = fixef(models_no_co_hf_psm_1_1_adjusted_full_baye[[i]])[2,3],
+                                                                                                                              uci = fixef(models_no_co_hf_psm_1_1_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_hf_psm_1_1_adjusted_full_baye, paste0(output_path, "additional_outcomes/models_no_co_hf_psm_1_1_adjusted_full_baye.rds"))
+  
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye <- predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+}
+
+
+## Adjusted
+
+#--- Cox  
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_no_co_hf_stan_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_no_co_hf_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_no_co_hf_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_hf_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                          data = group.no_co.dataset %>%
+                                                            select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                            cbind(time = group.no_co.dataset$postdrug_hf_censtime_yrs,
+                                                                  censored = group.no_co.dataset$postdrug_hf_censvar,
+                                                                  qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                  qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                  agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                  agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                  t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                  t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                  prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                  prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                  preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                  preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                  prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                  prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                            as.data.frame() %>%
+                                                            drop_na() %>%
+                                                            mutate(sex = relevel(sex, ref = "Male"),
+                                                                   intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                          family = "cox",
+                                                          chains = 2)
+    
+    predictions_no_co_hf_stan_adjusted_baye <- rbind(predictions_no_co_hf_stan_adjusted_baye, cbind(mean = fixef(models_no_co_hf_adjusted_male_baye[[i]])[2,1],
+                                                                                                      lci = fixef(models_no_co_hf_adjusted_male_baye[[i]])[2,3],
+                                                                                                      uci = fixef(models_no_co_hf_adjusted_male_baye[[i]])[2,4],
+                                                                                                      sex = "Male",
+                                                                                                      intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+    models_no_co_hf_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.no_co.dataset %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                              cbind(time = group.no_co.dataset$postdrug_hf_censtime_yrs,
+                                                                    censored = group.no_co.dataset$postdrug_hf_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                    agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                    agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                    t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                    t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                    prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                    prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                    preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                    preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                    prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                    prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(sex = relevel(sex, ref = "Female"),
+                                                                     intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_no_co_hf_stan_adjusted_baye <- rbind(predictions_no_co_hf_stan_adjusted_baye, cbind(mean = fixef(models_no_co_hf_adjusted_female_baye[[i]])[2,1],
+                                                                                                      lci = fixef(models_no_co_hf_adjusted_female_baye[[i]])[2,3],
+                                                                                                      uci = fixef(models_no_co_hf_adjusted_female_baye[[i]])[2,4],
+                                                                                                      sex = "Female",
+                                                                                                      intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_adjusted_male_baye.rds"))
+  
+  saveRDS(models_no_co_hf_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_adjusted_female_baye.rds"))
+  
+  predictions_no_co_hf_stan_adjusted_baye <- predictions_no_co_hf_stan_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_adjusted_overall_baye <- vector()
+  
+  models_no_co_hf_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_no_co_hf_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                             data = group.no_co.dataset %>%
+                                                               select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                               cbind(time = group.no_co.dataset$postdrug_hf_censtime_yrs,
+                                                                     censored = group.no_co.dataset$postdrug_hf_censvar,
+                                                                     qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                     qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                     agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                                     agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                                     t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                                     t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                                     prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                                     prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                                     preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                                     preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                                     prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                                     prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                               as.data.frame() %>%
+                                                               drop_na() %>%
+                                                               mutate(intervals = relevel(intervals, ref = levels(group.no_co.dataset$intervals)[i])),
+                                                             family = "cox",
+                                                             chains = 2)
+    
+    predictions_no_co_hf_stan_adjusted_overall_baye <- rbind(predictions_no_co_hf_stan_adjusted_overall_baye, cbind(mean = fixef(models_no_co_hf_adjusted_overall_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_no_co_hf_adjusted_overall_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_no_co_hf_adjusted_overall_baye[[i]])[2,4],
+                                                                                                                      intervals = levels(group.no_co.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_no_co_hf_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_adjusted_overall_baye.rds"))
+  
+  predictions_no_co_hf_stan_adjusted_overall_baye <- predictions_no_co_hf_stan_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_no_co_hf_stan_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_no_co_hf_stan_adjusted_full_baye <- vector()
+  
+  models_no_co_hf_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                   data = group.no_co.dataset %>%
+                                                     select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                     cbind(time = group.no_co.dataset$postdrug_hf_censtime_yrs,
+                                                           censored = group.no_co.dataset$postdrug_hf_censvar,
+                                                           qrisk2_10yr_score_1 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,1],
+                                                           qrisk2_10yr_score_2 = rcs(group.no_co.dataset$qrisk2_10yr_score, 3)[,2],
+                                                           agetx_1 = rcs(group.no_co.dataset$agetx, 3)[,1],
+                                                           agetx_2 = rcs(group.no_co.dataset$agetx, 3)[,2],
+                                                           t2dmduration_1 = rcs(group.no_co.dataset$t2dmduration, 3)[,1],
+                                                           t2dmduration_2 = rcs(group.no_co.dataset$t2dmduration, 3)[,2],
+                                                           prehba1c_1 = rcs(group.no_co.dataset$prehba1c, 3)[,1],
+                                                           prehba1c_2 = rcs(group.no_co.dataset$prehba1c, 3)[,2],
+                                                           preegfr_1 = rcs(group.no_co.dataset$preegfr, 3)[,1],
+                                                           preegfr_2 = rcs(group.no_co.dataset$preegfr, 3)[,2],
+                                                           prealt_1 = rcs(group.no_co.dataset$prealt, 3)[,1],
+                                                           prealt_2 = rcs(group.no_co.dataset$prealt, 3)[,2]) %>%
+                                                     as.data.frame() %>%
+                                                     drop_na(),
+                                                   family = "cox",
+                                                   chains = 2)
+  
+  predictions_no_co_hf_stan_adjusted_full_baye <- rbind(predictions_no_co_hf_stan_adjusted_full_baye, cbind(mean = fixef(models_no_co_hf_adjusted_full_baye[[i]])[2,1],
+                                                                                                              lci = fixef(models_no_co_hf_adjusted_full_baye[[i]])[2,3],
+                                                                                                              uci = fixef(models_no_co_hf_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_no_co_hf_adjusted_full_baye, paste0(output_path, "/additional_outcomes/models_no_co_hf_adjusted_full_baye.rds"))
+  
+  predictions_no_co_hf_stan_adjusted_full_baye <- predictions_no_co_hf_stan_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_no_co_hf_stan_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_full_baye.rds"))
+  
+}
+
+
+
+
+#:--------------------
+#:---- PLOTS
+#:--------------------
+
+
+
+# Propensity score matching
+plot_no_co_hf_psm_1_1_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_overall_baye %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_psm_1_1_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_psm_1_1_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Propensity score matching + adjusted
+plot_no_co_hf_psm_1_1_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall_baye %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_psm_1_1_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_psm_1_1_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Adjusted
+plot_no_co_hf_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_overall_baye %>% slice(4:6),
+  predictions_no_co_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.no_co.dataset), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.no_co.dataset%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_no_co_hf_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_no_co_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.no_co.dataset%>%filter(intervals==levels(group.no_co.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.no_co.dataset%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+pdf(width = 7, height = 12, "Plots/no_co_hf_overall_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HF outcomes for no CVD/HF/CKD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_no_co_hf_psm_1_1_overall_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_no_co_hf_psm_1_1_adjusted_overall_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_no_co_hf_adjusted_overall_baye
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/no_co_hf_strata_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HF outcomes for no CVD/HF/CKD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_no_co_hf_psm_1_1_female_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_no_co_hf_psm_1_1_male_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_no_co_hf_psm_1_1_adjusted_female_baye
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_no_co_hf_psm_1_1_adjusted_male_baye
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_no_co_hf_adjusted_female_baye
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_no_co_hf_adjusted_male_baye
+upViewport()
+
+dev.off()
+
+
+
+#:--------------------------
+# Cardiovascular outcome
+
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+cvd.dataset <- set_up_data_sglt2_glp1(dataset.type="cvd.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.cvd.dataset <- group_values(data = cvd.dataset,
+                                  variable = "effects",
+                                  breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+matching_cvd <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.cvd.dataset,
+  method = "nearest",
+  distance = group.cvd.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_cvd, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_cvd$match.matrix))
+
+group.cvd.dataset.matched <- group.cvd.dataset %>%
+  slice(which(matching_cvd$weights == 1))
+
+# CVD survival analysis
+
+
+## Propensity score matching
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD strata sex and intervals
+  predictions_cvd_cvd_stan_psm_1_1_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_baye <- vector()
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  models_cvd_cvd_psm_1_1_male_baye <- vector("list", quantiles)
+  
+  models_cvd_cvd_psm_1_1_female_baye <- vector("list", quantiles)
+  
+  for(i in mnumber) {
+    
+    models_cvd_cvd_psm_1_1_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                         data = group.cvd.dataset.matched %>%
+                                                           select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                           cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                 censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                 qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                 qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                           as.data.frame() %>%
+                                                           drop_na() %>%
+                                                           mutate(sex = relevel(sex, ref = "Male"),
+                                                                  intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                         family = "cox",
+                                                         chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_male_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_cvd_cvd_psm_1_1_male_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_cvd_cvd_psm_1_1_male_baye[[i]])[2,4],
+                                                                                                    sex = "Male",
+                                                                                                    intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+    models_cvd_cvd_psm_1_1_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.cvd.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                             cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                   censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na() %>%
+                                                             mutate(sex = relevel(sex, ref = "Female"),
+                                                                    intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                           family = "cox",
+                                                           chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_female_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_cvd_cvd_psm_1_1_female_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_cvd_cvd_psm_1_1_female_baye[[i]])[2,4],
+                                                                                                    sex = "Female",
+                                                                                                    intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_psm_1_1_male_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_male_baye.rds"))
+  
+  saveRDS(models_cvd_cvd_psm_1_1_female_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_female_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_baye <- predictions_cvd_cvd_stan_psm_1_1_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_baye.rds"))
+  
+}
+
+# No sex strata
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_psm_1_1_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_overall_baye <- vector()
+  
+  models_cvd_cvd_psm_1_1_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_cvd_cvd_psm_1_1_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.cvd.dataset.matched %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                              cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                    censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_overall_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_overall_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_overall_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_cvd_cvd_psm_1_1_overall_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_cvd_cvd_psm_1_1_overall_baye[[i]])[2,4],
+                                                                                                                    intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_overall_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_overall_baye <- predictions_cvd_cvd_stan_psm_1_1_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_overall_baye.rds"))
+  
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_psm_1_1_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_full_baye <- vector()
+  
+  models_cvd_cvd_psm_1_1_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                  data = group.cvd.dataset.matched %>%
+                                                    select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                    cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                          censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                          qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                          qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                    as.data.frame() %>%
+                                                    drop_na(),
+                                                  family = "cox",
+                                                  chains = 2)
+  
+  predictions_cvd_cvd_stan_psm_1_1_full_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_full_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_cvd_cvd_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_full_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_full_baye <- predictions_cvd_cvd_stan_psm_1_1_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_full_baye.rds"))
+  
+}
+
+
+## Propensity score matching + adjusted
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD strata sex and intervals
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_cvd_cvd_psm_1_1_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_cvd_cvd_psm_1_1_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_cvd_cvd_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                  data = group.cvd.dataset.matched %>%
+                                                                    select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                    cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                          censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                          qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                          qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                          agetx_1 = rcs(group.cvd.dataset.matched$agetx, 3)[,1],
+                                                                          agetx_2 = rcs(group.cvd.dataset.matched$agetx, 3)[,2],
+                                                                          t2dmduration_1 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,1],
+                                                                          t2dmduration_2 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,2],
+                                                                          prehba1c_1 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,1],
+                                                                          prehba1c_2 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,2],
+                                                                          preegfr_1 = rcs(group.cvd.dataset.matched$preegfr, 3)[,1],
+                                                                          preegfr_2 = rcs(group.cvd.dataset.matched$preegfr, 3)[,2],
+                                                                          prealt_1 = rcs(group.cvd.dataset.matched$prealt, 3)[,1],
+                                                                          prealt_2 = rcs(group.cvd.dataset.matched$prealt, 3)[,2]) %>%
+                                                                    as.data.frame() %>%
+                                                                    drop_na() %>%
+                                                                    mutate(sex = relevel(sex, ref = "Male"),
+                                                                           intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                                  family = "cox",
+                                                                  chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_adjusted_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_adjusted_male_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_cvd_cvd_psm_1_1_adjusted_male_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_cvd_cvd_psm_1_1_adjusted_male_baye[[i]])[2,4],
+                                                                                                                      sex = "Male",
+                                                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+    models_cvd_cvd_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
+                                                                     data = group.cvd.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                             censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.cvd.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.cvd.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.cvd.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.cvd.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.cvd.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.cvd.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(sex = relevel(sex, ref = "Female"),
+                                                                              intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_adjusted_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_adjusted_female_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_cvd_cvd_psm_1_1_adjusted_female_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_cvd_cvd_psm_1_1_adjusted_female_baye[[i]])[2,4],
+                                                                                                                      sex = "Female",
+                                                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_psm_1_1_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_adjusted_male_baye.rds"))
+  
+  saveRDS(models_cvd_cvd_psm_1_1_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_adjusted_female_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye <- predictions_cvd_cvd_stan_psm_1_1_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset.matched[,breakdown_adjust], is.factor)
+  
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye <- vector()
+  
+  models_cvd_cvd_psm_1_1_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_cvd_cvd_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                     data = group.cvd.dataset.matched %>%
+                                                                       select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                       cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                             censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                             qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                             qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                             agetx_1 = rcs(group.cvd.dataset.matched$agetx, 3)[,1],
+                                                                             agetx_2 = rcs(group.cvd.dataset.matched$agetx, 3)[,2],
+                                                                             t2dmduration_1 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,1],
+                                                                             t2dmduration_2 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,2],
+                                                                             prehba1c_1 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,1],
+                                                                             prehba1c_2 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,2],
+                                                                             preegfr_1 = rcs(group.cvd.dataset.matched$preegfr, 3)[,1],
+                                                                             preegfr_2 = rcs(group.cvd.dataset.matched$preegfr, 3)[,2],
+                                                                             prealt_1 = rcs(group.cvd.dataset.matched$prealt, 3)[,1],
+                                                                             prealt_2 = rcs(group.cvd.dataset.matched$prealt, 3)[,2]) %>%
+                                                                       as.data.frame() %>%
+                                                                       drop_na() %>%
+                                                                       mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset.matched$intervals)[i])),
+                                                                     family = "cox",
+                                                                     chains = 2)
+    
+    predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                                                      lci = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                                                      uci = fixef(models_cvd_cvd_psm_1_1_full_baye[[i]])[2,4],
+                                                                                                                                      intervals = levels(group.cvd.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_psm_1_1_adjusted_overall_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye <- predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye <- vector()
+  
+  models_cvd_cvd_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.cvd.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                             cbind(time = group.cvd.dataset.matched$postdrug_mace_censtime_yrs,
+                                                                   censored = group.cvd.dataset.matched$postdrug_mace_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.cvd.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                   agetx_1 = rcs(group.cvd.dataset.matched$agetx, 3)[,1],
+                                                                   agetx_2 = rcs(group.cvd.dataset.matched$agetx, 3)[,2],
+                                                                   t2dmduration_1 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,1],
+                                                                   t2dmduration_2 = rcs(group.cvd.dataset.matched$t2dmduration, 3)[,2],
+                                                                   prehba1c_1 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,1],
+                                                                   prehba1c_2 = rcs(group.cvd.dataset.matched$prehba1c, 3)[,2],
+                                                                   preegfr_1 = rcs(group.cvd.dataset.matched$preegfr, 3)[,1],
+                                                                   preegfr_2 = rcs(group.cvd.dataset.matched$preegfr, 3)[,2],
+                                                                   prealt_1 = rcs(group.cvd.dataset.matched$prealt, 3)[,1],
+                                                                   prealt_2 = rcs(group.cvd.dataset.matched$prealt, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na(),
+                                                           family = "cox",
+                                                           chains = 2)
+  
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye <- rbind(predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye, cbind(mean = fixef(models_cvd_cvd_psm_1_1_adjusted_full_baye[[i]])[2,1],
+                                                                                                                              lci = fixef(models_cvd_cvd_psm_1_1_adjusted_full_baye[[i]])[2,3],
+                                                                                                                              uci = fixef(models_cvd_cvd_psm_1_1_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_cvd_cvd_psm_1_1_adjusted_full_baye, paste0(output_path, "additional_outcomes/models_cvd_cvd_psm_1_1_adjusted_full_baye.rds"))
+  
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye <- predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+}
+
+
+## Adjusted
+
+#--- Cox  
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD strata sex and intervals
+  predictions_cvd_cvd_stan_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_cvd_cvd_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_cvd_cvd_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_cvd_cvd_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                          data = group.cvd.dataset %>%
+                                                            select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                            cbind(time = group.cvd.dataset$postdrug_mace_censtime_yrs,
+                                                                  censored = group.cvd.dataset$postdrug_mace_censvar,
+                                                                  qrisk2_10yr_score_1 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                  qrisk2_10yr_score_2 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                  agetx_1 = rcs(group.cvd.dataset$agetx, 3)[,1],
+                                                                  agetx_2 = rcs(group.cvd.dataset$agetx, 3)[,2],
+                                                                  t2dmduration_1 = rcs(group.cvd.dataset$t2dmduration, 3)[,1],
+                                                                  t2dmduration_2 = rcs(group.cvd.dataset$t2dmduration, 3)[,2],
+                                                                  prehba1c_1 = rcs(group.cvd.dataset$prehba1c, 3)[,1],
+                                                                  prehba1c_2 = rcs(group.cvd.dataset$prehba1c, 3)[,2],
+                                                                  preegfr_1 = rcs(group.cvd.dataset$preegfr, 3)[,1],
+                                                                  preegfr_2 = rcs(group.cvd.dataset$preegfr, 3)[,2],
+                                                                  prealt_1 = rcs(group.cvd.dataset$prealt, 3)[,1],
+                                                                  prealt_2 = rcs(group.cvd.dataset$prealt, 3)[,2]) %>%
+                                                            as.data.frame() %>%
+                                                            drop_na() %>%
+                                                            mutate(sex = relevel(sex, ref = "Male"),
+                                                                   intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])),
+                                                          family = "cox",
+                                                          chains = 2)
+    
+    predictions_cvd_cvd_stan_adjusted_baye <- rbind(predictions_cvd_cvd_stan_adjusted_baye, cbind(mean = fixef(models_cvd_cvd_adjusted_male_baye[[i]])[2,1],
+                                                                                                      lci = fixef(models_cvd_cvd_adjusted_male_baye[[i]])[2,3],
+                                                                                                      uci = fixef(models_cvd_cvd_adjusted_male_baye[[i]])[2,4],
+                                                                                                      sex = "Male",
+                                                                                                      intervals = levels(group.cvd.dataset$intervals)[i]))
+    
+    models_cvd_cvd_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.cvd.dataset %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                              cbind(time = group.cvd.dataset$postdrug_mace_censtime_yrs,
+                                                                    censored = group.cvd.dataset$postdrug_mace_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                    agetx_1 = rcs(group.cvd.dataset$agetx, 3)[,1],
+                                                                    agetx_2 = rcs(group.cvd.dataset$agetx, 3)[,2],
+                                                                    t2dmduration_1 = rcs(group.cvd.dataset$t2dmduration, 3)[,1],
+                                                                    t2dmduration_2 = rcs(group.cvd.dataset$t2dmduration, 3)[,2],
+                                                                    prehba1c_1 = rcs(group.cvd.dataset$prehba1c, 3)[,1],
+                                                                    prehba1c_2 = rcs(group.cvd.dataset$prehba1c, 3)[,2],
+                                                                    preegfr_1 = rcs(group.cvd.dataset$preegfr, 3)[,1],
+                                                                    preegfr_2 = rcs(group.cvd.dataset$preegfr, 3)[,2],
+                                                                    prealt_1 = rcs(group.cvd.dataset$prealt, 3)[,1],
+                                                                    prealt_2 = rcs(group.cvd.dataset$prealt, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(sex = relevel(sex, ref = "Female"),
+                                                                     intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_cvd_cvd_stan_adjusted_baye <- rbind(predictions_cvd_cvd_stan_adjusted_baye, cbind(mean = fixef(models_cvd_cvd_adjusted_female_baye[[i]])[2,1],
+                                                                                                      lci = fixef(models_cvd_cvd_adjusted_female_baye[[i]])[2,3],
+                                                                                                      uci = fixef(models_cvd_cvd_adjusted_female_baye[[i]])[2,4],
+                                                                                                      sex = "Female",
+                                                                                                      intervals = levels(group.cvd.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_adjusted_male_baye.rds"))
+  
+  saveRDS(models_cvd_cvd_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_adjusted_female_baye.rds"))
+  
+  predictions_cvd_cvd_stan_adjusted_baye <- predictions_cvd_cvd_stan_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_adjusted_overall_baye <- vector()
+  
+  models_cvd_cvd_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_cvd_cvd_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                             data = group.cvd.dataset %>%
+                                                               select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                               cbind(time = group.cvd.dataset$postdrug_mace_censtime_yrs,
+                                                                     censored = group.cvd.dataset$postdrug_mace_censvar,
+                                                                     qrisk2_10yr_score_1 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                     qrisk2_10yr_score_2 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                     agetx_1 = rcs(group.cvd.dataset$agetx, 3)[,1],
+                                                                     agetx_2 = rcs(group.cvd.dataset$agetx, 3)[,2],
+                                                                     t2dmduration_1 = rcs(group.cvd.dataset$t2dmduration, 3)[,1],
+                                                                     t2dmduration_2 = rcs(group.cvd.dataset$t2dmduration, 3)[,2],
+                                                                     prehba1c_1 = rcs(group.cvd.dataset$prehba1c, 3)[,1],
+                                                                     prehba1c_2 = rcs(group.cvd.dataset$prehba1c, 3)[,2],
+                                                                     preegfr_1 = rcs(group.cvd.dataset$preegfr, 3)[,1],
+                                                                     preegfr_2 = rcs(group.cvd.dataset$preegfr, 3)[,2],
+                                                                     prealt_1 = rcs(group.cvd.dataset$prealt, 3)[,1],
+                                                                     prealt_2 = rcs(group.cvd.dataset$prealt, 3)[,2]) %>%
+                                                               as.data.frame() %>%
+                                                               drop_na() %>%
+                                                               mutate(intervals = relevel(intervals, ref = levels(group.cvd.dataset$intervals)[i])),
+                                                             family = "cox",
+                                                             chains = 2)
+    
+    predictions_cvd_cvd_stan_adjusted_overall_baye <- rbind(predictions_cvd_cvd_stan_adjusted_overall_baye, cbind(mean = fixef(models_cvd_cvd_adjusted_overall_baye[[i]])[2,1],
+                                                                                                                      lci = fixef(models_cvd_cvd_adjusted_overall_baye[[i]])[2,3],
+                                                                                                                      uci = fixef(models_cvd_cvd_adjusted_overall_baye[[i]])[2,4],
+                                                                                                                      intervals = levels(group.cvd.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_cvd_cvd_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_adjusted_overall_baye.rds"))
+  
+  predictions_cvd_cvd_stan_adjusted_overall_baye <- predictions_cvd_cvd_stan_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD
+  predictions_cvd_cvd_stan_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.cvd.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_cvd_cvd_stan_adjusted_full_baye <- vector()
+  
+  models_cvd_cvd_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                   data = group.cvd.dataset %>%
+                                                     select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                     cbind(time = group.cvd.dataset$postdrug_mace_censtime_yrs,
+                                                           censored = group.cvd.dataset$postdrug_mace_censvar,
+                                                           qrisk2_10yr_score_1 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,1],
+                                                           qrisk2_10yr_score_2 = rcs(group.cvd.dataset$qrisk2_10yr_score, 3)[,2],
+                                                           agetx_1 = rcs(group.cvd.dataset$agetx, 3)[,1],
+                                                           agetx_2 = rcs(group.cvd.dataset$agetx, 3)[,2],
+                                                           t2dmduration_1 = rcs(group.cvd.dataset$t2dmduration, 3)[,1],
+                                                           t2dmduration_2 = rcs(group.cvd.dataset$t2dmduration, 3)[,2],
+                                                           prehba1c_1 = rcs(group.cvd.dataset$prehba1c, 3)[,1],
+                                                           prehba1c_2 = rcs(group.cvd.dataset$prehba1c, 3)[,2],
+                                                           preegfr_1 = rcs(group.cvd.dataset$preegfr, 3)[,1],
+                                                           preegfr_2 = rcs(group.cvd.dataset$preegfr, 3)[,2],
+                                                           prealt_1 = rcs(group.cvd.dataset$prealt, 3)[,1],
+                                                           prealt_2 = rcs(group.cvd.dataset$prealt, 3)[,2]) %>%
+                                                     as.data.frame() %>%
+                                                     drop_na(),
+                                                   family = "cox",
+                                                   chains = 2)
+  
+  predictions_cvd_cvd_stan_adjusted_full_baye <- rbind(predictions_cvd_cvd_stan_adjusted_full_baye, cbind(mean = fixef(models_cvd_cvd_adjusted_full_baye[[i]])[2,1],
+                                                                                                              lci = fixef(models_cvd_cvd_adjusted_full_baye[[i]])[2,3],
+                                                                                                              uci = fixef(models_cvd_cvd_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_cvd_cvd_adjusted_full_baye, paste0(output_path, "/additional_outcomes/models_cvd_cvd_adjusted_full_baye.rds"))
+  
+  predictions_cvd_cvd_stan_adjusted_full_baye <- predictions_cvd_cvd_stan_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_cvd_cvd_stan_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_cvd_cvd_stan_adjusted_full_baye.rds"))
+  
+}
+
+#:--------------------
+#:---- PLOTS
+#:--------------------
+
+
+# Propensity score matching
+plot_cvd_cvd_psm_1_1_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_overall_baye %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_psm_1_1_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_psm_1_1_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+# Propensity score matching + adjusted
+plot_cvd_cvd_psm_1_1_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_overall_baye %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_psm_1_1_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_psm_1_1_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset.matched%>%filter(intervals==levels(group.cvd.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Adjusted
+plot_cvd_cvd_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_overall_baye %>% slice(4:6),
+  predictions_cvd_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.cvd.dataset), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.cvd.dataset%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_cvd_cvd_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_cvd_cvd_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_cvd_cvd_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.cvd.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.cvd.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.cvd.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.cvd.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.cvd.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.cvd.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.cvd.dataset%>%filter(intervals==levels(group.cvd.dataset$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.cvd.dataset%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+pdf(width = 7, height = 12, "Plots/cvd_cvd_overall_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("CVD outcomes for no CVD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_cvd_cvd_psm_1_1_overall_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_cvd_cvd_psm_1_1_adjusted_overall_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_cvd_cvd_adjusted_overall_baye
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/cvd_cvd_strata_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("CVD outcomes for no CVD population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_cvd_cvd_psm_1_1_female_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_cvd_cvd_psm_1_1_male_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_cvd_cvd_psm_1_1_adjusted_female_baye
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_cvd_cvd_psm_1_1_adjusted_male_baye
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_cvd_cvd_adjusted_female_baye
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_cvd_cvd_adjusted_male_baye
+upViewport()
+
+dev.off()
+
+
+
+
+#:--------------------------
+# Heart failure outcome
+
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+hf.dataset <- set_up_data_sglt2_glp1(dataset.type="hf.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.hf.dataset <- group_values(data = hf.dataset,
+                                 variable = "effects",
+                                 breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+matching_hf <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.hf.dataset,
+  method = "nearest",
+  distance = group.hf.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_hf, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_hf$match.matrix))
+
+group.hf.dataset.matched <- group.hf.dataset %>%
+  slice(which(matching_hf$weights == 1))
+
+
+# Heart failure survival analysis
+
+## Propensity score matching
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_hf_hf_stan_psm_1_1_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_baye <- vector()
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  models_hf_hf_psm_1_1_male_baye <- vector("list", quantiles)
+  
+  models_hf_hf_psm_1_1_female_baye <- vector("list", quantiles)
+  
+  for(i in mnumber) {
+    
+    models_hf_hf_psm_1_1_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                        data = group.hf.dataset.matched %>%
+                                                          select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                          cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                          as.data.frame() %>%
+                                                          drop_na() %>%
+                                                          mutate(sex = relevel(sex, ref = "Male"),
+                                                                 intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                        family = "cox",
+                                                        chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_baye <- rbind(predictions_hf_hf_stan_psm_1_1_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_male_baye[[i]])[2,1],
+                                                                                                  lci = fixef(models_hf_hf_psm_1_1_male_baye[[i]])[2,3],
+                                                                                                  uci = fixef(models_hf_hf_psm_1_1_male_baye[[i]])[2,4],
+                                                                                                  sex = "Male",
+                                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+    models_hf_hf_psm_1_1_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                          data = group.hf.dataset.matched %>%
+                                                            select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                            cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                  censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                  qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                  qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                            as.data.frame() %>%
+                                                            drop_na() %>%
+                                                            mutate(sex = relevel(sex, ref = "Female"),
+                                                                   intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                          family = "cox",
+                                                          chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_baye <- rbind(predictions_hf_hf_stan_psm_1_1_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_female_baye[[i]])[2,1],
+                                                                                                  lci = fixef(models_hf_hf_psm_1_1_female_baye[[i]])[2,3],
+                                                                                                  uci = fixef(models_hf_hf_psm_1_1_female_baye[[i]])[2,4],
+                                                                                                  sex = "Female",
+                                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_psm_1_1_male_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_male_baye.rds"))
+  
+  saveRDS(models_hf_hf_psm_1_1_female_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_female_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_baye <- predictions_hf_hf_stan_psm_1_1_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_baye.rds"))
+  
+}
+
+# No sex strata
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_psm_1_1_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_overall_baye <- vector()
+  
+  models_hf_hf_psm_1_1_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_hf_hf_psm_1_1_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.hf.dataset.matched %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                             cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                   censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na() %>%
+                                                             mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                           family = "cox",
+                                                           chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_overall_baye <- rbind(predictions_hf_hf_stan_psm_1_1_overall_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_overall_baye[[i]])[2,1],
+                                                                                                                  lci = fixef(models_hf_hf_psm_1_1_overall_baye[[i]])[2,3],
+                                                                                                                  uci = fixef(models_hf_hf_psm_1_1_overall_baye[[i]])[2,4],
+                                                                                                                  intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_overall_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_overall_baye <- predictions_hf_hf_stan_psm_1_1_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_overall_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_overall_baye.rds"))
+  
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_psm_1_1_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_full_baye <- vector()
+  
+  models_hf_hf_psm_1_1_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                 data = group.hf.dataset.matched %>%
+                                                   select(drugclass, intervals, sex, qrisk2_10yr_score) %>%
+                                                   cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                         censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                         qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                         qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2]) %>%
+                                                   as.data.frame() %>%
+                                                   drop_na(),
+                                                 family = "cox",
+                                                 chains = 2)
+  
+  predictions_hf_hf_stan_psm_1_1_full_baye <- rbind(predictions_hf_hf_stan_psm_1_1_full_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                          lci = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                          uci = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_hf_hf_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_full_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_full_baye <- predictions_hf_hf_stan_psm_1_1_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_full_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_full_baye.rds"))
+  
+}
+
+
+## Propensity score matching + adjusted
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_hf_hf_psm_1_1_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_hf_hf_psm_1_1_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_hf_hf_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                 data = group.hf.dataset.matched %>%
+                                                                   select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                   cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                         censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                         qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                         qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                         agetx_1 = rcs(group.hf.dataset.matched$agetx, 3)[,1],
+                                                                         agetx_2 = rcs(group.hf.dataset.matched$agetx, 3)[,2],
+                                                                         t2dmduration_1 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,1],
+                                                                         t2dmduration_2 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,2],
+                                                                         prehba1c_1 = rcs(group.hf.dataset.matched$prehba1c, 3)[,1],
+                                                                         prehba1c_2 = rcs(group.hf.dataset.matched$prehba1c, 3)[,2],
+                                                                         preegfr_1 = rcs(group.hf.dataset.matched$preegfr, 3)[,1],
+                                                                         preegfr_2 = rcs(group.hf.dataset.matched$preegfr, 3)[,2],
+                                                                         prealt_1 = rcs(group.hf.dataset.matched$prealt, 3)[,1],
+                                                                         prealt_2 = rcs(group.hf.dataset.matched$prealt, 3)[,2]) %>%
+                                                                   as.data.frame() %>%
+                                                                   drop_na() %>%
+                                                                   mutate(sex = relevel(sex, ref = "Male"),
+                                                                          intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                                 family = "cox",
+                                                                 chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_adjusted_baye <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_adjusted_male_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_hf_hf_psm_1_1_adjusted_male_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_hf_hf_psm_1_1_adjusted_male_baye[[i]])[2,4],
+                                                                                                                    sex = "Male",
+                                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+    models_hf_hf_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
+                                                                    data = group.hf.dataset.matched %>%
+                                                                      select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                      cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                            censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                            qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                            qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                            agetx_1 = rcs(group.hf.dataset.matched$agetx, 3)[,1],
+                                                                            agetx_2 = rcs(group.hf.dataset.matched$agetx, 3)[,2],
+                                                                            t2dmduration_1 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,1],
+                                                                            t2dmduration_2 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,2],
+                                                                            prehba1c_1 = rcs(group.hf.dataset.matched$prehba1c, 3)[,1],
+                                                                            prehba1c_2 = rcs(group.hf.dataset.matched$prehba1c, 3)[,2],
+                                                                            preegfr_1 = rcs(group.hf.dataset.matched$preegfr, 3)[,1],
+                                                                            preegfr_2 = rcs(group.hf.dataset.matched$preegfr, 3)[,2],
+                                                                            prealt_1 = rcs(group.hf.dataset.matched$prealt, 3)[,1],
+                                                                            prealt_2 = rcs(group.hf.dataset.matched$prealt, 3)[,2]) %>%
+                                                                      as.data.frame() %>%
+                                                                      drop_na() %>%
+                                                                      mutate(sex = relevel(sex, ref = "Female"),
+                                                                             intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                                    family = "cox",
+                                                                    chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_adjusted_baye <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_adjusted_female_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_hf_hf_psm_1_1_adjusted_female_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_hf_hf_psm_1_1_adjusted_female_baye[[i]])[2,4],
+                                                                                                                    sex = "Female",
+                                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_psm_1_1_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_adjusted_male_baye.rds"))
+  
+  saveRDS(models_hf_hf_psm_1_1_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_adjusted_female_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye <- predictions_hf_hf_stan_psm_1_1_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset.matched[,breakdown_adjust], is.factor)
+  
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye <- vector()
+  
+  models_hf_hf_psm_1_1_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_hf_hf_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                                    data = group.hf.dataset.matched %>%
+                                                                      select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                                      cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                            censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                            qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                            qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                            agetx_1 = rcs(group.hf.dataset.matched$agetx, 3)[,1],
+                                                                            agetx_2 = rcs(group.hf.dataset.matched$agetx, 3)[,2],
+                                                                            t2dmduration_1 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,1],
+                                                                            t2dmduration_2 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,2],
+                                                                            prehba1c_1 = rcs(group.hf.dataset.matched$prehba1c, 3)[,1],
+                                                                            prehba1c_2 = rcs(group.hf.dataset.matched$prehba1c, 3)[,2],
+                                                                            preegfr_1 = rcs(group.hf.dataset.matched$preegfr, 3)[,1],
+                                                                            preegfr_2 = rcs(group.hf.dataset.matched$preegfr, 3)[,2],
+                                                                            prealt_1 = rcs(group.hf.dataset.matched$prealt, 3)[,1],
+                                                                            prealt_2 = rcs(group.hf.dataset.matched$prealt, 3)[,2]) %>%
+                                                                      as.data.frame() %>%
+                                                                      drop_na() %>%
+                                                                      mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset.matched$intervals)[i])),
+                                                                    family = "cox",
+                                                                    chains = 2)
+    
+    predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,1],
+                                                                                                                                    lci = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,3],
+                                                                                                                                    uci = fixef(models_hf_hf_psm_1_1_full_baye[[i]])[2,4],
+                                                                                                                                    intervals = levels(group.hf.dataset.matched$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_psm_1_1_adjusted_overall_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye <- predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset.matched[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye <- vector()
+  
+  models_hf_hf_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                          data = group.hf.dataset.matched %>%
+                                                            select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                            cbind(time = group.hf.dataset.matched$postdrug_hf_censtime_yrs,
+                                                                  censored = group.hf.dataset.matched$postdrug_hf_censvar,
+                                                                  qrisk2_10yr_score_1 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,1],
+                                                                  qrisk2_10yr_score_2 = rcs(group.hf.dataset.matched$qrisk2_10yr_score, 3)[,2],
+                                                                  agetx_1 = rcs(group.hf.dataset.matched$agetx, 3)[,1],
+                                                                  agetx_2 = rcs(group.hf.dataset.matched$agetx, 3)[,2],
+                                                                  t2dmduration_1 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,1],
+                                                                  t2dmduration_2 = rcs(group.hf.dataset.matched$t2dmduration, 3)[,2],
+                                                                  prehba1c_1 = rcs(group.hf.dataset.matched$prehba1c, 3)[,1],
+                                                                  prehba1c_2 = rcs(group.hf.dataset.matched$prehba1c, 3)[,2],
+                                                                  preegfr_1 = rcs(group.hf.dataset.matched$preegfr, 3)[,1],
+                                                                  preegfr_2 = rcs(group.hf.dataset.matched$preegfr, 3)[,2],
+                                                                  prealt_1 = rcs(group.hf.dataset.matched$prealt, 3)[,1],
+                                                                  prealt_2 = rcs(group.hf.dataset.matched$prealt, 3)[,2]) %>%
+                                                            as.data.frame() %>%
+                                                            drop_na(),
+                                                          family = "cox",
+                                                          chains = 2)
+  
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye <- rbind(predictions_hf_hf_stan_psm_1_1_adjusted_full_baye, cbind(mean = fixef(models_hf_hf_psm_1_1_adjusted_full_baye[[i]])[2,1],
+                                                                                                                            lci = fixef(models_hf_hf_psm_1_1_adjusted_full_baye[[i]])[2,3],
+                                                                                                                            uci = fixef(models_hf_hf_psm_1_1_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_hf_hf_psm_1_1_adjusted_full_baye, paste0(output_path, "additional_outcomes/models_hf_hf_psm_1_1_adjusted_full_baye.rds"))
+  
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye <- predictions_hf_hf_stan_psm_1_1_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_psm_1_1_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_psm_1_1_adjusted_full_baye.rds"))
+  
+}
+
+
+## Adjusted
+
+#--- Cox  
+if (class(try(
+  
+  # predictions for the CVD outcomes in population with no CVD/HF/CKD strata sex and intervals
+  predictions_hf_hf_stan_adjusted_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_adjusted_baye <- vector()
+  
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  models_hf_hf_adjusted_male_baye <- vector("list", quantiles)
+  
+  models_hf_hf_adjusted_female_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_hf_hf_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                         data = group.hf.dataset %>%
+                                                           select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                           cbind(time = group.hf.dataset$postdrug_hf_censtime_yrs,
+                                                                 censored = group.hf.dataset$postdrug_hf_censvar,
+                                                                 qrisk2_10yr_score_1 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                 qrisk2_10yr_score_2 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                 agetx_1 = rcs(group.hf.dataset$agetx, 3)[,1],
+                                                                 agetx_2 = rcs(group.hf.dataset$agetx, 3)[,2],
+                                                                 t2dmduration_1 = rcs(group.hf.dataset$t2dmduration, 3)[,1],
+                                                                 t2dmduration_2 = rcs(group.hf.dataset$t2dmduration, 3)[,2],
+                                                                 prehba1c_1 = rcs(group.hf.dataset$prehba1c, 3)[,1],
+                                                                 prehba1c_2 = rcs(group.hf.dataset$prehba1c, 3)[,2],
+                                                                 preegfr_1 = rcs(group.hf.dataset$preegfr, 3)[,1],
+                                                                 preegfr_2 = rcs(group.hf.dataset$preegfr, 3)[,2],
+                                                                 prealt_1 = rcs(group.hf.dataset$prealt, 3)[,1],
+                                                                 prealt_2 = rcs(group.hf.dataset$prealt, 3)[,2]) %>%
+                                                           as.data.frame() %>%
+                                                           drop_na() %>%
+                                                           mutate(sex = relevel(sex, ref = "Male"),
+                                                                  intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])),
+                                                         family = "cox",
+                                                         chains = 2)
+    
+    predictions_hf_hf_stan_adjusted_baye <- rbind(predictions_hf_hf_stan_adjusted_baye, cbind(mean = fixef(models_hf_hf_adjusted_male_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_hf_hf_adjusted_male_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_hf_hf_adjusted_male_baye[[i]])[2,4],
+                                                                                                    sex = "Male",
+                                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
+    
+    models_hf_hf_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                           data = group.hf.dataset %>%
+                                                             select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                             cbind(time = group.hf.dataset$postdrug_hf_censtime_yrs,
+                                                                   censored = group.hf.dataset$postdrug_hf_censvar,
+                                                                   qrisk2_10yr_score_1 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                   qrisk2_10yr_score_2 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                   agetx_1 = rcs(group.hf.dataset$agetx, 3)[,1],
+                                                                   agetx_2 = rcs(group.hf.dataset$agetx, 3)[,2],
+                                                                   t2dmduration_1 = rcs(group.hf.dataset$t2dmduration, 3)[,1],
+                                                                   t2dmduration_2 = rcs(group.hf.dataset$t2dmduration, 3)[,2],
+                                                                   prehba1c_1 = rcs(group.hf.dataset$prehba1c, 3)[,1],
+                                                                   prehba1c_2 = rcs(group.hf.dataset$prehba1c, 3)[,2],
+                                                                   preegfr_1 = rcs(group.hf.dataset$preegfr, 3)[,1],
+                                                                   preegfr_2 = rcs(group.hf.dataset$preegfr, 3)[,2],
+                                                                   prealt_1 = rcs(group.hf.dataset$prealt, 3)[,1],
+                                                                   prealt_2 = rcs(group.hf.dataset$prealt, 3)[,2]) %>%
+                                                             as.data.frame() %>%
+                                                             drop_na() %>%
+                                                             mutate(sex = relevel(sex, ref = "Female"),
+                                                                    intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])),
+                                                           family = "cox",
+                                                           chains = 2)
+    
+    predictions_hf_hf_stan_adjusted_baye <- rbind(predictions_hf_hf_stan_adjusted_baye, cbind(mean = fixef(models_hf_hf_adjusted_female_baye[[i]])[2,1],
+                                                                                                    lci = fixef(models_hf_hf_adjusted_female_baye[[i]])[2,3],
+                                                                                                    uci = fixef(models_hf_hf_adjusted_female_baye[[i]])[2,4],
+                                                                                                    sex = "Female",
+                                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_adjusted_male_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_adjusted_male_baye.rds"))
+  
+  saveRDS(models_hf_hf_adjusted_female_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_adjusted_female_baye.rds"))
+  
+  predictions_hf_hf_stan_adjusted_baye <- predictions_hf_hf_stan_adjusted_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_adjusted_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_baye.rds"))
+  
+}
+
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_adjusted_overall_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_overall_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_adjusted_overall_baye <- vector()
+  
+  models_hf_hf_adjusted_overall_baye <- vector("list", quantiles)
+  
+  for (i in mnumber) {
+    
+    models_hf_hf_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
+                                                            data = group.hf.dataset %>%
+                                                              select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                              cbind(time = group.hf.dataset$postdrug_hf_censtime_yrs,
+                                                                    censored = group.hf.dataset$postdrug_hf_censvar,
+                                                                    qrisk2_10yr_score_1 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,1],
+                                                                    qrisk2_10yr_score_2 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,2],
+                                                                    agetx_1 = rcs(group.hf.dataset$agetx, 3)[,1],
+                                                                    agetx_2 = rcs(group.hf.dataset$agetx, 3)[,2],
+                                                                    t2dmduration_1 = rcs(group.hf.dataset$t2dmduration, 3)[,1],
+                                                                    t2dmduration_2 = rcs(group.hf.dataset$t2dmduration, 3)[,2],
+                                                                    prehba1c_1 = rcs(group.hf.dataset$prehba1c, 3)[,1],
+                                                                    prehba1c_2 = rcs(group.hf.dataset$prehba1c, 3)[,2],
+                                                                    preegfr_1 = rcs(group.hf.dataset$preegfr, 3)[,1],
+                                                                    preegfr_2 = rcs(group.hf.dataset$preegfr, 3)[,2],
+                                                                    prealt_1 = rcs(group.hf.dataset$prealt, 3)[,1],
+                                                                    prealt_2 = rcs(group.hf.dataset$prealt, 3)[,2]) %>%
+                                                              as.data.frame() %>%
+                                                              drop_na() %>%
+                                                              mutate(intervals = relevel(intervals, ref = levels(group.hf.dataset$intervals)[i])),
+                                                            family = "cox",
+                                                            chains = 2)
+    
+    predictions_hf_hf_stan_adjusted_overall_baye <- rbind(predictions_hf_hf_stan_adjusted_overall_baye, cbind(mean = fixef(models_hf_hf_adjusted_overall_baye[[i]])[2,1],
+                                                                                                                    lci = fixef(models_hf_hf_adjusted_overall_baye[[i]])[2,3],
+                                                                                                                    uci = fixef(models_hf_hf_adjusted_overall_baye[[i]])[2,4],
+                                                                                                                    intervals = levels(group.hf.dataset$intervals)[i]))
+    
+  }
+  
+  saveRDS(models_hf_hf_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_adjusted_overall_baye.rds"))
+  
+  predictions_hf_hf_stan_adjusted_overall_baye <- predictions_hf_hf_stan_adjusted_overall_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_adjusted_overall_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_overall_baye.rds"))
+  
+}
+# Full population (interval as a continuous, without subgrouping individuals)
+if (class(try(
+  
+  # predictions for the CVD outcomes in the population with no CVD/HF/CKD
+  predictions_hf_hf_stan_adjusted_full_baye <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_full_baye.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  breakdown_adjust <- unique(c(variables_mu, variables_tau))
+  # categorical variables in breakdown
+  factors <- sapply(group.hf.dataset[,breakdown_adjust], is.factor)
+  
+  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors], collapse = " + "))
+  
+  # maximum number of deciles being tested
+  quantiles <- length(levels(group.hf.dataset[,"intervals"]))
+  # create lists with results
+  mnumber = c(1:quantiles)
+  predictions_hf_hf_stan_adjusted_full_baye <- vector()
+  
+  models_hf_hf_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
+                                                  data = group.hf.dataset %>%
+                                                    select(drugclass, intervals, sex, qrisk2_10yr_score, agetx, t2dmduration, prehba1c, preegfr, prealt) %>%
+                                                    cbind(time = group.hf.dataset$postdrug_hf_censtime_yrs,
+                                                          censored = group.hf.dataset$postdrug_hf_censvar,
+                                                          qrisk2_10yr_score_1 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,1],
+                                                          qrisk2_10yr_score_2 = rcs(group.hf.dataset$qrisk2_10yr_score, 3)[,2],
+                                                          agetx_1 = rcs(group.hf.dataset$agetx, 3)[,1],
+                                                          agetx_2 = rcs(group.hf.dataset$agetx, 3)[,2],
+                                                          t2dmduration_1 = rcs(group.hf.dataset$t2dmduration, 3)[,1],
+                                                          t2dmduration_2 = rcs(group.hf.dataset$t2dmduration, 3)[,2],
+                                                          prehba1c_1 = rcs(group.hf.dataset$prehba1c, 3)[,1],
+                                                          prehba1c_2 = rcs(group.hf.dataset$prehba1c, 3)[,2],
+                                                          preegfr_1 = rcs(group.hf.dataset$preegfr, 3)[,1],
+                                                          preegfr_2 = rcs(group.hf.dataset$preegfr, 3)[,2],
+                                                          prealt_1 = rcs(group.hf.dataset$prealt, 3)[,1],
+                                                          prealt_2 = rcs(group.hf.dataset$prealt, 3)[,2]) %>%
+                                                    as.data.frame() %>%
+                                                    drop_na(),
+                                                  family = "cox",
+                                                  chains = 2)
+  
+  predictions_hf_hf_stan_adjusted_full_baye <- rbind(predictions_hf_hf_stan_adjusted_full_baye, cbind(mean = fixef(models_hf_hf_adjusted_full_baye[[i]])[2,1],
+                                                                                                            lci = fixef(models_hf_hf_adjusted_full_baye[[i]])[2,3],
+                                                                                                            uci = fixef(models_hf_hf_adjusted_full_baye[[i]])[2,4]))
+  
+  saveRDS(models_hf_hf_adjusted_full_baye, paste0(output_path, "/additional_outcomes/models_hf_hf_adjusted_full_baye.rds"))
+  
+  predictions_hf_hf_stan_adjusted_full_baye <- predictions_hf_hf_stan_adjusted_full_baye %>%
+    as.data.frame()
+  
+  saveRDS(predictions_hf_hf_stan_adjusted_full_baye, paste0(output_path, "/additional_outcomes/predictions_hf_hf_stan_adjusted_full_baye.rds"))
+  
+}
+
+
+
+
+#:--------------------
+#:---- PLOTS
+#:--------------------
+
+
+
+# Propensity score matching
+plot_hf_hf_psm_1_1_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_overall_baye %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_psm_1_1_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_psm_1_1_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Propensity score matching + adjusted
+plot_hf_hf_psm_1_1_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_overall_baye %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset.matched), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_psm_1_1_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_psm_1_1_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_psm_1_1_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_psm_1_1_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset.matched%>%filter(intervals==levels(group.hf.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Propensity score matching + adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.hf.dataset.matched%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+# Adjusted
+plot_hf_hf_adjusted_overall_baye <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_overall_baye %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_overall_baye %>% slice(4:6),
+  predictions_hf_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Overall population (n=", nrow(group.hf.dataset), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_adjusted_male_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_baye %>% filter(sex == "Male") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%filter(sex=="Male")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Male")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Male (n=", nrow(group.hf.dataset%>%filter(sex=="Male")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+plot_hf_hf_adjusted_female_baye<- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_hf_hf_stan_adjusted_baye %>% filter(sex == "Female") %>% select(-sex) %>% slice(4:6),
+  predictions_hf_hf_stan_adjusted_full_baye %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.hf.dataset$intervals)[1], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                            ifelse(intervals == levels(group.hf.dataset$intervals)[2], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                   ifelse(intervals == levels(group.hf.dataset$intervals)[3], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                          ifelse(intervals == levels(group.hf.dataset$intervals)[4], paste0("0-3 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                 ifelse(intervals == levels(group.hf.dataset$intervals)[5], paste0("3-5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"),
+                                                        ifelse(intervals == levels(group.hf.dataset$intervals)[6], paste0(">5 mmol/mol (n=", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%filter(sex=="Female")%>%nrow(), ", event = ", group.hf.dataset%>%filter(intervals==levels(group.hf.dataset$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%filter(sex=="Female")%>%nrow(), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Adjusted",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazards ratio") %>%
+  fp_add_header(paste0("Female (n=", nrow(group.hf.dataset%>%filter(sex=="Female")), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = gpar(col = "black", lty = 2))
+
+
+pdf(width = 7, height = 12, "Plots/hf_hf_overall_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 1, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HF outcomes for no HF population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_hf_hf_psm_1_1_overall_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_hf_hf_psm_1_1_adjusted_overall_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_hf_hf_adjusted_overall_baye
+upViewport()
+
+dev.off()
+
+pdf(width = 14, height = 12, "Plots/hf_hf_strata_baye.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 4,
+                                           ncol = 2, heights = unit(c(0.5, 5, 5, 5), "null"))))
+# title
+grid.text("HF outcomes for no HF population (GLP1 control, values correspond to SGLT2)", vp = viewport(layout.pos.row = 1, layout.pos.col = 1:2))
+
+# first plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_hf_hf_psm_1_1_female_baye
+upViewport()
+# second plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_hf_hf_psm_1_1_male_baye
+upViewport()
+# third plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 1))
+plot_hf_hf_psm_1_1_adjusted_female_baye
+upViewport()
+# forth plot
+pushViewport(viewport(layout.pos.row = 3,
+                      layout.pos.col = 2))
+plot_hf_hf_psm_1_1_adjusted_male_baye
+upViewport()
+# fifth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 1))
+plot_hf_hf_adjusted_female_baye
+upViewport()
+# sixth plot
+pushViewport(viewport(layout.pos.row = 4,
+                      layout.pos.col = 2))
+plot_hf_hf_adjusted_male_baye
+upViewport()
+
+dev.off()
 
 
 
@@ -4121,6 +8265,8 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_no_co_cvd_stan_psm_1_1 <- vector()
   
+  predictions_no_co_cvd_stan_psm_1_1_baye <- vector()
+  
   
   ###:-------------------------
   ## test - comparison with male, interval 1
@@ -4143,8 +8289,8 @@ if (class(try(
   # 
   # test_1 <- brms::brm(formula = formula(formula),
   #                          data = interim.dataset,
-  #                          family = "exponential",
-  #                          chains = 1)
+  #                          family = "cox",
+  #                          chains = 2)
   # 
   # ## cox
   # 
@@ -4238,7 +8384,7 @@ if (class(try(
   
   # predictions for the CVD outcomes in the population with no CVD/HF/CKD
   predictions_no_co_cvd_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   formula_freq <- "Surv(postdrug_mace_censtime_yrs, postdrug_mace_censvar) ~ factor(drugclass) + qrisk2_10yr_score"
@@ -8791,6 +12937,28 @@ qpdf::pdf_combine(input = c("Plots/hba1c_grouping_strata.pdf",
                             "Plots/hf_hf_strata.pdf"),
                   output = "Plots/11.06.strata_additional_outcomes.pdf")
 
+# Overall population - bayes
+qpdf::pdf_combine(input = c("Plots/hba1c_grouping_overall.pdf",
+                            "Plots/weight_overall.pdf",
+                            "Plots/egfr_overall.pdf",
+                            "Plots/discontinuation_overall.pdf",
+                            "Plots/no_co_cvd_overall_bayes.pdf",
+                            "Plots/no_co_hf_overall_bayes.pdf",
+                            "Plots/cvd_cvd_overall_bayes.pdf",
+                            "Plots/hf_hf_overall_bayes.pdf"),
+                  output = "Plots/11.06.overall_additional_outcomes_bayes.pdf")
+
+# Strata population - bayes
+qpdf::pdf_combine(input = c("Plots/hba1c_grouping_strata.pdf",
+                            "Plots/weight_strata.pdf",
+                            "Plots/egfr_strata.pdf",
+                            "Plots/discontinuation_strata.pdf",
+                            "Plots/no_co_cvd_strata_bayes.pdf",
+                            "Plots/no_co_hf_strata_bayes.pdf",
+                            "Plots/cvd_cvd_strata_bayes.pdf",
+                            "Plots/hf_hf_strata_bayes.pdf"),
+                  output = "Plots/11.06.strata_additional_outcomes_bayes.pdf")
+
 
 file.remove(c("Plots/hba1c_grouping_overall.pdf",
               "Plots/weight_overall.pdf",
@@ -8799,7 +12967,11 @@ file.remove(c("Plots/hba1c_grouping_overall.pdf",
               "Plots/no_co_cvd_overall.pdf",
               "Plots/no_co_hf_overall.pdf",
               "Plots/cvd_cvd_overall.pdf",
-              "Plots/hf_hf_overall.pdf"))
+              "Plots/hf_hf_overall.pdf",
+              "Plots/no_co_cvd_overall_bayes.pdf",
+              "Plots/no_co_hf_overall_bayes.pdf",
+              "Plots/cvd_cvd_overall_bayes.pdf",
+              "Plots/hf_hf_overall_bayes.pdf"))
 
 file.remove(c("Plots/hba1c_grouping_strata.pdf",
               "Plots/weight_strata.pdf",
@@ -8808,5 +12980,9 @@ file.remove(c("Plots/hba1c_grouping_strata.pdf",
               "Plots/no_co_cvd_strata.pdf",
               "Plots/no_co_hf_strata.pdf",
               "Plots/cvd_cvd_strata.pdf",
-              "Plots/hf_hf_strata.pdf"))
+              "Plots/hf_hf_strata.pdf",
+              "Plots/no_co_cvd_strata_bayes.pdf",
+              "Plots/no_co_hf_strata_bayes.pdf",
+              "Plots/cvd_cvd_strata_bayes.pdf",
+              "Plots/hf_hf_strata_bayes.pdf"))
 
