@@ -207,28 +207,24 @@ calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_dif
       data.new <- data[data[,quantile_var] == i,]
     }
     
-    # variables used in adjustment
-    breakdown_adjust <- breakdown
-    # categorical variables in breakdown
-    factors <- sapply(data.new[,breakdown_adjust], is.factor)
-    # variables with only one variable represented
-    one_category_factors <- sapply(data.new[, breakdown_adjust[factors]], function(x) length(unique(x)) == 1)
-    
-    if (!is_empty(breakdown_adjust[factors][one_category_factors])) {
-      # which variables in breakdown_adjust only have one category represented
-      for (l in 1:length(breakdown_adjust[factors][one_category_factors])) {
-        # position
-        position <- which(breakdown_adjust == breakdown_adjust[factors][one_category_factors][l])
-        # remove var from breakdown_adjust
-        breakdown_adjust <- breakdown_adjust[-position]
-      }
-    }
-    
     if (adjust == TRUE) {
-      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust, collapse = "+"))
+      
+      # variables used in adjustment
+      breakdown_adjust <- breakdown
+      # categorical variables in breakdown
+      # factors <- sapply(data.new[,breakdown_adjust], is.factor)
+      # variables with only one variable represented
+      checker <- which(sapply(data.new[,breakdown_adjust], function(col) length(unique(col))) > 1)
+      
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
+      
     } else {
       formula <- "posthba1cfinal ~ factor(drugclass)"
     }
+    
+    
+    
+    
     
     # fit linear regression for decile in the matched dataset
     models[[i]] <- lm(as.formula(formula),data=data.new)
@@ -335,25 +331,12 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
       
       # variables used in adjustment
       breakdown_adjust <- breakdown
-      # categorical variables in breakdown
-      factors <- sapply(data.new[,breakdown_adjust], is.factor)
       # variables with only one variable represented
-      one_category_factors <- sapply(data.new[, breakdown_adjust[factors]], function(x) length(unique(x)) == 1)
+      checker <- which(sapply(data.new[data.new[,quantile_var] == i,breakdown_adjust], function(col) length(unique(col))) > 1)
       
-      if (!is_empty(breakdown_adjust[factors][one_category_factors])) {
-        # which variables in breakdown_adjust only have one category represented
-        for (l in 1:length(breakdown_adjust[factors][one_category_factors])) {
-          # position
-          position <- which(breakdown_adjust == breakdown_adjust[factors][one_category_factors][l])
-          # remove var from breakdown_adjust
-          breakdown_adjust <- breakdown_adjust[-position]
-        }
-      }
       
-    }
-    
-    if (adjust == TRUE) {
-      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown, collapse = "+"))
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
+      
     } else {
       formula <- "posthba1cfinal ~ factor(drugclass)"
     }
