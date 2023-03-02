@@ -549,6 +549,19 @@ if (class(try(
 
 # plot predictions from model BCF (prop score) vs BCF (no prop score)
 if (class(try(
+  
+  prop.score.comparison.mu <- readRDS(paste0(output_path, "/response_model_bcf/prop.score.comparison.mu.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  prop.score.comparison.mu <- cbind(bcf_prop = c(colMeans(bcf_model_prop$mu), colMeans(predictions.hba1c.test_prop$mu)),
+                                    bcf_no_prop = c(colMeans(bcf_model$mu), colMeans(predictions.hba1c.test$mu)))
+  
+  saveRDS(prop.score.comparison.mu, paste0(output_path, "/response_model_bcf/prop.score.comparison.mu.rds"))
+  
+}
+
+if (class(try(
 
   prop.score.comparison <- readRDS(paste0(output_path, "/response_model_bcf/prop.score.comparison.rds"))
 
