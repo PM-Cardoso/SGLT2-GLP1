@@ -7,59 +7,6 @@
 require(tidyverse)
 
 
-# synthetic.original <- set_up_data_sglt2_glp1(dataset.type="synthetic")
-# synthetic.newer <- set_up_data(dataset.type="synthetic", drugs = c("GLP1", "SGLT2"))
-# identical(synthetic.original, synthetic.newer)
-# 
-# full.cohort.original <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
-# full.cohort.newer <- set_up_data(dataset.type="full.cohort", drugs = c("GLP1", "SGLT2"))
-# identical(full.cohort.original, full.cohort.newer)
-# 
-# ps.model.train.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.train")
-# ps.model.train.newer <- set_up_data(dataset.type="ps.model.train", drugs = c("GLP1", "SGLT2"))
-# identical(ps.model.train.original, ps.model.train.newer)
-# 
-# ps.model.test.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.test")
-# ps.model.test.newer <- set_up_data(dataset.type="ps.model.test", drugs = c("GLP1", "SGLT2"))
-# identical(ps.model.test.original, ps.model.test.newer)
-# 
-# hba1c.train.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.train")
-# hba1c.train.newer <- set_up_data(dataset.type="hba1c.train", drugs = c("GLP1", "SGLT2"))
-# identical(hba1c.train.original, hba1c.train.newer)
-# 
-# hba1c.test.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.test")
-# hba1c.test.newer <- set_up_data(dataset.type="hba1c.test", drugs = c("GLP1", "SGLT2"))
-# identical(hba1c.test.original, hba1c.test.newer)
-# 
-# weight.dataset.original <- set_up_data_sglt2_glp1(dataset.type="weight.dataset")
-# weight.dataset.newer <- set_up_data(dataset.type="weight.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(weight.dataset.original, weight.dataset.newer)
-# 
-# discontinuation.dataset.original <- set_up_data_sglt2_glp1(dataset.type="discontinuation.dataset")
-# discontinuation.dataset.newer <- set_up_data(dataset.type="discontinuation.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(discontinuation.dataset.original, discontinuation.dataset.newer)
-# 
-# egfr.dataset.original <- set_up_data_sglt2_glp1(dataset.type="egfr.dataset")
-# egfr.dataset.newer <- set_up_data(dataset.type="egfr.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(egfr.dataset.original, egfr.dataset.newer)
-# 
-# ckd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="ckd.dataset")
-# ckd.dataset.newer <- set_up_data(dataset.type="ckd.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(ckd.dataset.original, ckd.dataset.newer)
-# 
-# cvd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="cvd.dataset")
-# cvd.dataset.newer <- set_up_data(dataset.type="cvd.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(cvd.dataset.original, cvd.dataset.newer)
-# 
-# hf.dataset.original <- set_up_data_sglt2_glp1(dataset.type="hf.dataset")
-# hf.dataset.newer <- set_up_data(dataset.type="hf.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(hf.dataset.original, hf.dataset.newer)
-# 
-# no_co.dataset.original <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset")
-# no_co.dataset.newer <- set_up_data(dataset.type="no_co.dataset", drugs = c("GLP1", "SGLT2"))
-# identical(no_co.dataset.original, no_co.dataset.newer)
-
-
 ###############################################################################
 ###############################################################################
 ############################### Functions #####################################
@@ -73,8 +20,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
   }
   if (missing(drugs)) {stop("'drugs' needs to be supplied")}
   if (!is.character(drugs)) {stop("'drugs' must be a character string")}
@@ -84,9 +31,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     }
   }
   
-  if (dataset.type == "ckd.dataset") {stop("outcome variables for 'ckd.dataset' hasn't been coded")}
-  
-    
   # load original dataset # name - t2d_1stinstance
   load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
   
@@ -391,7 +335,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort" | dataset.type == "micro_comp.dataset" | dataset.type == "retinopathy.dataset") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -429,10 +373,16 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
       ungroup()
     
     
+    # Load in all instances of ckd outcomes
+    load("/slade/CPRD_data/mastermind_2022/20230125_ckd_outcomes_all.Rda")
+    
+    
     cprd <- cprd %>%
       left_join(later_sglt2, by=c("patid", "dstartdate")) %>%
       left_join(later_glp1, by=c("patid", "dstartdate")) %>%
-      left_join(later_tzd, by=c("patid", "dstartdate"))
+      left_join(later_tzd, by=c("patid", "dstartdate")) %>%
+      # only left_join first instances of outcomes
+      left_join(ckd_outcomes, by=c("patid", "dstartdate", "drugclass"))
     
   }
   
@@ -448,7 +398,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort" | dataset.type == "micro_comp.dataset" | dataset.type == "retinopathy.dataset") {
     
     final.dataset <- cprd %>%
       select(
@@ -477,7 +427,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
         # discontinuation
         stopdrug_6m_3mFU,
         # CKD
-        preckd, predrug_cvd,
+        preckd, predrug_cvd, postckdstage345date, egfr40_or_ckd5,
         # CVD
         predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
         five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
@@ -485,7 +435,9 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
         postdrug_first_primary_hhf, hf_death_date_primary_cause,
         # No comorbidities
         postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, 
-        hf_death_date_any_cause, qrisk2_10yr_score
+        hf_death_date_any_cause, qrisk2_10yr_score,
+        # Microvascular complications
+        postdrug_first_diabeticnephropathy, postdrug_first_neuropathy, postdrug_first_retinopathy
       ) %>%
       as.data.frame()
     
@@ -1576,34 +1528,61 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   ##### Outcome
   ################################################
   
-  # ckd.dataset <- ckd.dataset %>%
+  ckd.dataset <- ckd.dataset %>% 
+    mutate(postdrug_stage345 = pmin(postckdstage345date, na.rm = TRUE),
+           postdrug_egfr40_or_ckd5 = pmin(egfr40_or_ckd5, na.rm = TRUE)) %>%
+    
+    
+  mutate(postdrug_stage345_censdate = if_else(drugclass=="GLP1",
+                                              pmin(five_years_post_dstart,
+                                                   death_date,
+                                                   next_sglt2_start,
+                                                   next_tzd_start,
+                                                   gp_record_end,
+                                                   postdrug_stage345, na.rm=TRUE),
+                                              if_else(drugclass=="SGLT2",
+                                                      pmin(five_years_post_dstart,
+                                                           death_date,
+                                                           next_glp1_start,
+                                                           next_tzd_start,
+                                                           gp_record_end,
+                                                           postdrug_stage345, na.rm=TRUE),
+                                                      as.Date(NA))),
+         
+         postdrug_egfr40_or_ckd5_censdate = if_else(drugclass=="GLP1",
+                                                    pmin(five_years_post_dstart,
+                                                         death_date,
+                                                         next_sglt2_start,
+                                                         next_tzd_start,
+                                                         gp_record_end,
+                                                         postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                    if_else(drugclass=="SGLT2",
+                                                            pmin(five_years_post_dstart,
+                                                                 death_date,
+                                                                 next_glp1_start,
+                                                                 next_tzd_start,
+                                                                 gp_record_end,
+                                                                 postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                            as.Date(NA))),
+         
+         
+         postdrug_stage345_censvar=ifelse(!is.na(postdrug_stage345) & postdrug_stage345_censdate==postdrug_stage345, 1, 0),
+         
+         postdrug_egfr40_or_ckd5_censvar=ifelse(!is.na(postdrug_egfr40_or_ckd5) & postdrug_egfr40_or_ckd5_censdate==postdrug_egfr40_or_ckd5, 1, 0),
+         
+         postdrug_stage345_censtime_yrs=as.numeric(difftime(postdrug_stage345_censdate, dstartdate, unit="days"))/365.25,
+         
+         postdrug_egfr40_or_ckd5_censtime_yrs=as.numeric(difftime(postdrug_egfr40_or_ckd5_censdate, dstartdate, unit="days"))/365.25
+         
+         )
+  
   
   
   #:----------------------------------------------------
   # Select variables needed
   
   final.ckd.dataset <- ckd.dataset %>%
-    # select(
-    #   # information regarding patient
-    #   patid, pated,
-    #   # response hba1c
-    #   posthba1cfinal,
-    #   # therapies of interest
-    #   drugclass,
-    #   # Sociodemographic features
-    #   agetx, sex, t2dmduration, 
-    #   # Diabetes treatment 
-    #   drugline, ncurrtx, hba1cmonth,
-  #   # Biomarkers
-  #   prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin,
-  #   prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
-  #   # Comorbidities
-  #   preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-  #   preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
-  #   # eGFR analysis
-  #   postegfr
-  # ) %>%
-  as.data.frame()
+    as.data.frame()
   
   # printing inclusion patients
   if (dataset.type == "diagnostics") {
@@ -2193,7 +2172,9 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     
     
     mutate(postdrug_mace=pmin(postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, na.rm=TRUE),
-           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE)) %>%
+           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE),
+           postdrug_stage345 = pmin(postckdstage345date, na.rm = TRUE),
+           postdrug_egfr40_or_ckd5 = pmin(egfr40_or_ckd5, na.rm = TRUE)) %>%
     
     
     # Mace: broad definition: MI/stroke GP codes + broad MI/stroke HES codes (any cause) + CV death in ONS death (any cause)
@@ -2243,9 +2224,56 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
            
            postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
            
-           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
-  
-  ## CKD: TBD
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25,
+           
+           
+           
+           ## CKD: reaching stage 3/4/5 OR decrease of 40% in egfr and stage 5
+           
+           
+           
+           postdrug_stage345_censdate = if_else(drugclass=="GLP1",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_sglt2_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_stage345, na.rm=TRUE),
+                                                if_else(drugclass=="SGLT2",
+                                                        pmin(five_years_post_dstart,
+                                                             death_date,
+                                                             next_glp1_start,
+                                                             next_tzd_start,
+                                                             gp_record_end,
+                                                             postdrug_stage345, na.rm=TRUE),
+                                                        as.Date(NA))),
+           
+           postdrug_egfr40_or_ckd5_censdate = if_else(drugclass=="GLP1",
+                                                      pmin(five_years_post_dstart,
+                                                           death_date,
+                                                           next_sglt2_start,
+                                                           next_tzd_start,
+                                                           gp_record_end,
+                                                           postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                      if_else(drugclass=="SGLT2",
+                                                              pmin(five_years_post_dstart,
+                                                                   death_date,
+                                                                   next_glp1_start,
+                                                                   next_tzd_start,
+                                                                   gp_record_end,
+                                                                   postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                              as.Date(NA))),
+           
+           
+           postdrug_stage345_censvar=ifelse(!is.na(postdrug_stage345) & postdrug_stage345_censdate==postdrug_stage345, 1, 0),
+           
+           postdrug_egfr40_or_ckd5_censvar=ifelse(!is.na(postdrug_egfr40_or_ckd5) & postdrug_egfr40_or_ckd5_censdate==postdrug_egfr40_or_ckd5, 1, 0),
+           
+           postdrug_stage345_censtime_yrs=as.numeric(difftime(postdrug_stage345_censdate, dstartdate, unit="days"))/365.25,
+           
+           postdrug_egfr40_or_ckd5_censtime_yrs=as.numeric(difftime(postdrug_egfr40_or_ckd5_censdate, dstartdate, unit="days"))/365.25
+           
+    )
   
   #:----------------------------------------------------
   # Select variables needed
@@ -2270,6 +2298,419 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   
   
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ########## No microvascular complications outcome population ##################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### No microvascular complications outcome model")
+    print("################################################")
+    
+  }
+  
+  micro_comp.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(micro_comp.dataset$multi_drug_start))
+    print(table(micro_comp.dataset$multi_drug_start, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(micro_comp.dataset$timeprevcombo_less61))
+    print(table(micro_comp.dataset$timeprevcombo_less61, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(micro_comp.dataset$hb_extreme_53))
+    print(table(micro_comp.dataset$hb_extreme_53, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(micro_comp.dataset$prehba1c)))
+    print(table(is.na(micro_comp.dataset$prehba1c), micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  
+  ################################################
+  ##### Drop if comorbidity
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(comorbidities = ifelse(prediabeticnephropathy == "No" & preneuropathy == "No" & preretinopathy == "No", NA_real_, 1))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(micro_comp.dataset$comorbidities, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(comorbidities))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(micro_comp.dataset$TZD, micro_comp.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(micro_comp.dataset$GLP1, micro_comp.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(micro_comp.dataset$SGLT2, micro_comp.dataset$drugclass))
+    
+  }
+  
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    
+    ## Microvascular complications: diabetic nephropathy, retinopathy, neuropahty
+    
+    
+    mutate(postdrug_micro_comp=pmin(postdrug_first_diabeticnephropathy, postdrug_first_neuropathy, postdrug_first_retinopathy, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_micro_comp_censdate=if_else(drugclass=="GLP1",
+                                        pmin(five_years_post_dstart,
+                                             death_date,
+                                             next_sglt2_start,
+                                             next_tzd_start,
+                                             gp_record_end,
+                                             postdrug_micro_comp, na.rm=TRUE),
+                                        
+                                        if_else(drugclass=="SGLT2",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_glp1_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_micro_comp, na.rm=TRUE),
+                                                as.Date(NA))),
+           
+           postdrug_micro_comp_censvar=ifelse(!is.na(postdrug_micro_comp) & postdrug_micro_comp_censdate==postdrug_micro_comp, 1, 0),
+           
+           postdrug_micro_comp_censtime_yrs=as.numeric(difftime(postdrug_micro_comp_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.micro_comp.dataset <- micro_comp.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.micro_comp.dataset))
+    print(table(final.micro_comp.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "micro_comp.dataset") {
+    return(final.micro_comp.dataset)
+  }
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  #################### Retinopathy outcome population ###########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Retinopathy outcome model")
+    print("################################################")
+    
+  }
+  
+  retinopathy.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(retinopathy.dataset$multi_drug_start))
+    print(table(retinopathy.dataset$multi_drug_start, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(retinopathy.dataset$timeprevcombo_less61))
+    print(table(retinopathy.dataset$timeprevcombo_less61, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(retinopathy.dataset$hb_extreme_53))
+    print(table(retinopathy.dataset$hb_extreme_53, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(retinopathy.dataset$prehba1c)))
+    print(table(is.na(retinopathy.dataset$prehba1c), retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if retinopathy
+  ################################################
+  
+  # ckd.dataset <- ckd.dataset %>%
+  #   mutate(no_retinopat = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if retinopathy")
+    print("################################################")
+    print(table(retinopathy.dataset$preretinopathy))
+    print(table(retinopathy.dataset$preretinopathy, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(preretinopathy == "No")
+  
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(retinopathy.dataset$TZD, retinopathy.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(retinopathy.dataset$GLP1, retinopathy.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(retinopathy.dataset$SGLT2, retinopathy.dataset$drugclass))
+    
+  }
+  
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>% 
+    mutate(postdrug_retinopathy = pmin(postdrug_first_retinopathy, na.rm = TRUE)) %>%
+    
+    
+    mutate(postdrug_retinopathy_censdate = if_else(drugclass=="GLP1",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_sglt2_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_retinopathy, na.rm=TRUE),
+                                                if_else(drugclass=="SGLT2",
+                                                        pmin(five_years_post_dstart,
+                                                             death_date,
+                                                             next_glp1_start,
+                                                             next_tzd_start,
+                                                             gp_record_end,
+                                                             postdrug_retinopathy, na.rm=TRUE),
+                                                        as.Date(NA))),
+           
+           postdrug_retinopathy_censvar=ifelse(!is.na(postdrug_retinopathy) & postdrug_retinopathy_censdate==postdrug_retinopathy, 1, 0),
+           
+           postdrug_retinopathy_censtime_yrs=as.numeric(difftime(postdrug_retinopathy_censdate, dstartdate, unit="days"))/365.25
+           
+    )
+  
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.retinopathy.dataset <- retinopathy.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Retinopathy outcome model - final")
+    print("################################################")
+    print(nrow(final.retinopathy.dataset))
+    print(table(final.retinopathy.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "retinopathy.dataset") {
+    return(final.retinopathy.dataset)
+  }
+  
+  
+  
+  
   
 }
 
@@ -2281,11 +2722,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # initial checks
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
   }
-  
-  if (dataset.type == "ckd.dataset") {stop("outcome variables for 'ckd.dataset' hasn't been coded")}
   
   # load original dataset # name - t2d_1stinstance
   load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
@@ -2632,7 +3071,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort" | dataset.type == "micro_comp.dataset" | dataset.type == "retinopathy.dataset") {
     
     # Add in later GLP1/SGLT2/TZD drug starts needed for censoring
     load("/slade/CPRD_data/mastermind_2022/20221205_t2d_all_drug_periods.Rda")
@@ -2670,10 +3109,16 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       ungroup()
     
     
+    # Load in all instances of ckd outcomes
+    load("/slade/CPRD_data/mastermind_2022/20230125_ckd_outcomes_all.Rda")
+    
     cprd <- cprd %>%
       left_join(later_sglt2, by=c("patid", "dstartdate")) %>%
       left_join(later_glp1, by=c("patid", "dstartdate")) %>%
-      left_join(later_tzd, by=c("patid", "dstartdate"))
+      left_join(later_tzd, by=c("patid", "dstartdate")) %>%
+      # only left_join first instances of outcomes
+      left_join(ckd_outcomes, by=c("patid", "dstartdate", "drugclass"))
+    
     
       
     
@@ -2692,7 +3137,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # Add all variables necessary for ALL analysis in the paper.
   #
   
-  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort") {
+  if (dataset.type == "ckd.dataset" | dataset.type == "cvd.dataset" | dataset.type == "hf.dataset" | dataset.type == "no_co.dataset" | dataset.type == "diagnostics" | dataset.type == "full.cohort" | dataset.type == "micro_comp.dataset" | dataset.type == "retinopathy.dataset") {
     
     final.dataset <- cprd %>%
       select(
@@ -2721,7 +3166,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
         # discontinuation
         stopdrug_6m_3mFU,
         # CKD
-        preckd, predrug_cvd,
+        preckd, predrug_cvd, postckdstage345date, egfr40_or_ckd5,
         # CVD
         predrug_cvd, postdrug_first_primary_incident_mi, postdrug_first_primary_incident_stroke, cv_death_date_primary_cause, 
         five_years_post_dstart, death_date, next_sglt2_start, next_tzd_start, gp_record_end, next_glp1_start,
@@ -2729,7 +3174,9 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
         postdrug_first_primary_hhf, hf_death_date_primary_cause,
         # No comorbidities
         postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, postdrug_first_heartfailure, 
-        hf_death_date_any_cause, qrisk2_10yr_score
+        hf_death_date_any_cause, qrisk2_10yr_score,
+        # Microvascular complications
+        postdrug_first_diabeticnephropathy, postdrug_first_neuropathy, postdrug_first_retinopathy
       ) %>%
       as.data.frame()
     
@@ -3821,33 +4268,60 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ##### Outcome
   ################################################
   
-  # ckd.dataset <- ckd.dataset %>%
+  ckd.dataset <- ckd.dataset %>% 
+    mutate(postdrug_stage345 = pmin(postckdstage345date, na.rm = TRUE),
+           postdrug_egfr40_or_ckd5 = pmin(egfr40_or_ckd5, na.rm = TRUE)) %>%
+    
+    
+    mutate(postdrug_stage345_censdate = if_else(drugclass=="GLP1",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_sglt2_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_stage345, na.rm=TRUE),
+                                                if_else(drugclass=="SGLT2",
+                                                        pmin(five_years_post_dstart,
+                                                             death_date,
+                                                             next_glp1_start,
+                                                             next_tzd_start,
+                                                             gp_record_end,
+                                                             postdrug_stage345, na.rm=TRUE),
+                                                        as.Date(NA))),
+           
+           postdrug_egfr40_or_ckd5_censdate = if_else(drugclass=="GLP1",
+                                                      pmin(five_years_post_dstart,
+                                                           death_date,
+                                                           next_sglt2_start,
+                                                           next_tzd_start,
+                                                           gp_record_end,
+                                                           postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                      if_else(drugclass=="SGLT2",
+                                                              pmin(five_years_post_dstart,
+                                                                   death_date,
+                                                                   next_glp1_start,
+                                                                   next_tzd_start,
+                                                                   gp_record_end,
+                                                                   postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                              as.Date(NA))),
+           
+           
+           postdrug_stage345_censvar=ifelse(!is.na(postdrug_stage345) & postdrug_stage345_censdate==postdrug_stage345, 1, 0),
+           
+           postdrug_egfr40_or_ckd5_censvar=ifelse(!is.na(postdrug_egfr40_or_ckd5) & postdrug_egfr40_or_ckd5_censdate==postdrug_egfr40_or_ckd5, 1, 0),
+           
+           postdrug_stage345_censtime_yrs=as.numeric(difftime(postdrug_stage345_censdate, dstartdate, unit="days"))/365.25,
+           
+           postdrug_egfr40_or_ckd5_censtime_yrs=as.numeric(difftime(postdrug_egfr40_or_ckd5_censdate, dstartdate, unit="days"))/365.25
+           
+    )
+  
   
   
   #:----------------------------------------------------
   # Select variables needed
   
   final.ckd.dataset <- ckd.dataset %>%
-    # select(
-    #   # information regarding patient
-    #   patid, pated,
-    #   # response hba1c
-    #   posthba1cfinal,
-    #   # therapies of interest
-    #   drugclass,
-    #   # Sociodemographic features
-    #   agetx, sex, t2dmduration, 
-    #   # Diabetes treatment 
-    #   drugline, ncurrtx, hba1cmonth,
-    #   # Biomarkers
-    #   prehba1c, prebmi, preegfr, preacr, prealbuminblood, prealt, preast, prebilirubin,
-    #   prehaematocrit, prehaemoglobin, prehdl, premap, pretotalcholesterol, pretriglyceride,
-    #   # Comorbidities
-    #   preangina, precld, prediabeticnephropathy, preheartfailure, prehypertension, preihd, premyocardialinfarction, 
-    #   preneuropathy, prepad, preretinopathy, prerevasc, prestroke, pretia, preaf,
-    #   # eGFR analysis
-    #   postegfr
-    # ) %>%
     as.data.frame()
   
   # printing inclusion patients
@@ -4431,15 +4905,17 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   
   no_co.dataset <- no_co.dataset %>%
-
-
+    
+    
     mutate(postdrug_mace=pmin(postdrug_first_myocardialinfarction, postdrug_first_stroke, cv_death_date_any_cause, na.rm=TRUE),
-           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE)) %>%
-
-
+           postdrug_hf=pmin(postdrug_first_heartfailure, hf_death_date_any_cause, na.rm=TRUE),
+           postdrug_stage345 = pmin(postckdstage345date, na.rm = TRUE),
+           postdrug_egfr40_or_ckd5 = pmin(egfr40_or_ckd5, na.rm = TRUE)) %>%
+    
+    
     # Mace: broad definition: MI/stroke GP codes + broad MI/stroke HES codes (any cause) + CV death in ONS death (any cause)
-
-
+    
+    
     mutate(postdrug_mace_censdate=if_else(drugclass=="GLP1",
                                           pmin(five_years_post_dstart,
                                                death_date,
@@ -4447,7 +4923,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                                                next_tzd_start,
                                                gp_record_end,
                                                postdrug_mace, na.rm=TRUE),
-
+                                          
                                           if_else(drugclass=="SGLT2",
                                                   pmin(five_years_post_dstart,
                                                        death_date,
@@ -4456,15 +4932,15 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                                                        gp_record_end,
                                                        postdrug_mace, na.rm=TRUE),
                                                   as.Date(NA))),
-
+           
            postdrug_mace_censvar=ifelse(!is.na(postdrug_mace) & postdrug_mace_censdate==postdrug_mace, 1, 0),
-
+           
            postdrug_mace_censtime_yrs=as.numeric(difftime(postdrug_mace_censdate, dstartdate, unit="days"))/365.25,
-
-
+           
+           
            ## HF: broad definition: HF GP codes + HF HES codes (any cause) + HF death in ONS death (any cause)
-
-
+           
+           
            postdrug_hf_censdate=if_else(drugclass=="GLP1",
                                         pmin(five_years_post_dstart,
                                              death_date,
@@ -4472,7 +4948,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                                              next_tzd_start,
                                              gp_record_end,
                                              postdrug_hf, na.rm=TRUE),
-
+                                        
                                         if_else(drugclass=="SGLT2",
                                                 pmin(five_years_post_dstart,
                                                      death_date,
@@ -4481,12 +4957,59 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                                                      gp_record_end,
                                                      postdrug_hf, na.rm=TRUE),
                                                 as.Date(NA))),
-
+           
            postdrug_hf_censvar=ifelse(!is.na(postdrug_hf) & postdrug_hf_censdate==postdrug_hf, 1, 0),
-
-           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25)
-
-  ## CKD: TBD
+           
+           postdrug_hf_censtime_yrs=as.numeric(difftime(postdrug_hf_censdate, dstartdate, unit="days"))/365.25,
+           
+           
+           
+           ## CKD: reaching stage 3/4/5 OR decrease of 40% in egfr and stage 5
+           
+           
+           
+           postdrug_stage345_censdate = if_else(drugclass=="GLP1",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_sglt2_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_stage345, na.rm=TRUE),
+                                                if_else(drugclass=="SGLT2",
+                                                        pmin(five_years_post_dstart,
+                                                             death_date,
+                                                             next_glp1_start,
+                                                             next_tzd_start,
+                                                             gp_record_end,
+                                                             postdrug_stage345, na.rm=TRUE),
+                                                        as.Date(NA))),
+           
+           postdrug_egfr40_or_ckd5_censdate = if_else(drugclass=="GLP1",
+                                                      pmin(five_years_post_dstart,
+                                                           death_date,
+                                                           next_sglt2_start,
+                                                           next_tzd_start,
+                                                           gp_record_end,
+                                                           postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                      if_else(drugclass=="SGLT2",
+                                                              pmin(five_years_post_dstart,
+                                                                   death_date,
+                                                                   next_glp1_start,
+                                                                   next_tzd_start,
+                                                                   gp_record_end,
+                                                                   postdrug_egfr40_or_ckd5, na.rm=TRUE),
+                                                              as.Date(NA))),
+           
+           
+           postdrug_stage345_censvar=ifelse(!is.na(postdrug_stage345) & postdrug_stage345_censdate==postdrug_stage345, 1, 0),
+           
+           postdrug_egfr40_or_ckd5_censvar=ifelse(!is.na(postdrug_egfr40_or_ckd5) & postdrug_egfr40_or_ckd5_censdate==postdrug_egfr40_or_ckd5, 1, 0),
+           
+           postdrug_stage345_censtime_yrs=as.numeric(difftime(postdrug_stage345_censdate, dstartdate, unit="days"))/365.25,
+           
+           postdrug_egfr40_or_ckd5_censtime_yrs=as.numeric(difftime(postdrug_egfr40_or_ckd5_censdate, dstartdate, unit="days"))/365.25
+           
+    )
   
   #:----------------------------------------------------
   # Select variables needed
@@ -4510,9 +5033,550 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  ########## No microvascular complications outcome population ##################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### No microvascular complications outcome model")
+    print("################################################")
+    
+  }
+  
+  micro_comp.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(micro_comp.dataset$multi_drug_start))
+    print(table(micro_comp.dataset$multi_drug_start, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(micro_comp.dataset$timeprevcombo_less61))
+    print(table(micro_comp.dataset$timeprevcombo_less61, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(micro_comp.dataset$hb_extreme_53))
+    print(table(micro_comp.dataset$hb_extreme_53, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(micro_comp.dataset$prehba1c)))
+    print(table(is.na(micro_comp.dataset$prehba1c), micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  
+  
+  ################################################
+  ##### Drop if comorbidity
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    mutate(comorbidities = ifelse(prediabeticnephropathy == "No" & preneuropathy == "No" & preretinopathy == "No", NA_real_, 1))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if comorbidities")
+    print("################################################")
+    print(table(micro_comp.dataset$comorbidities, micro_comp.dataset$drugclass))
+    
+  }
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(is.na(comorbidities))
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(micro_comp.dataset$TZD, micro_comp.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(micro_comp.dataset$GLP1, micro_comp.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(micro_comp.dataset$SGLT2, micro_comp.dataset$drugclass))
+    
+  }
+  
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  micro_comp.dataset <- micro_comp.dataset %>%
+    
+    ## Microvascular complications: diabetic nephropathy, retinopathy, neuropahty
+    
+    
+    mutate(postdrug_micro_comp=pmin(postdrug_first_diabeticnephropathy, postdrug_first_neuropathy, postdrug_first_retinopathy, na.rm=TRUE)) %>%
+    
+    mutate(postdrug_micro_comp_censdate=if_else(drugclass=="GLP1",
+                                                pmin(five_years_post_dstart,
+                                                     death_date,
+                                                     next_sglt2_start,
+                                                     next_tzd_start,
+                                                     gp_record_end,
+                                                     postdrug_micro_comp, na.rm=TRUE),
+                                                
+                                                if_else(drugclass=="SGLT2",
+                                                        pmin(five_years_post_dstart,
+                                                             death_date,
+                                                             next_glp1_start,
+                                                             next_tzd_start,
+                                                             gp_record_end,
+                                                             postdrug_micro_comp, na.rm=TRUE),
+                                                        as.Date(NA))),
+           
+           postdrug_micro_comp_censvar=ifelse(!is.na(postdrug_micro_comp) & postdrug_micro_comp_censdate==postdrug_micro_comp, 1, 0),
+           
+           postdrug_micro_comp_censtime_yrs=as.numeric(difftime(postdrug_micro_comp_censdate, dstartdate, unit="days"))/365.25)
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.micro_comp.dataset <- micro_comp.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### CVD model - final")
+    print("################################################")
+    print(nrow(final.micro_comp.dataset))
+    print(table(final.micro_comp.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "micro_comp.dataset") {
+    return(final.micro_comp.dataset)
+  }
+  
+  
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  #################### Retinopathy outcome population ###########################
+  ###############################################################################
+  #:-----------------------------------------------------------------------------
+  ###############################################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Retinopathy outcome model")
+    print("################################################")
+    
+  }
+  
+  retinopathy.dataset <- final.dataset
+  
+  
+  ################################################
+  ##### Drop duplicates (i.e. started treatment on same day)
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop duplicates (i.e. started treatment on same day)")
+    print("################################################")
+    print(table(retinopathy.dataset$multi_drug_start))
+    print(table(retinopathy.dataset$multi_drug_start, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(multi_drug_start == 0)
+  
+  
+  ################################################
+  ##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    mutate(timeprevcombo_less61 = ifelse(timeprevcombo <= 61, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if less than 61 days since started previous line of therapy (see Bev finalmerge)")
+    print("################################################")
+    print(table(retinopathy.dataset$timeprevcombo_less61))
+    print(table(retinopathy.dataset$timeprevcombo_less61, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(is.na(timeprevcombo_less61))
+  
+  
+  ################################################
+  ##### Drop if HbA1c <53
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    mutate(hb_extreme_53 = ifelse(prehba1c < 53, 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c <53")
+    print("################################################")
+    print(table(retinopathy.dataset$hb_extreme_53))
+    print(table(retinopathy.dataset$hb_extreme_53, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(is.na(hb_extreme_53))
+  
+  
+  ################################################
+  ##### Drop if HbA1c is missing
+  ################################################
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if HbA1c is missing")
+    print("################################################")
+    print(table(is.na(retinopathy.dataset$prehba1c)))
+    print(table(is.na(retinopathy.dataset$prehba1c), retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(!is.na(prehba1c))
+  
+  ################################################
+  ##### Drop if retinopathy
+  ################################################
+  
+  # ckd.dataset <- ckd.dataset %>%
+  #   mutate(no_retinopat = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Drop if retinopathy")
+    print("################################################")
+    print(table(retinopathy.dataset$preretinopathy))
+    print(table(retinopathy.dataset$preretinopathy, retinopathy.dataset$drugclass))
+    
+  }
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(preretinopathy == "No")
+  
+  
+  
+  ################################################
+  ##### Drop if co-treated with other treatments
+  ################################################
+  
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("#####  Drop if co-treated with other treatments")
+    print("################################################")
+    print("TZD treated")
+    print(table(retinopathy.dataset$TZD, retinopathy.dataset$drugclass))
+    print("GLP1 treated")
+    print(table(retinopathy.dataset$GLP1, retinopathy.dataset$drugclass))
+    print("SGLT2 treated")
+    print(table(retinopathy.dataset$SGLT2, retinopathy.dataset$drugclass))
+    
+  }
+  
+  
+  retinopathy.dataset <- retinopathy.dataset %>%
+    filter(TZD == 0) %>%
+    filter(!(GLP1 == 1 & drugclass == "SGLT2")) %>%
+    filter(!(SGLT2 == 1 & drugclass == "GLP1"))
+  
+  
+  ################################################
+  ##### Outcome
+  ################################################
+  
+  retinopathy.dataset <- retinopathy.dataset %>% 
+    mutate(postdrug_retinopathy = pmin(postdrug_first_retinopathy, na.rm = TRUE)) %>%
+    
+    
+    mutate(postdrug_retinopathy_censdate = if_else(drugclass=="GLP1",
+                                                   pmin(five_years_post_dstart,
+                                                        death_date,
+                                                        next_sglt2_start,
+                                                        next_tzd_start,
+                                                        gp_record_end,
+                                                        postdrug_retinopathy, na.rm=TRUE),
+                                                   if_else(drugclass=="SGLT2",
+                                                           pmin(five_years_post_dstart,
+                                                                death_date,
+                                                                next_glp1_start,
+                                                                next_tzd_start,
+                                                                gp_record_end,
+                                                                postdrug_retinopathy, na.rm=TRUE),
+                                                           as.Date(NA))),
+           
+           postdrug_retinopathy_censvar=ifelse(!is.na(postdrug_retinopathy) & postdrug_retinopathy_censdate==postdrug_retinopathy, 1, 0),
+           
+           postdrug_retinopathy_censtime_yrs=as.numeric(difftime(postdrug_retinopathy_censdate, dstartdate, unit="days"))/365.25
+           
+    )
+  
+  
+  
+  #:----------------------------------------------------
+  # Select variables needed
+  
+  final.retinopathy.dataset <- retinopathy.dataset %>%
+    as.data.frame()
+  
+  # printing inclusion patients
+  if (dataset.type == "diagnostics") {
+    
+    print("################################################")
+    print("##### Retinopathy outcome model - final")
+    print("################################################")
+    print(nrow(final.retinopathy.dataset))
+    print(table(final.retinopathy.dataset$drugclass))
+    
+  }
+  
+  if (dataset.type == "retinopathy.dataset") {
+    return(final.retinopathy.dataset)
+  }
+  
+  
+  
+  
   
 }
 
+
+
+# This function compares both functions for setting up data and comfirms they are identical
+test_functions <- function() {
+  
+  # Test the synthetic datasets
+  synthetic.original <- set_up_data_sglt2_glp1(dataset.type="synthetic")
+  synthetic.newer <- set_up_data(dataset.type="synthetic", drugs = c("GLP1", "SGLT2"))
+  if(identical(synthetic.original, synthetic.newer) == TRUE) {
+    print("The dataset type 'synthetic' is coded correctly")
+  } else {
+    print("The dataset type 'synthetic' is NOT CODED correctly")
+  }
+  
+  full.cohort.original <- set_up_data_sglt2_glp1(dataset.type="full.cohort")
+  full.cohort.newer <- set_up_data(dataset.type="full.cohort", drugs = c("GLP1", "SGLT2"))
+  if(identical(full.cohort.original, full.cohort.newer) == TRUE) {
+    print("The dataset type 'full.cohort' is coded correctly")
+  } else {
+    print("The dataset type 'full.cohort' is NOT CODED correctly")
+  }
+  
+  ps.model.train.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.train")
+  ps.model.train.newer <- set_up_data(dataset.type="ps.model.train", drugs = c("GLP1", "SGLT2"))
+  if(identical(ps.model.train.original, ps.model.train.newer) == TRUE) {
+    print("The dataset type 'ps.model.train' is coded correctly")
+  } else {
+    print("The dataset type 'ps.model.train' is NOT CODED correctly")
+  }
+  
+  ps.model.test.original <- set_up_data_sglt2_glp1(dataset.type="ps.model.test")
+  ps.model.test.newer <- set_up_data(dataset.type="ps.model.test", drugs = c("GLP1", "SGLT2"))
+  if(identical(ps.model.test.original, ps.model.test.newer) == TRUE) {
+    print("The dataset type 'ps.model.test' is coded correctly")
+  } else {
+    print("The dataset type 'ps.model.test' is NOT CODED correctly")
+  }
+  
+  hba1c.train.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.train")
+  hba1c.train.newer <- set_up_data(dataset.type="hba1c.train", drugs = c("GLP1", "SGLT2"))
+  if(identical(hba1c.train.original, hba1c.train.newer) == TRUE) {
+    print("The dataset type 'hba1c.train' is coded correctly")
+  } else {
+    print("The dataset type 'hba1c.train' is NOT CODED correctly")
+  }
+  
+  hba1c.test.original <- set_up_data_sglt2_glp1(dataset.type="hba1c.test")
+  hba1c.test.newer <- set_up_data(dataset.type="hba1c.test", drugs = c("GLP1", "SGLT2"))
+  if(identical(hba1c.test.original, hba1c.test.newer) == TRUE) {
+    print("The dataset type 'hba1c.test' is coded correctly")
+  } else {
+    print("The dataset type 'hba1c.test' is NOT CODED correctly")
+  }
+  
+  weight.dataset.original <- set_up_data_sglt2_glp1(dataset.type="weight.dataset")
+  weight.dataset.newer <- set_up_data(dataset.type="weight.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(weight.dataset.original, weight.dataset.newer) == TRUE) {
+    print("The dataset type 'weight.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'weight.dataset' is NOT CODED correctly")
+  }
+  
+  discontinuation.dataset.original <- set_up_data_sglt2_glp1(dataset.type="discontinuation.dataset")
+  discontinuation.dataset.newer <- set_up_data(dataset.type="discontinuation.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(discontinuation.dataset.original, discontinuation.dataset.newer) == TRUE) {
+    print("The dataset type 'discontinuation.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'discontinuation.dataset' is NOT CODED correctly")
+  }
+  
+  egfr.dataset.original <- set_up_data_sglt2_glp1(dataset.type="egfr.dataset")
+  egfr.dataset.newer <- set_up_data(dataset.type="egfr.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(egfr.dataset.original, egfr.dataset.newer) == TRUE) {
+    print("The dataset type 'egfr.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'egfr.dataset' is NOT CODED correctly")
+  }
+  
+  ckd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="ckd.dataset")
+  ckd.dataset.newer <- set_up_data(dataset.type="ckd.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(ckd.dataset.original, ckd.dataset.newer) == TRUE) {
+    print("The dataset type 'ckd.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'ckd.dataset' is NOT CODED correctly")
+  }
+  
+  cvd.dataset.original <- set_up_data_sglt2_glp1(dataset.type="cvd.dataset")
+  cvd.dataset.newer <- set_up_data(dataset.type="cvd.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(cvd.dataset.original, cvd.dataset.newer) == TRUE) {
+    print("The dataset type 'cvd.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'cvd.dataset' is NOT CODED correctly")
+  }
+  
+  hf.dataset.original <- set_up_data_sglt2_glp1(dataset.type="hf.dataset")
+  hf.dataset.newer <- set_up_data(dataset.type="hf.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(hf.dataset.original, hf.dataset.newer) == TRUE) {
+    print("The dataset type 'hf.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'hf.dataset' is NOT CODED correctly")
+  }
+  
+  no_co.dataset.original <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset")
+  no_co.dataset.newer <- set_up_data(dataset.type="no_co.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(no_co.dataset.original, no_co.dataset.newer) == TRUE) {
+    print("The dataset type 'no_co.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'no_co.dataset' is NOT CODED correctly")
+  }
+  
+  micro_comp.dataset.original <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset")
+  micro_comp.dataset.newer <- set_up_data(dataset.type="micro_comp.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(micro_comp.dataset.original, micro_comp.dataset.newer) == TRUE) {
+    print("The dataset type 'micro_comp.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'micro_comp.dataset' is NOT CODED correctly")
+  }
+  
+  retinopathy.dataset.original <- set_up_data_sglt2_glp1(dataset.type="retinopathy.dataset")
+  retinopathy.dataset.newer <- set_up_data(dataset.type="retinopathy.dataset", drugs = c("GLP1", "SGLT2"))
+  if(identical(retinopathy.dataset.original, retinopathy.dataset.newer) == TRUE) {
+    print("The dataset type 'retinopathy.dataset' is coded correctly")
+  } else {
+    print("The dataset type 'retinopathy.dataset' is NOT CODED correctly")
+  }
+  
+  
+}
 
 
 
