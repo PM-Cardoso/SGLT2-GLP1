@@ -4,7 +4,7 @@
 ##    - Fit a BART PS model to all variables.
 ##    - Perform variable selection on PS model and refit model.
 ##    - Refit BART PS model
-####################
+#################### this was run with bartMachine v1.3.2
 
 
 ## increase memery usage to 50gb of RAM
@@ -257,5 +257,103 @@ patient_prop_scores <- patient_prop_scores %>%
   as.data.frame()
 
 saveRDS(patient_prop_scores, paste0(output_path, "/ps_model/patient_prop_scores.rds"))
+
+
+
+
+
+#:--------------------------------------------------------------------------------------------------
+#:--------------------------------------------------------------------------------------------------
+#:--------------------------------------------------------------------------------------------------
+
+# ############### Redoing this in the newest version of the bartMachine for American dataset validation - bartMachine v1.3.3.1
+# 
+# ## increase memery usage to 50gb of RAM
+# options(java.parameters = "-Xmx100g")
+# 
+# library(tidyverse)
+# library(bartMachine)
+# 
+# 
+# ## path to output folder
+# output_path <- "Samples"
+# ## make directory for outputs
+# 
+# dir.create(output_path)
+# 
+# output_path <- "Samples/SGLT2-GLP1"
+# 
+# ## make directory for outputs
+# dir.create(output_path)
+# 
+# output_path <- "Samples/SGLT2-GLP1/Aurum"
+# 
+# ## make directory for outputs
+# dir.create(output_path)
+# 
+# ## male directory for outputs
+# dir.create(paste0(output_path, "/ps_model"))
+# 
+# ## make directory for outputs
+# dir.create("Plots")
+# 
+# source("11.01.slade_aurum_functions.R")
+# source("11.02.slade_aurum_set_data.R")
+# 
+# 
+# 
+# ps.model.train <- set_up_data_sglt2_glp1(dataset.type = "ps.model.train")
+# 
+# ########
+# ### Fit a propensity score model to all variables selected from the dataset
+# ########
+# 
+# if (class(try(
+#   
+#   vs_bart_ps_model <- readRDS(paste0(output_path, "/ps_model/vs_bart_ps_model.rds"))
+#   
+#   , silent = TRUE)) == "try-error") {
+#   
+#   pdf(file = "Plots/11.04.prop_model_vs.pdf", width = 18, height = 11)
+#   # error with cv
+#   vs_bart_ps_model <- var_selection_by_permute(bart_ps_model)
+#   dev.off()
+#   
+#   ## Variables selected
+#   # [1] "prebmi"      "yrdrugstart" "preegfr"     "prehba1c"    "drugline"
+#   # [6] "ncurrtx"     "ethnicity"
+#   
+#   
+#   saveRDS(vs_bart_ps_model, paste0(output_path, "/ps_model/vs_bart_ps_model.rds"))
+#   
+# }
+# 
+# variables_chosen <- unique(gsub("_.*", "", vs_bart_ps_model$important_vars_local_names))
+# 
+# 
+# 
+# ## Fit initial model using all the available variables to estimate HbA1c outcome
+# bart_ps_model_final <- bartMachine::bartMachine(X = ps.model.train %>%
+#                                                   select(
+#                                                     all_of(variables_chosen)
+#                                                   ),
+#                                                 y = ps.model.train[,"drugclass"] %>%
+#                                                   unlist(),
+#                                                 num_trees = 50,
+#                                                 use_missing_data = TRUE,
+#                                                 num_burn_in = 15000,
+#                                                 num_iterations_after_burn_in = 10000,
+#                                                 serialize = TRUE)
+# 
+# 
+# bart_ps_model_test_delect <- readRDS("bart_ps_model_test_delect.rds")
+# 
+# bart_ps_model_final$X <- bart_ps_model_test_delect$X
+# bart_ps_model_final$y <- bart_ps_model_test_delect$y
+# 
+# 
+# saveRDS(bart_ps_model_final, "bart_ps_american_model_version.rds")
+# 
+
 
 
