@@ -4,6 +4,45 @@
 ####################
 
 
+new.vars <- function(data){
+  # data = dataset that needs new vars
+  
+  data.new <- data %>%
+    left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort"), by = c("patid", "pated")) %>%
+    mutate(microvascular_complications = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
+           CV_problems = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
+           ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No"),
+           deprivation = factor(deprivation, labels = c("1", "1", "2", "2", "3", "3", "4", "4", "5", "5")),
+           preckd = factor(preckd, labels = c("stage_1/2", "stage_1/2", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4")),
+           drug_canagliflozin = ifelse(drugsubstances == "Canagliflozin" | drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Canagliflozin & Empagliflozin", "Yes", "No"),
+           drug_dapagliflozin = ifelse(drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Dapagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin", "Yes", "No"),
+           drug_empagliflozin = ifelse(drugsubstances == "Canagliflozin & Empagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin" | drugsubstances == "Empagliflozin", "Yes", "No"),
+           drug_ertugliflozin = ifelse(drugsubstances == "Ertugliflozin", "Yes", "No"),
+           drug_dulaglutide = ifelse(drugsubstances == "Dulaglutide" | drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Dulaglutide & Liraglutide", "Yes", "No"),
+           drug_exenatide_short = ifelse(drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Exenatide" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Liraglutide", "Yes", "No"),
+           drug_exenatide_long = ifelse(drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release & Liraglutide", "Yes", "No"),
+           drug_liraglutide = ifelse(drugsubstances == "Dulaglutide & Liraglutide" | drugsubstances == "Exenatide & Liraglutide" | drugsubstances == "Exenatide prolonged-release & Liraglutide" | drugsubstances == "Liraglutide" | drugsubstances == "Liraglutide & Lixisenatide", "Yes", "No"),
+           drug_lixisenatide = ifelse(drugsubstances == "Liraglutide & Lixisenatide" | drugsubstances == "Lixisenatide", "Yes", "No"),
+           prehba1c_na = ifelse(is.na(prehba1c), "Yes", "No"),
+           prebmi_na = ifelse(is.na(prebmi), "Yes", "No"),
+           preegfr_na = ifelse(is.na(preegfr), "Yes", "No"),
+           prehdl_na = ifelse(is.na(prehdl), "Yes", "No"),
+           prealt_na = ifelse(is.na(prealt), "Yes", "No"),
+           prealbuminblood_na = ifelse(is.na(prealbuminblood), "Yes", "No"),
+           prebilirubin_na = ifelse(is.na(prebilirubin), "Yes", "No"),
+           pretotalcholesterol_na = ifelse(is.na(pretotalcholesterol), "Yes", "No"),
+           premap_na = ifelse(is.na(premap), "Yes", "No"),
+           posthba1cfinal_na = ifelse(is.na(posthba1cfinal), "Yes", "No"),
+           hba1cmonth_na = ifelse(is.na(hba1cmonth), "Yes", "No"))
+  
+  return(data.new)
+  
+}
+
+
+
+
+
 ## Calculate assessments of prediction
 
 rsq <- function (x, y) cor(x, y) ^ 2
@@ -170,104 +209,69 @@ hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/
 }
 
 
-calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_diff.q", breakdown = NULL, adjust = TRUE) {
-  ##### Input variables
-  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # variable - variable with y values
-  # quantile_var - variable containing quantile indexes
-  # breakdown - variables used to compare quality of matching
-  # adjust - variables to adjust linear regression of effects
-  
-  require(rlang)
-  
-  # split predicted treatment effects into deciles
-  predicted_treatment_effect <- data %>%
-    plyr::ddply(quantile_var, dplyr::summarise,
-                N = length(hba1c_diff),
-                hba1c_diff.pred = mean(hba1c_diff))
-  
-  # maximum number of deciles being tested
-  quantiles <- length(unique(data[,quantile_var]))
-  
-  # create lists with results
-  mnumber = c(1:quantiles)
-  models  <- as.list(1:quantiles)
-  obs <- vector(); lci <- vector(); uci <- vector();
-  
-  
-  # iterate through deciles
-  for (i in mnumber) {
-    
-    # do this differently if quantile_var is categorical
-    if (is.factor(data[,quantile_var])) {
-      # dataset being used in this quantile
-      data.new <- data[data[,quantile_var] == levels(data[,quantile_var])[i],]
-    } else {
-      # dataset being used in this quantile
-      data.new <- data[data[,quantile_var] == i,]
-    }
-    
-    if (adjust == TRUE) {
-      
-      # variables used in adjustment
-      breakdown_adjust <- breakdown
-      # categorical variables in breakdown
-      # factors <- sapply(data.new[,breakdown_adjust], is.factor)
-      # variables with only one variable represented
-      checker <- which(sapply(data.new[,breakdown_adjust], function(col) length(unique(col))) > 1)
-      
-      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
-      
-    } else {
-      formula <- "posthba1cfinal ~ factor(drugclass)"
-    }
-    
-    
-    
-    
-    
-    # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(formula),data=data.new)
-    
-    # collect treatment effect from regression
-    obs <- append(obs,models[[i]]$coefficients[2])
-    
-    # calculate confidence intervals
-    confint_all <- confint(models[[i]], levels=0.95)
-    
-    # collect lower bound CI
-    lci <- append(lci,confint_all[2,1])
-    
-    # collect upper bound CI
-    uci <- append(uci,confint_all[2,2])
-    
-  }
-  
-  # join treatment effects for deciles in a data.frame
-  effects <- data.frame(predicted_treatment_effect,cbind(obs, lci, uci))
-  
-  # returned list with fitted propensity model + decile treatment effects
-  t <- list(effects = effects)
-  
-  return(t)
-}
 
-calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", breakdown = NULL, adjust = FALSE) {
+calc_ATE <- function(data, validation_type, variable, quantile_var, breakdown = NULL, prop_scores, caliper = 0.05, replace = FALSE, order = "random") {
+  ##### Explanation of the function:
+  # This function performs the calibration necessary for the model / clinical outcomes.
+  # It can be done in three ways:
+  #     - Propensity score matching:
+  #           After splitting the population into subgroups, patients are matched
+  #       based on their propensity scores. The matched patients are used to calculate
+  #       the average treatment effect (ATE) and compared to the mean conditional
+  #       average treatment effect (CATE).
+  #     - Propensity score matching + adjustment:
+  #           After splitting the population into subgroups, patients are matched
+  #       based on their propensity scores. The matched patients are used to calculate
+  #       the average treatment effect (ATE) whilst adjusting for all variables used
+  #       in the model and compared to the mean conditional average treatment 
+  #       effect (CATE).
+  #     - Adjustment:
+  #           After splitting the population into subgroups, The average treatment 
+  #       effect (ATE) is calculated whilst adjusting for all variables used in the
+  #       the model and it is compared to the mean conditional average treatment
+  #       effect (CATE).
+  
   ##### Input variables
-  # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-  # variable - variable with y values
+  # data - data with variables + treatment effect quantiles 'quantile_var'
+  # validation_type - string containing the type of validation you want to perform,
+  #       that been: 
+  #           - Propensity score matching: PSM 
+  #           - Propensity score matching with variable adjustment: PSM + adjust
+  #           - Variable adjustment: Adjust
+  # variable - variable with outcome values
+  # quantile_var - variable containing quantile/subgrouping indexes
+  # breakdown - variables used to adjust  of matching
   # prop_scores - propensity scores for individuals or vector with variables from dataset
-  # quantile_var - variable containing quantile indexes
   # caliper - maximum distance between propensity scores of drug 1 vs drug 2
   # replace - logical variables, whether we replace matched individuals of small group
-  # order - which side we start matching individuals, "largest", "smallest", "random"
-  # breakdown - variables used to compare quality of matching
-  # adjust - variables to adjust linear regression of effects
+  # order - which side of propensity scores we start matching individuals, "largest", "smallest", "random"
   
+  
+  ##### Initial checks required for running the function:
+  
+  # If 'validation_type' is not supplied, error.
+  if (missing(validation_type)) {stop("'validation_type' needs to be supplied")}
+  # If 'validation_type' is not a character string, error.
+  if (!is.character(validation_type)) {stop("'validation_type' must be a character string")}
+  # If 'validation_type' is not one of the options in this list, error
+  if (!(validation_type %in% c("PSM", "PSM + adjust", "Adjust"))) {
+    stop("'validation_type' must be one of: 'PSM' / 'PSM + adjust' / 'Adjust'")
+  }
+  
+  # If 'variable' is not supplied, error.
+  if (missing(variable)) {stop("'variable' needs to be supplied")}
+  # If 'variable' is not a character string, error.
+  if (!is.character(variable)) {stop("'variable' must be a character string")}
+  
+  # If 'quantile_var' is not supplied, error.
+  if (missing(quantile_var)) {stop("'quantile_var' needs to be supplied")}
+  # If 'quantile_var' is not a character string, error.
+  if (!is.character(quantile_var)) {stop("'quantile_var' must be a character string")}
+  
+  # load libraries
   require(rlang)
   
-  # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-  prop_score <- 1 - prop_scores
+  ##### Start of the function
   
   # split predicted treatment effects into deciles
   predicted_treatment_effect <- data %>%
@@ -281,20 +285,31 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
   # create lists with results
   mnumber = c(1:quantiles)
   models  <- as.list(1:quantiles)
-  obs <- vector(); lci <- vector(); uci <- vector(); n_drug1 <- vector(); n_drug2 <- vector()
+  obs <- vector(); lci <- vector(); uci <- vector()
   
-  data.new <- data %>%
-    cbind(prop_score)
-  
-  # list of matchings
-  if (!is.null(breakdown)) {
-    matchit.ouputs <- list()
-  }
-  
-  # iterate through deciles
-  for (i in mnumber) {
+  if (validation_type == "PSM") {
+    # This is the code for the calibration using PSM
     
-    if (!is.null(breakdown)) {
+    ##### Initial checks required for running the function:
+    
+    # If 'prop_scores' is not supplied, error.
+    if (missing(prop_scores)) {stop("'prop_scores' needs to be supplied")}
+    # If 'breakdown' is not supplied, error.
+    if (is.null(breakdown)) {stop("'breakdown' needs to be supplied")}
+    
+    # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+    prop_score <- 1 - prop_scores
+    
+    # create lists with results
+    n_drug1 <- vector(); n_drug2 <- vector(); matchit.ouputs <- list()
+    
+    # join propensity scores into dataset
+    data.new <- data %>%
+      cbind(prop_score)
+    
+    # iterate through deciles
+    for (i in mnumber) {
+      
       # model if propensity scores are provided
       matching_package_result <- MatchIt::matchit(
         formula = formula(paste0("drugclass ~ ", paste(breakdown, collapse = " + "))), # shouldn't be used since we are specifying 'distance' (propensity scores)
@@ -306,10 +321,69 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
         caliper = caliper,
         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
       )
-    } else {
+      
+      # collect matching summary
+      matchit.ouputs[[i]] <- matching_package_result
+      
+      # calculate number of patients with either drug in the subgroup
+      n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
+      n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
+      
+      # formula
+      formula <- "posthba1cfinal ~ factor(drugclass)"
+      
+      # fit linear regression for decile in the matched dataset
+      models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
+      
+      # collect treatment effect from regression
+      obs <- append(obs,models[[i]]$coefficients[2])
+      
+      # calculate confidence intervals
+      confint_all <- confint(models[[i]], levels=0.95)
+      
+      # collect lower bound CI
+      lci <- append(lci,confint_all[2,1])
+      
+      # collect upper bound CI
+      uci <- append(uci,confint_all[2,2])
+      
+    }
+    
+    # join treatment effects for deciles in a data.frame
+    effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
+    
+    # returned list with fitted propensity model + decile treatment effects
+    final_dataset <- list(effects = effects,
+                          matching_outputs = matchit.ouputs)
+    
+    return(final_dataset)
+    
+  } else if (validation_type == "PSM + adjust") {
+    # This is the code for the calibration using PSM + adjust
+    
+    ##### Initial checks required for running the function:
+    
+    # If 'prop_scores' is not supplied, error.
+    if (missing(prop_scores)) {stop("'prop_scores' needs to be supplied")}
+    # If 'breakdown' is not supplied, error.
+    if (is.null(breakdown)) {stop("'breakdown' needs to be supplied")}
+    
+    # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+    prop_score <- 1 - prop_scores
+    
+    # create lists with results
+    n_drug1 <- vector(); n_drug2 <- vector(); matchit.ouputs <- list()
+    
+    # join propensity scores into dataset
+    data.new <- data %>%
+      cbind(prop_score)
+    
+    # iterate through deciles
+    for (i in mnumber) {
+      
       # model if propensity scores are provided
       matching_package_result <- MatchIt::matchit(
-        formula = formula("drugclass ~ posthba1cfinal"), # shouldn't be used since we are specifying 'distance' (propensity scores)
+        formula = formula(paste0("drugclass ~ ", paste(breakdown, collapse = " + "))), # shouldn't be used since we are specifying 'distance' (propensity scores)
         data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
         method = "nearest",
         distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
@@ -318,63 +392,325 @@ calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quant
         caliper = caliper,
         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
       )
-    }
-    
-    if (!is.null(breakdown)) {
+      
+      # collect matching summary
       matchit.ouputs[[i]] <- matching_package_result
+      
+      # calculate number of patients with either drug in the subgroup
+      n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
+      n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
+      
+      # variables used in adjustment
+      breakdown_adjust <- breakdown
+      # variables with more than one category represented
+      checker <- which(sapply(data.new[data.new[,quantile_var] == i,breakdown_adjust], function(col) length(unique(col))) > 1)
+      
+      # formula
+      formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
+      
+      # fit linear regression for decile in the matched dataset
+      models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
+      
+      # collect treatment effect from regression
+      obs <- append(obs,models[[i]]$coefficients[2])
+      
+      # calculate confidence intervals
+      confint_all <- confint(models[[i]], levels=0.95)
+      
+      # collect lower bound CI
+      lci <- append(lci,confint_all[2,1])
+      
+      # collect upper bound CI
+      uci <- append(uci,confint_all[2,2])
+      
     }
     
-    n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
-    n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
+    # join treatment effects for deciles in a data.frame
+    effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
     
-    if (!is.null(breakdown) & adjust == TRUE) {
+    # returned list with fitted propensity model + decile treatment effects
+    final_dataset <- list(effects = effects,
+                          matching_outputs = matchit.ouputs)
+    
+    return(final_dataset)
+    
+  } else {
+    # This is the code for the calibration using Adjust
+    
+    ##### Initial checks required for running the function:
+    
+    # If 'breakdown' is not supplied, error.
+    if (is.null(breakdown)) {stop("'breakdown' needs to be supplied")}
+    
+    # iterate through deciles
+    for (i in mnumber) {
+      
+      # do this differently if quantile_var is categorical
+      if (is.factor(data[,quantile_var])) {
+        # dataset being used in this quantile
+        data.new <- data[data[,quantile_var] == levels(data[,quantile_var])[i],]
+      } else {
+        # dataset being used in this quantile
+        data.new <- data[data[,quantile_var] == i,]
+      }
       
       # variables used in adjustment
       breakdown_adjust <- breakdown
       # variables with only one variable represented
-      checker <- which(sapply(data.new[data.new[,quantile_var] == i,breakdown_adjust], function(col) length(unique(col))) > 1)
+      checker <- which(sapply(data.new[,breakdown_adjust], function(col) length(unique(col))) > 1)
       
-      
+      # formula
       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
       
-    } else {
-      formula <- "posthba1cfinal ~ factor(drugclass)"
+      # fit linear regression for decile in the matched dataset
+      models[[i]] <- lm(as.formula(formula),data=data.new)
+      
+      # collect treatment effect from regression
+      obs <- append(obs,models[[i]]$coefficients[2])
+      
+      # calculate confidence intervals
+      confint_all <- confint(models[[i]], levels=0.95)
+      
+      # collect lower bound CI
+      lci <- append(lci,confint_all[2,1])
+      
+      # collect upper bound CI
+      uci <- append(uci,confint_all[2,2])
+      
     }
     
-    # fit linear regression for decile in the matched dataset
-    models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
-  
-    # collect treatment effect from regression
-    obs <- append(obs,models[[i]]$coefficients[2])
+    # join treatment effects for deciles in a data.frame
+    effects <- data.frame(predicted_treatment_effect,cbind(obs, lci, uci))
     
-    # calculate confidence intervals
-    confint_all <- confint(models[[i]], levels=0.95)
-    
-    # collect lower bound CI
-    lci <- append(lci,confint_all[2,1])
-    
-    # collect upper bound CI
-    uci <- append(uci,confint_all[2,2])
-     
-  }
-    
-  
-  
-  # join treatment effects for deciles in a data.frame
-  effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
-    
-  
-  if (!is.null(breakdown)) {
     # returned list with fitted propensity model + decile treatment effects
-    t <- list(effects = effects,
-              matching_outputs = matchit.ouputs)
-  } else {
-    # returned list with fitted propensity model + decile treatment effects
-    t <- list(effects = effects)
+    final_dataset <- list(effects = effects)
+    
+    return(final_dataset)
+    
   }
   
-  return(t)
+  
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_diff.q", breakdown = NULL, adjust = TRUE) {
+#   ##### Input variables
+#   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+#   # variable - variable with y values
+#   # quantile_var - variable containing quantile indexes
+#   # breakdown - variables used to compare quality of matching
+#   # adjust - variables to adjust linear regression of effects
+#   
+#   require(rlang)
+#   
+#   # split predicted treatment effects into deciles
+#   predicted_treatment_effect <- data %>%
+#     plyr::ddply(quantile_var, dplyr::summarise,
+#                 N = length(hba1c_diff),
+#                 hba1c_diff.pred = mean(hba1c_diff))
+#   
+#   # maximum number of deciles being tested
+#   quantiles <- length(unique(data[,quantile_var]))
+#   
+#   # create lists with results
+#   mnumber = c(1:quantiles)
+#   models  <- as.list(1:quantiles)
+#   obs <- vector(); lci <- vector(); uci <- vector();
+#   
+#   
+#   # iterate through deciles
+#   for (i in mnumber) {
+#     
+#     # do this differently if quantile_var is categorical
+#     if (is.factor(data[,quantile_var])) {
+#       # dataset being used in this quantile
+#       data.new <- data[data[,quantile_var] == levels(data[,quantile_var])[i],]
+#     } else {
+#       # dataset being used in this quantile
+#       data.new <- data[data[,quantile_var] == i,]
+#     }
+#     
+#     if (adjust == TRUE) {
+#       
+#       # variables used in adjustment
+#       breakdown_adjust <- breakdown
+#       # categorical variables in breakdown
+#       # factors <- sapply(data.new[,breakdown_adjust], is.factor)
+#       # variables with only one variable represented
+#       checker <- which(sapply(data.new[,breakdown_adjust], function(col) length(unique(col))) > 1)
+#       
+#       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
+#       
+#     } else {
+#       formula <- "posthba1cfinal ~ factor(drugclass)"
+#     }
+#     
+#     
+#     
+#     
+#     
+#     # fit linear regression for decile in the matched dataset
+#     models[[i]] <- lm(as.formula(formula),data=data.new)
+#     
+#     # collect treatment effect from regression
+#     obs <- append(obs,models[[i]]$coefficients[2])
+#     
+#     # calculate confidence intervals
+#     confint_all <- confint(models[[i]], levels=0.95)
+#     
+#     # collect lower bound CI
+#     lci <- append(lci,confint_all[2,1])
+#     
+#     # collect upper bound CI
+#     uci <- append(uci,confint_all[2,2])
+#     
+#   }
+#   
+#   # join treatment effects for deciles in a data.frame
+#   effects <- data.frame(predicted_treatment_effect,cbind(obs, lci, uci))
+#   
+#   # returned list with fitted propensity model + decile treatment effects
+#   t <- list(effects = effects)
+#   
+#   return(t)
+# }
+
+# calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", breakdown = NULL, adjust = FALSE) {
+#   ##### Input variables
+#   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
+#   # variable - variable with y values
+#   # prop_scores - propensity scores for individuals or vector with variables from dataset
+#   # quantile_var - variable containing quantile indexes
+#   # caliper - maximum distance between propensity scores of drug 1 vs drug 2
+#   # replace - logical variables, whether we replace matched individuals of small group
+#   # order - which side we start matching individuals, "largest", "smallest", "random"
+#   # breakdown - variables used to compare quality of matching
+#   # adjust - variables to adjust linear regression of effects
+#   
+#   require(rlang)
+#   
+#   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
+#   prop_score <- 1 - prop_scores
+#   
+#   # split predicted treatment effects into deciles
+#   predicted_treatment_effect <- data %>%
+#     plyr::ddply(quantile_var, dplyr::summarise,
+#                 N = length(hba1c_diff),
+#                 hba1c_diff.pred = mean(hba1c_diff))
+#   
+#   # maximum number of deciles being tested
+#   quantiles <- length(unique(data[,quantile_var]))
+#   
+#   # create lists with results
+#   mnumber = c(1:quantiles)
+#   models  <- as.list(1:quantiles)
+#   obs <- vector(); lci <- vector(); uci <- vector(); n_drug1 <- vector(); n_drug2 <- vector()
+#   
+#   data.new <- data %>%
+#     cbind(prop_score)
+#   
+#   # list of matchings
+#   if (!is.null(breakdown)) {
+#     matchit.ouputs <- list()
+#   }
+#   
+#   # iterate through deciles
+#   for (i in mnumber) {
+#     
+#     if (!is.null(breakdown)) {
+#       # model if propensity scores are provided
+#       matching_package_result <- MatchIt::matchit(
+#         formula = formula(paste0("drugclass ~ ", paste(breakdown, collapse = " + "))), # shouldn't be used since we are specifying 'distance' (propensity scores)
+#         data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
+#         method = "nearest",
+#         distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
+#         replace = replace,
+#         m.order = order,
+#         caliper = caliper,
+#         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+#       )
+#     } else {
+#       # model if propensity scores are provided
+#       matching_package_result <- MatchIt::matchit(
+#         formula = formula("drugclass ~ posthba1cfinal"), # shouldn't be used since we are specifying 'distance' (propensity scores)
+#         data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
+#         method = "nearest",
+#         distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
+#         replace = replace,
+#         m.order = order,
+#         caliper = caliper,
+#         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+#       )
+#     }
+#     
+#     if (!is.null(breakdown)) {
+#       matchit.ouputs[[i]] <- matching_package_result
+#     }
+#     
+#     n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
+#     n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
+#     
+#     if (!is.null(breakdown) & adjust == TRUE) {
+#       
+#       # variables used in adjustment
+#       breakdown_adjust <- breakdown
+#       # variables with only one variable represented
+#       checker <- which(sapply(data.new[data.new[,quantile_var] == i,breakdown_adjust], function(col) length(unique(col))) > 1)
+#       
+#       
+#       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
+#       
+#     } else {
+#       formula <- "posthba1cfinal ~ factor(drugclass)"
+#     }
+#     
+#     # fit linear regression for decile in the matched dataset
+#     models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
+#   
+#     # collect treatment effect from regression
+#     obs <- append(obs,models[[i]]$coefficients[2])
+#     
+#     # calculate confidence intervals
+#     confint_all <- confint(models[[i]], levels=0.95)
+#     
+#     # collect lower bound CI
+#     lci <- append(lci,confint_all[2,1])
+#     
+#     # collect upper bound CI
+#     uci <- append(uci,confint_all[2,2])
+#      
+#   }
+#     
+#   
+#   
+#   # join treatment effects for deciles in a data.frame
+#   effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
+#     
+#   
+#   if (!is.null(breakdown)) {
+#     # returned list with fitted propensity model + decile treatment effects
+#     t <- list(effects = effects,
+#               matching_outputs = matchit.ouputs)
+#   } else {
+#     # returned list with fitted propensity model + decile treatment effects
+#     t <- list(effects = effects)
+#   }
+#   
+#   return(t)
+# }
 
 ### inverse propensity score weighting 
 
