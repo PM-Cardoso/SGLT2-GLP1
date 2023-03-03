@@ -2,73 +2,47 @@
 ## Description:
 ##  - In this file we:
 ##    - Produce tables to describe cohorts
+##    - Produce tables to describe forest plots.
 ####################
 
 
+### Load libraries required
 library(tidyverse)
 library(tableone)
 
-
+### Load functions required
 source("11.02.slade_aurum_set_data.R")
 source("11.01.slade_aurum_functions.R")
 
-####
+#:--------------------------------------------------------------------------------------
+## Start of the file
 
-# Inclusion criteria
+### Run through the inclusion criteria to make all necessary datasets.
 
 set_up_data_sglt2_glp1(dataset.type = "diagnostics")
 
-###
+### Make tables for each of the datasets
 
-vars <- c("yrdrugstart","agetx", "t2dmduration", "sex", "ethnicity", "drug_canagliflozin", "drug_dapagliflozin", "drug_empagliflozin", "drug_ertugliflozin",
-          "drug_dulaglutide", "drug_exenatide_short", "drug_exenatide_long", "drug_liraglutide", "drug_lixisenatide", "deprivation", "smoke", "drugline", 
-          "ncurrtx", "MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1", "prehba1c", "prehba1c_na", "prebmi", "prebmi_na", "preegfr", "preegfr_na", 
-          "prehdl", "prehdl_na", "prealt", "prealt_na", "prealbuminblood", "prealbuminblood_na", "prebilirubin", "prebilirubin_na", 
-          "pretotalcholesterol", "pretotalcholesterol_na", "premap", "premap_na", "prediabeticnephropathy", "preneuropathy", "preretinopathy", "preangina",
-          "CV_problems", "microvascular_complications", "ASCVD", "preaf", "prerevasc", "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction", "prepad", "prestroke",
-          "pretia", "preckd", "precld", "posthba1cfinal", "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
+# Variables to be used in the table
 
-####
+vars <- c("yrdrugstart","agetx", "t2dmduration", "sex", "ethnicity", "drug_canagliflozin",
+          "drug_dapagliflozin", "drug_empagliflozin", "drug_ertugliflozin", "drug_dulaglutide",
+          "drug_exenatide_short", "drug_exenatide_long", "drug_liraglutide", "drug_lixisenatide",
+          "deprivation", "smoke", "drugline", "ncurrtx", "MFN", "SU", "DPP4", "SGLT2", "TZD",
+          "GLP1", "prehba1c", "prehba1c_na", "prebmi", "prebmi_na", "preegfr", "preegfr_na", 
+          "prehdl", "prehdl_na", "prealt", "prealt_na", "prealbuminblood", "prealbuminblood_na",
+          "prebilirubin", "prebilirubin_na", "pretotalcholesterol", "pretotalcholesterol_na",
+          "premap", "premap_na", "prediabeticnephropathy", "preneuropathy", "preretinopathy",
+          "preangina","CV_problems", "microvascular_complications", "ASCVD", "preaf", 
+          "prerevasc", "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
+          "prepad", "prestroke","pretia", "preckd", "precld", "posthba1cfinal",
+          "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
 
-new.vars <- function(data){
-  # data = dataset that needs new vars
-  
-  data.new <- data %>%
-    left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort"), by = c("patid", "pated")) %>%
-    mutate(microvascular_complications = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
-           CV_problems = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
-           ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No"),
-           deprivation = factor(deprivation, labels = c("1", "1", "2", "2", "3", "3", "4", "4", "5", "5")),
-           preckd = factor(preckd, labels = c("stage_1/2", "stage_1/2", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4")),
-           drug_canagliflozin = ifelse(drugsubstances == "Canagliflozin" | drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Canagliflozin & Empagliflozin", "Yes", "No"),
-           drug_dapagliflozin = ifelse(drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Dapagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin", "Yes", "No"),
-           drug_empagliflozin = ifelse(drugsubstances == "Canagliflozin & Empagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin" | drugsubstances == "Empagliflozin", "Yes", "No"),
-           drug_ertugliflozin = ifelse(drugsubstances == "Ertugliflozin", "Yes", "No"),
-           drug_dulaglutide = ifelse(drugsubstances == "Dulaglutide" | drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Dulaglutide & Liraglutide", "Yes", "No"),
-           drug_exenatide_short = ifelse(drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Exenatide" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Liraglutide", "Yes", "No"),
-           drug_exenatide_long = ifelse(drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release & Liraglutide", "Yes", "No"),
-           drug_liraglutide = ifelse(drugsubstances == "Dulaglutide & Liraglutide" | drugsubstances == "Exenatide & Liraglutide" | drugsubstances == "Exenatide prolonged-release & Liraglutide" | drugsubstances == "Liraglutide" | drugsubstances == "Liraglutide & Lixisenatide", "Yes", "No"),
-           drug_lixisenatide = ifelse(drugsubstances == "Liraglutide & Lixisenatide" | drugsubstances == "Lixisenatide", "Yes", "No"),
-           prehba1c_na = ifelse(is.na(prehba1c), "Yes", "No"),
-           prebmi_na = ifelse(is.na(prebmi), "Yes", "No"),
-           preegfr_na = ifelse(is.na(preegfr), "Yes", "No"),
-           prehdl_na = ifelse(is.na(prehdl), "Yes", "No"),
-           prealt_na = ifelse(is.na(prealt), "Yes", "No"),
-           prealbuminblood_na = ifelse(is.na(prealbuminblood), "Yes", "No"),
-           prebilirubin_na = ifelse(is.na(prebilirubin), "Yes", "No"),
-           pretotalcholesterol_na = ifelse(is.na(pretotalcholesterol), "Yes", "No"),
-           premap_na = ifelse(is.na(premap), "Yes", "No"),
-           posthba1cfinal_na = ifelse(is.na(posthba1cfinal), "Yes", "No"),
-           hba1cmonth_na = ifelse(is.na(hba1cmonth), "Yes", "No"))
-  
-  return(data.new)
-  
-}
+#:-----------------------
+############## Predicted treatment benefits
+####### > 5 mmol for either drug
 
-#:-----------------------------------------------------------------------------
-############## Benefits
-
-### HbA1c train - complete dataset used for fitting the model (smaller than hba1c.train)
+### HbA1c train - dataset with complete variables used for fitting the model (smaller than hba1c.train)
 hba1c.train.complete.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum//ps_model/patient_prop_scores.rds"), by = c("patid", "pated")) %>%
   # drop the variables with the most missingness
@@ -92,11 +66,11 @@ tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN"
 print(tab.benefits, smd = TRUE)
 
 
-### HbA1c test - complete dataset used for validation
+### HbA1c test - dataset with complete variables used for validation
 hba1c.test.complete.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum//ps_model/patient_prop_scores.rds"), by = c("patid", "pated")) %>%
   # selected variables from SparseBCF
-  select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum//response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds"))), prop.score) %>%
   # only complete cases
   drop_na() %>%
   as.data.frame() %>%
@@ -109,8 +83,6 @@ hba1c.test.complete.benefit <- new.vars(hba1c.test.complete.benefit.simple)
 tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = hba1c.test.complete.benefit, test = FALSE)
 ## Show table with SMD
 print(tab.benefits, smd = TRUE)
-
-
 
 
 ### HbA1c train
@@ -127,7 +99,22 @@ tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN"
 print(tab.benefits, smd = TRUE)
 
 
-### Full cohort (any benefit)
+### Full cohort
+full.cohort.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_))) %>%
+  select(patid, pated, benefit)
+
+full.cohort.benefit <- new.vars(full.cohort.benefit.simple)
+
+tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = full.cohort.benefit, test = FALSE)
+## Show table with SMD
+print(tab.benefits, smd = TRUE)
+
+
+####### any benefit for either drug
+
+### Full cohort
 full.cohort.any_benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
   mutate(benefit = ifelse(effects < 0, "SGLT2i", ifelse(effects > 0, "GLP1-RA", NA_real_))) %>%
@@ -142,17 +129,6 @@ print(tab.benefits, smd = TRUE)
 
 table(full.cohort.any_benefit.simple$sex, full.cohort.any_benefit.simple$benefit)
 
-### Full cohort (max benefit)
-full.cohort.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
-  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
-  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_))) %>%
-  select(patid, pated, benefit)
-
-full.cohort.benefit <- new.vars(full.cohort.benefit.simple)
-
-tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = full.cohort.benefit, test = FALSE)
-## Show table with SMD
-print(tab.benefits, smd = TRUE)
 
 
 
