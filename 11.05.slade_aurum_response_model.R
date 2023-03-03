@@ -1,5 +1,5 @@
 ####################
-## Description:
+## Description:    (this file uses BCF v.2.0.1)
 ##  - In this file we:
 ##    - Fit a SparseBCF model to choose the variables to include as control and moderators.
 ##    - Fit a BCF model with the specific chosen variables used in control and in moderators.
@@ -7,40 +7,28 @@
 ####################
 
 
+## Load libraries
 library(tidyverse)
-# library(SparseBCF)
+# library(SparseBCF)    # This package can only be loaded when BCF isn't loaded. They conflict with each other.
 require(bcf)
 library(cobalt)
 
-## path to output folder
-output_path <- "Samples"
-## make directory for outputs
+## Set up directory path to save files (stagered to ensure folders are created)
 
-dir.create(output_path)
-
-output_path <- "Samples/SGLT2-GLP1"
-
-## make directory for outputs
-dir.create(output_path)
+dir.create("Samples")
+dir.create("Samples/SGLT2-GLP1")
 
 output_path <- "Samples/SGLT2-GLP1/Aurum"
-
-## make directory for outputs
 dir.create(output_path)
 
-## male directory for outputs
 dir.create(paste0(output_path, "/response_model_bcf"))
 
-## male directory for outputs
 dir.create(paste0(output_path, "/response_model_bcf/trees_prop"))
 
-## male directory for outputs
 dir.create(paste0(output_path, "/response_model_bcf/trees_no_prop"))
 
-## male directory for outputs
 dir.create(paste0(output_path, "/response_model_bcf/assessment"))
 
-## make directory for outputs
 dir.create("Plots")
 
 
@@ -50,24 +38,24 @@ dir.create("Plots")
 ###############################################################################
 ###############################################################################
 
+## Load functions required
+
 source("11.01.slade_aurum_functions.R")
 source("11.02.slade_aurum_set_data.R")
 
-
-
+## Load dataset
 hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train")
 
-
-# collect propensity score values
+## Collect propensity score values
 patient_prop_scores <- readRDS(paste0(output_path, "/ps_model/patient_prop_scores.rds"))
 
+## Append values
 hba1c.train <- hba1c.train %>%
   left_join(patient_prop_scores, by = c("patid", "pated"))
 
-
-# Complete data
+## Prepare dataset to be used in SparseBCF
 hba1c.train.complete <- hba1c.train %>%
-  # drop the variables with the most missingness
+  # drop the variables with the most missingness (>40%)
   select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
   # only complete cases
   drop_na() %>%
@@ -78,12 +66,12 @@ hba1c.train.complete <- hba1c.train %>%
 # Fit 2 chains of SparseBCF
 
 if (class(try(
-
+  
   sparsebcf_chain_1 <- readRDS(paste0(output_path, "/response_model_bcf/sparsebcf_chain_1.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-
+  
+  
   sparsebcf_chain_1 <- SparseBCF(y = hba1c.train.complete$posthba1cfinal,
                                  z = hba1c.train.complete %>%
                                    select(drugclass) %>%
@@ -115,19 +103,19 @@ if (class(try(
                                  use_muscale = FALSE,
                                  use_tauscale = FALSE
   )
-
-
+  
+  
   saveRDS(sparsebcf_chain_1, paste0(output_path, "/response_model_bcf/sparsebcf_chain_1.rds"))
-
+  
 }
 
 if (class(try(
-
+  
   sparsebcf_chain_2 <- readRDS(paste0(output_path, "/response_model_bcf/sparsebcf_chain_2.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-
+  
+  
   sparsebcf_chain_2 <- SparseBCF(y = hba1c.train.complete$posthba1cfinal,
                                  z = hba1c.train.complete %>%
                                    select(drugclass) %>%
@@ -159,13 +147,14 @@ if (class(try(
                                  use_muscale = FALSE,
                                  use_tauscale = FALSE
   )
-
-
+  
+  
   saveRDS(sparsebcf_chain_2, paste0(output_path, "/response_model_bcf/sparsebcf_chain_2.rds"))
-
+  
 }
 
 
+## Check trace plots for the only parameter than can be directly checked.
 plot_sigma_sparsebcf <- ggplot() +
   geom_path(aes(x = 1:length(c(sparsebcf_chain_1$sigma, sparsebcf_chain_2$sigma)), y = c(sparsebcf_chain_1$sigma, sparsebcf_chain_2$sigma))) +
   ggtitle("Sigma") +
@@ -173,8 +162,10 @@ plot_sigma_sparsebcf <- ggplot() +
   theme(axis.title.x = element_blank())
 
 
+#:----------------------------------------------------------------------------------------------
+# Selecting variables
 
-### Selecting variables
+## Collect variables used in the modelling of SparseBCF
 variables <- hba1c.train.complete %>% select(-patid, -pated, -drugclass, -posthba1cfinal, -prop.score) %>% colnames()
 
 # Calculate the mean values of tau inclusion proportions for all chains
@@ -192,16 +183,16 @@ if (class(try(
 }
 
 if (class(try(
-
+  
   variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
+  
   # select variables with tau inclusion proportions above 1/n (n is number of variables)
   variables_tau <- colnames(variables_tau_original)[variables_tau_original > 0.023]
-
+  
   saveRDS(variables_tau, file = paste0(output_path, "/response_model_bcf/variables_tau.rds"))
-
+  
 }
 
 # Calculate the mean values of tau inclusion proportions for each chain
@@ -279,19 +270,19 @@ if (class(try(
 
 
 if (class(try(
-
+  
   variables_mu <- readRDS(paste0(output_path, "/response_model_bcf/variables_mu.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
   
   # select variables with mu inclusion proportions above 1/n (n is number of variables)
   dataset.variables.mu <- variables_mu_original %>%
     select(-`propensity score`)
-
+  
   variables_mu <- colnames(dataset.variables.mu)[dataset.variables.mu > 0.023]
-
+  
   saveRDS(variables_mu, file = paste0(output_path, "/response_model_bcf/variables_mu.rds"))
-
+  
 }
 
 # Calculate the mean values of mu inclusion proportions for each chain
@@ -352,18 +343,20 @@ plot_variables_mu <- variables_mu_original %>%
   scale_colour_manual(values = c("Above" = "green", "Below" = "red"))
 
 
-# remove objects that are not needed anymore
+# remove objects that are not needed anymore (objects too big for the session)
 rm(sparsebcf_chain_1)
 rm(sparsebcf_chain_2)
 
 
+
+#:----------------------------------------------------------------------------------------------
+## Prepare dataset by only selecting the variable chosen (in both prognostic and moderator sides of the model)
+
 hba1c.train.complete.vs <- hba1c.train.complete %>%
   select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau)), prop.score)
 
-
 ## Hold out cohort
 hba1c.test <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test")
-
 
 # collect propensity score values
 patient_prop_scores <- readRDS(paste0(output_path, "/ps_model/patient_prop_scores.rds"))
@@ -371,8 +364,7 @@ patient_prop_scores <- readRDS(paste0(output_path, "/ps_model/patient_prop_score
 hba1c.test <- hba1c.test %>%
   left_join(patient_prop_scores, by = c("patid", "pated"))
 
-
-# Complete data
+# only keep entries with complete data
 hba1c.test.complete.vs <- hba1c.test %>%
   # selected variables from SparseBCF
   select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
@@ -380,100 +372,18 @@ hba1c.test.complete.vs <- hba1c.test %>%
   drop_na() %>%
   as.data.frame()
 
+
 #:----------------------------------------------------------------------------------------------------
 # Fit BCF model with propensity score included
 
 if (class(try(
-
+  
   bcf_model_prop <- readRDS(paste0(output_path, "/response_model_bcf/bcf_model_prop.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-
+  
+  
   bcf_model_prop = bcf::bcf(y = hba1c.train.complete.vs$posthba1cfinal,
-                       z = hba1c.train.complete.vs %>%
-                         select(drugclass) %>%
-                         mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
-                         unlist(),
-                       x_control = hba1c.train.complete.vs %>%
-                         select(
-                           all_of(variables_mu)
-                         ) %>%
-                         mutate_all(funs(as.numeric(.))) %>%
-                         as.matrix(),
-                       x_moderate = hba1c.train.complete.vs %>%
-                         select(
-                           all_of(variables_tau)
-                         ) %>%
-                         mutate_all(funs(as.numeric(.))) %>%
-                         as.matrix(),
-                       pihat = 1-hba1c.train.complete.vs$prop.score,
-                       nburn = 200000,
-                       nsim = 25000,
-                       nthin = 4,
-                       n_chains = 2,
-                       # n_threads was max((RcppParallel::defaultNumThreads() - 2)/n_cores, 1) (this uses all of the server)
-                       n_threads = 4,
-                       update_interval = 500,
-                       ntree_control = 200,
-                       sd_control = 2 * sd(hba1c.train.complete.vs$posthba1cfinal),
-                       base_control = 0.95,
-                       power_control = 2,
-                       ntree_moderate = 200,
-                       sd_moderate = 2 * sd(hba1c.train.complete.vs$posthba1cfinal),
-                       base_moderate = 0.95,
-                       power_moderate = 2,
-                       use_muscale = FALSE,
-                       use_tauscale = FALSE,
-                       save_tree_directory = paste0(output_path, "/response_model_bcf/trees_prop"))
-
-  saveRDS(bcf_model_prop, paste0(output_path, "/response_model_bcf/bcf_model_prop.rds"))
-
-}
-
-
-if (class(try(
-
-  predictions.hba1c.test_prop <- readRDS(paste0(output_path, "/response_model_bcf/predictions.hba1c.test_prop.rds"))
-
-  , silent = TRUE)) == "try-error") {
-
-  predictions.hba1c.test_prop <- predict(object = bcf_model_prop,
-                                    x_predict_control = hba1c.test.complete.vs %>%
-                                      select(
-                                        all_of(variables_mu)
-                                      ) %>%
-                                      mutate_all(funs(as.numeric(.))) %>%
-                                      as.matrix(),
-                                    x_predict_moderate = hba1c.test.complete.vs %>%
-                                      select(
-                                        all_of(variables_tau)
-                                      ) %>%
-                                      mutate_all(funs(as.numeric(.))) %>%
-                                      as.matrix(),
-                                    pi_pred = 1-hba1c.test.complete.vs$prop.score,
-                                    z_pred = hba1c.test.complete.vs %>%
-                                      select(drugclass) %>%
-                                      mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
-                                      unlist(),
-                                    save_tree_directory = paste0(output_path, "/response_model_bcf/trees_prop"))
-
-
-  saveRDS(predictions.hba1c.test_prop, paste0(output_path, "/response_model_bcf/predictions.hba1c.test_prop.rds"))
-
-}
-
-#:----------------------------------------------------------------------------------------------------
-# Fit BCF model without propensity score included
-
-if (class(try(
-
-  bcf_model <- readRDS(paste0(output_path, "/response_model_bcf/bcf_model.rds"))
-
-  , silent = TRUE)) == "try-error") {
-
-
-  bcf_model = bcf::bcf(y = hba1c.train.complete.vs$posthba1cfinal,
                             z = hba1c.train.complete.vs %>%
                               select(drugclass) %>%
                               mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
@@ -508,20 +418,103 @@ if (class(try(
                             power_moderate = 2,
                             use_muscale = FALSE,
                             use_tauscale = FALSE,
-                            include_pi = "none",
-                            save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
-
-  saveRDS(bcf_model, paste0(output_path, "/response_model_bcf/bcf_model.rds"))
-
+                            save_tree_directory = paste0(output_path, "/response_model_bcf/trees_prop"))
+  
+  saveRDS(bcf_model_prop, paste0(output_path, "/response_model_bcf/bcf_model_prop.rds"))
+  
 }
 
 
 if (class(try(
-
-  predictions.hba1c.test <- readRDS(paste0(output_path, "/response_model_bcf/predictions.hba1c.test.rds"))
-
+  
+  predictions.hba1c.test_prop <- readRDS(paste0(output_path, "/response_model_bcf/predictions.hba1c.test_prop.rds"))
+  
   , silent = TRUE)) == "try-error") {
+  
+  predictions.hba1c.test_prop <- predict(object = bcf_model_prop,
+                                         x_predict_control = hba1c.test.complete.vs %>%
+                                           select(
+                                             all_of(variables_mu)
+                                           ) %>%
+                                           mutate_all(funs(as.numeric(.))) %>%
+                                           as.matrix(),
+                                         x_predict_moderate = hba1c.test.complete.vs %>%
+                                           select(
+                                             all_of(variables_tau)
+                                           ) %>%
+                                           mutate_all(funs(as.numeric(.))) %>%
+                                           as.matrix(),
+                                         pi_pred = 1-hba1c.test.complete.vs$prop.score,
+                                         z_pred = hba1c.test.complete.vs %>%
+                                           select(drugclass) %>%
+                                           mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
+                                           unlist(),
+                                         save_tree_directory = paste0(output_path, "/response_model_bcf/trees_prop"))
+  
+  
+  saveRDS(predictions.hba1c.test_prop, paste0(output_path, "/response_model_bcf/predictions.hba1c.test_prop.rds"))
+  
+}
 
+#:----------------------------------------------------------------------------------------------------
+# Fit BCF model without propensity score included
+
+if (class(try(
+  
+  bcf_model <- readRDS(paste0(output_path, "/response_model_bcf/bcf_model.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  
+  bcf_model = bcf::bcf(y = hba1c.train.complete.vs$posthba1cfinal,
+                       z = hba1c.train.complete.vs %>%
+                         select(drugclass) %>%
+                         mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
+                         unlist(),
+                       x_control = hba1c.train.complete.vs %>%
+                         select(
+                           all_of(variables_mu)
+                         ) %>%
+                         mutate_all(funs(as.numeric(.))) %>%
+                         as.matrix(),
+                       x_moderate = hba1c.train.complete.vs %>%
+                         select(
+                           all_of(variables_tau)
+                         ) %>%
+                         mutate_all(funs(as.numeric(.))) %>%
+                         as.matrix(),
+                       pihat = 1-hba1c.train.complete.vs$prop.score,
+                       nburn = 200000,
+                       nsim = 25000,
+                       nthin = 4,
+                       n_chains = 2,
+                       # n_threads was max((RcppParallel::defaultNumThreads() - 2)/n_cores, 1) (this uses all of the server)
+                       n_threads = 4,
+                       update_interval = 500,
+                       ntree_control = 200,
+                       sd_control = 2 * sd(hba1c.train.complete.vs$posthba1cfinal),
+                       base_control = 0.95,
+                       power_control = 2,
+                       ntree_moderate = 200,
+                       sd_moderate = 2 * sd(hba1c.train.complete.vs$posthba1cfinal),
+                       base_moderate = 0.95,
+                       power_moderate = 2,
+                       use_muscale = FALSE,
+                       use_tauscale = FALSE,
+                       include_pi = "none",
+                       save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
+  
+  saveRDS(bcf_model, paste0(output_path, "/response_model_bcf/bcf_model.rds"))
+  
+}
+
+
+if (class(try(
+  
+  predictions.hba1c.test <- readRDS(paste0(output_path, "/response_model_bcf/predictions.hba1c.test.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
   predictions.hba1c.test <- predict(object = bcf_model,
                                     x_predict_control = hba1c.test.complete.vs %>%
                                       select(
@@ -541,13 +534,17 @@ if (class(try(
                                       mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
                                       unlist(),
                                     save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
-
-
+  
+  
   saveRDS(predictions.hba1c.test, paste0(output_path, "/response_model_bcf/predictions.hba1c.test.rds"))
-
+  
 }
 
-# plot predictions from model BCF (prop score) vs BCF (no prop score)
+
+#:----------------------------------------------------------------------------------------------------
+
+
+# plot mu predictions from model BCF (prop score) vs BCF (no prop score)
 if (class(try(
   
   prop.score.comparison.mu <- readRDS(paste0(output_path, "/response_model_bcf/prop.score.comparison.mu.rds"))
@@ -561,32 +558,25 @@ if (class(try(
   
 }
 
+# plot tau predictions from model BCF (prop score) vs BCF (no prop score)
 if (class(try(
-
+  
   prop.score.comparison <- readRDS(paste0(output_path, "/response_model_bcf/prop.score.comparison.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
+  
   prop.score.comparison <- cbind(bcf_prop = c(colMeans(bcf_model_prop$tau), colMeans(predictions.hba1c.test_prop$tau)),
                                  bcf_no_prop = c(colMeans(bcf_model$tau), colMeans(predictions.hba1c.test$tau)))
-
+  
   saveRDS(prop.score.comparison, paste0(output_path, "/response_model_bcf/prop.score.comparison.rds"))
-
+  
 }
 
-plot_comparison_bcf_models <- patchwork::wrap_plots(list(
 
-  prop.score.comparison %>%
-    as.data.frame() %>%
-    ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
-    geom_vline(aes(xintercept = 0), colour = "red") +
-    geom_hline(aes(yintercept = 0), colour = "red") +
-    geom_point() +
-    xlab("BCF model with propensity score") +
-    ylab("BCF model without propensity score")
-
-  ,
-
+## Plot the differences between BCF with prop score vs BCF without prop score
+plot_comparison_bcf_models <- patchwork::wrap_plots(
+  
+  # bar plot of the numbers in each group
   prop.score.comparison %>%
     as.data.frame() %>%
     mutate(effect = ifelse(bcf_prop > 0 & bcf_no_prop > 0, "BCF P > 0 / BCF NP > 0",
@@ -598,19 +588,64 @@ plot_comparison_bcf_models <- patchwork::wrap_plots(list(
     ggplot() +
     geom_bar(aes(x = effect, y = perc), stat = "identity") +
     geom_text(aes(label = n, y= ..prop.., x = effect), stat= "count", vjust = -.5, colour = "blue")
-
+  
   ,
+  
+  patchwork::wrap_plots(
+    
+    # scatter plot of tau values
+    prop.score.comparison %>%
+      as.data.frame() %>%
+      ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
+      geom_vline(aes(xintercept = 0), colour = "red") +
+      geom_hline(aes(yintercept = 0), colour = "red") +
+      geom_point() +
+      ggtitle("Tau") +
+      xlab("BCF model with propensity score") +
+      ylab("BCF model without propensity score")
+    
+    ,
+    
+    # scatter plot of mu values
+    prop.score.comparison.mu %>%
+      as.data.frame() %>%
+      ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
+      geom_point() +
+      ggtitle("Mu") +
+      xlab("BCF model with propensity score") +
+      ylab("BCF model without propensity score")
+    
+    ,
+    
+    # density plot of residuals for tau (BCF without prop - BCF with prop)
+    prop.score.comparison %>%
+      as.data.frame() %>%
+      mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
+      ggplot() +
+      geom_density(aes(x = effect.difference)) +
+      xlab("Predicted effect difference (BCF NP - BCF P)")
+    
+    ,
+    
+    # density plot of residuals for mu (BCF without prop - BCF with prop)
+    prop.score.comparison.mu %>%
+      as.data.frame() %>%
+      mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
+      ggplot() +
+      geom_density(aes(x = effect.difference)) +
+      xlab("Predicted effect difference (BCF NP - BCF P)")
+    
+    , ncol = 2, nrow = 2
+    
+    
+    
+  ) , ncol = 1, nrow = 2
+  
+)
 
-  prop.score.comparison %>%
-    as.data.frame() %>%
-    mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
-    ggplot() +
-    geom_density(aes(x = effect.difference)) +
-    xlab("Predicted effect difference (BCF NP - BCF P)")
 
-), ncol = 1)
-
-pdf("Plots/11.05.BCF_prop_vs_no_prop.pdf")
+## Produce pdf with these plots
+pdf("Plots/11.05.BCF_prop_vs_no_prop.pdf", width = 8, height = 12)
 plot_comparison_bcf_models
 dev.off()
 
@@ -619,9 +654,7 @@ rm(bcf_model_prop)
 rm(predictions.hba1c.test_prop)
 
 
-#### Model parameters
-
-
+# Trace plot for the only parameter directly observable
 plot_sigma_bcf <- ggplot() +
   geom_path(aes(x = 1:length(bcf_model$sigma), y = bcf_model$sigma)) +
   ggtitle("Sigma") +
@@ -629,17 +662,23 @@ plot_sigma_bcf <- ggplot() +
   theme(axis.title.x = element_blank())
 
 
-#### Residuals
+#:----------------------------------------------------------------------------------------------------
 
+#### Residuals for the BCF no prop model
+
+# Calculate prediction interval, residual interval and standardised residual interval for Development cohort
 cred_pred_dev <- calc_resid(hba1c.train.complete.vs, bcf_model$mu, "posthba1cfinal")
 
+# Calculate prediction interval, residual interval and standardised residual interval for Validation cohort
 cred_pred_val <- calc_resid(hba1c.test.complete.vs, predictions.hba1c.test$mu, "posthba1cfinal")
 
+# Plot the standardised residual plots
 plot_residuals <- resid_plot(cred_pred_dev, cred_pred_val, "Standardised Residuals of BCF model")
+
 
 #### R2/RMSE
 if (class(try(
-
+  
   assessment_dev <- readRDS(paste0(output_path, "/response_model_bcf/assessment/assessment_dev.rds"))
   
   , silent = TRUE)) == "try-error") {
@@ -662,7 +701,9 @@ if (class(try(
   
 }
 
-#### Effects
+#:----------------------------------------------------------------------------------------------------
+
+#### Plot predicted treatment effects
 
 data_dev <- cbind(mean = colMeans(bcf_model$tau)) %>%
   as.data.frame()
@@ -713,52 +754,71 @@ sex_female_val <- hba1c.test.complete.vs %>%
 plot_effect_2_female <- hist_plot(sex_female_val, "", -20, 30)
 
 
+#:----------------------------------------------------------------------------------------------------
+
 ####### Validation
 
+### Development cohort
 predicted_observed_dev <- hba1c.train.complete.vs %>%
   cbind(hba1c_diff = colMeans(bcf_model$tau)) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
+#:--------- Overall average treatment effect
 # PSM 1:1 posthba1c ~ drugclass
 if (class(try(
-
+  
   ATE_matching_1_1_all_dev <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_all_dev.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_all_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev %>% mutate(hba1c_diff.q = 1), "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
-
+  
+  ATE_matching_1_1_all_dev <- calc_ATE(data = predicted_observed_dev%>%mutate(hba1c_diff.q=1), 
+                                       validation_type = "PSM", variable = "posthba1cfinal", 
+                                       quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+                                       order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_matching_1_1_all_dev, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_all_dev.rds"))
-
+  
 }
 
+### plot love plots for the matching
 plot_all_dev_love <- cobalt::love.plot(ATE_matching_1_1_all_dev$matching_outputs[[1]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
 
+### plot calibration plot
 # plot_all_dev <- ATE_plot(ATE_matching_1_1_all_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
-ATE_matching_1_1_adjust_all_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev %>%
-                                                                mutate(hba1c_diff.q = 1), "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+# PSM 1:1 + adjust posthba1c ~ drugclass + adjust
+ATE_matching_1_1_adjust_all_dev <- calc_ATE(data = predicted_observed_dev%>%mutate(hba1c_diff.q=1), 
+                                            validation_type = "PSM + adjust", variable = "posthba1cfinal", 
+                                            quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+                                            order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
+# PDF with the love plot for overall dataset
 pdf("Plots/11.05.dev_full_love_plot.pdf")
 plot_all_dev_love
 dev.off()
 
 # PSM 1:1 posthba1c ~ drugclass
 if (class(try(
-
+  
   ATE_matching_1_1_validation_dev <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_validation_dev.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
-
+  
+  ATE_matching_1_1_validation_dev <- calc_ATE(data = predicted_observed_dev,
+                                              validation_type = "PSM", variable = "posthba1cfinal",
+                                              quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+                                              order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
+  
   saveRDS(ATE_matching_1_1_validation_dev, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_validation_dev.rds"))
-
+  
 }
 
+# Plot calibration of treatment effects
 plot_ATE_dev_prop_score_matching_1_1 <- ATE_plot(ATE_matching_1_1_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
+# PDF of love plots for all deciles
 pdf("Plots/11.05.dev_PSM_1_1_dev.pdf")
 cobalt::love.plot(ATE_matching_1_1_validation_dev$matching_outputs[[1]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Match 1")
 cobalt::love.plot(ATE_matching_1_1_validation_dev$matching_outputs[[2]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Match 2")
@@ -775,101 +835,130 @@ dev.off()
 
 # PSM 1:1 posthba1c ~ drugclass + adjust (all variables used in bcf)
 if (class(try(
-
+  
   ATE_matching_1_1_adjust_validation_dev <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_dev.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_adjust_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-
+  
+  ATE_matching_1_1_adjust_validation_dev <- calc_ATE(data = predicted_observed_dev,
+                                                     validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                                     quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+                                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_matching_1_1_adjust_validation_dev, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_dev.rds"))
-
+  
 }
 
+# Plot calibration of treatment effects
 plot_ATE_dev_prop_score_matching_1_1_adjust <- ATE_plot(ATE_matching_1_1_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 # posthba1c ~ drugclass + adjust (all variables used in bcf)
 if (class(try(
-
+  
   ATE_adjust_validation_dev <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation_dev.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_adjust_validation_dev <- calc_ATE_validation_adjust(predicted_observed_dev, "posthba1cfinal", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-
+  
+  ATE_adjust_validation_dev <- calc_ATE(data = predicted_observed_dev,
+                                        validation_type = "Adjust", variable = "posthba1cfinal",
+                                        quantile_var = "hba1c_diff.q",
+                                        order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_adjust_validation_dev, paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation_dev.rds"))
 }
 
+# Plot calibration of treatment effects
 plot_ATE_adjust_validation_dev <- ATE_plot(ATE_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 # # PSM k:1 posthba1c ~ drugclass
-# ATE_matching_k_1_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", replace = TRUE, breakdown = unique(c(variables_tau, variables_mu)))
-#
+# ATE_matching_k_1_validation_dev <- calc_ATE(data = predicted_observed_dev,
+#                                             validation_type = "PSM", variable = "posthba1cfinal",
+#                                             quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+#                                             order = "largest", breakdown = unique(c(variables_tau, variables_mu)), replace = TRUE)
+# 
 # plot_ATE_dev_prop_score_matching_k_1 <- ATE_plot(ATE_matching_k_1_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # PSM k:1 posthba1c ~ drugclass + adjust (all variables used in bcf)
-# ATE_matching_k_1_adjust_validation_dev <- calc_ATE_validation_prop_matching(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score, order = "largest", replace = TRUE, breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-#
+# ATE_matching_k_1_adjust_validation_dev <- calc_ATE(data = predicted_observed_dev,
+#                                                    validation_type = "PSM + adjust", variable = "posthba1cfinal",
+#                                                    quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_dev$prop.score, 
+#                                                    order = "largest", breakdown = unique(c(variables_tau, variables_mu)), replace = TRUE)
+# 
 # plot_ATE_dev_prop_score_matching_k_1_adjust <- ATE_plot(ATE_matching_k_1_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # IPTW
 # ATE_weighting_validation_dev <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score)
-#
+# 
 # plot_ATE_dev_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # IPTW stabilised
 # ATE_stabilised_validation_dev <- calc_ATE_validation_inverse_prop_weighting_stabilised(predicted_observed_dev, "posthba1cfinal", predicted_observed_dev$prop.score)
-#
+# 
 # plot_ATE_dev_prop_score_stabilised  <- ATE_plot(ATE_stabilised_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 
+### Validation cohort
 predicted_observed_val <- hba1c.test.complete.vs %>%
   cbind(hba1c_diff = colMeans(predictions.hba1c.test$tau)) %>%
   mutate(bestdrug = ifelse(hba1c_diff < 0, "SGLT2", "GLP1"),
          hba1c_diff.q = ntile(hba1c_diff, 10))
 
-
+#:--------- Overall average treatment effect
 # PSM 1:1 posthba1c ~ drugclass
 if (class(try(
-
+  
   ATE_matching_1_1_all_val <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_all_val.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_all_val <- calc_ATE_validation_prop_matching(predicted_observed_val %>% mutate(hba1c_diff.q = 1), "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
-
+  
+  ATE_matching_1_1_all_val <- calc_ATE(data = predicted_observed_val%>%mutate(hba1c_diff.q=1), 
+                                       validation_type = "PSM", variable = "posthba1cfinal", 
+                                       quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+                                       order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_matching_1_1_all_val, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_all_val.rds"))
-
+  
 }
 
+### plot love plots for the matching
 plot_all_val_love <- cobalt::love.plot(ATE_matching_1_1_all_val$matching_outputs[[1]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
 
+### plot calibration plot
 # plot_all_val <- ATE_plot(ATE_matching_1_1_all_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
-ATE_matching_1_1_adjust_all_val <- calc_ATE_validation_prop_matching(predicted_observed_val %>%
-                                                                       mutate(hba1c_diff.q = 1), "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
+# PSM 1:1 + adjust posthba1c ~ drugclass + adjust
+ATE_matching_1_1_adjust_all_val <- calc_ATE(data = predicted_observed_val%>%mutate(hba1c_diff.q=1), 
+                                            validation_type = "PSM + adjust", variable = "posthba1cfinal", 
+                                            quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+                                            order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
+# PDF with the love plot for overall dataset
 pdf("Plots/11.05.val_full_love_plot.pdf")
 plot_all_val_love
 dev.off()
 
 # PSM 1:1 posthba1c ~ drugclass
 if (class(try(
-
+  
   ATE_matching_1_1_validation_val <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_validation_val.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
-
+  
+  ATE_matching_1_1_validation_val <- calc_ATE(data = predicted_observed_val,
+                                              validation_type = "PSM", variable = "posthba1cfinal",
+                                              quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+                                              order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_matching_1_1_validation_val, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_validation_val.rds"))
-
+  
 }
 
+# Plot calibration of treatment effects
 plot_ATE_val_prop_score_matching_1_1 <- ATE_plot(ATE_matching_1_1_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
+# PDF of love plots for all deciles
 pdf("Plots/11.05.val_PSM_1_1_val.pdf")
 cobalt::love.plot(ATE_matching_1_1_validation_val$matching_outputs[[1]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Match 1")
 cobalt::love.plot(ATE_matching_1_1_validation_val$matching_outputs[[2]], binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Match 2")
@@ -886,61 +975,72 @@ dev.off()
 
 # PSM 1:1 posthba1c ~ drugclass + adjust (all variables used in bcf)
 if (class(try(
-
+  
   ATE_matching_1_1_adjust_validation_val <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_val.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_matching_1_1_adjust_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-
+  
+  ATE_matching_1_1_adjust_validation_val <- calc_ATE(data = predicted_observed_val,
+                                                     validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                                     quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+                                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_matching_1_1_adjust_validation_val, paste0(output_path, "/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_val.rds"))
-
+  
 }
 
+# Plot calibration of treatment effects
 plot_ATE_val_prop_score_matching_1_1_adjust <- ATE_plot(ATE_matching_1_1_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 # posthba1c ~ drugclass + adjust (all variables used in bcf)
 if (class(try(
-
+  
   ATE_adjust_validation_val <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation_val.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
-  ATE_adjust_validation_val <- calc_ATE_validation_adjust(predicted_observed_val, "posthba1cfinal", breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-
+  
+  ATE_adjust_validation_val <- calc_ATE(data = predicted_observed_val,
+                                        validation_type = "Adjust", variable = "posthba1cfinal",
+                                        quantile_var = "hba1c_diff.q",
+                                        order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
   saveRDS(ATE_adjust_validation_val, paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation_val.rds"))
 }
 
+# Plot calibration of treatment effects
 plot_ATE_adjust_validation_val <- ATE_plot(ATE_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 # # PSM k:1 posthba1c ~ drugclass
-# ATE_matching_k_1_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", replace = TRUE, breakdown = unique(c(variables_tau, variables_mu)))
-#
+# ATE_matching_k_1_validation_val <- calc_ATE(data = predicted_observed_val,
+#                                             validation_type = "PSM", variable = "posthba1cfinal",
+#                                             quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+#                                             order = "largest", breakdown = unique(c(variables_tau, variables_mu)), replace = TRUE)
+# 
 # plot_ATE_val_prop_score_matching_k_1 <- ATE_plot(ATE_matching_k_1_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # PSM k:1 posthba1c ~ drugclass + adjust (all variables used in bcf)
-# ATE_matching_k_1_adjust_validation_val <- calc_ATE_validation_prop_matching(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score, order = "largest", replace = TRUE, breakdown = unique(c(variables_tau, variables_mu)), adjust = TRUE)
-#
+# ATE_matching_k_1_adjust_validation_val <- calc_ATE(data = predicted_observed_val,
+#                                                    validation_type = "PSM + adjust", variable = "posthba1cfinal",
+#                                                    quantile_var = "hba1c_diff.q", prop_scores = predicted_observed_val$prop.score, 
+#                                                    order = "largest", breakdown = unique(c(variables_tau, variables_mu)), replace = TRUE)
+# 
 # plot_ATE_val_prop_score_matching_k_1_adjust <- ATE_plot(ATE_matching_k_1_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # IPTW
 # ATE_weighting_validation_val <- calc_ATE_validation_inverse_prop_weighting(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score)
-#
+# 
 # plot_ATE_val_prop_score_weighting  <- ATE_plot(ATE_weighting_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
-#
+# 
 # # IPTW stabilised
 # ATE_stabilised_validation_val <- calc_ATE_validation_inverse_prop_weighting_stabilised(predicted_observed_val, "posthba1cfinal", predicted_observed_val$prop.score)
-#
+# 
 # plot_ATE_val_prop_score_stabilised  <- ATE_plot(ATE_stabilised_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci")
 
 
 
-
+## PDF with all of the plots necessary for checking the model fitting and validation
 pdf(width = 10, height = 8, file = "Plots/11.05.slade_aurum_bcf.pdf")
-# convergence of the sparsebcf model analysis
-# patchwork::wrap_plots(list(plot_sigma_sparsebcf), ncol = 1) +
-#   patchwork::plot_annotation(title = "Parameters for SparseBCF")
 
 # variables for treatment effects
 plot_variables_tau
@@ -949,10 +1049,6 @@ plot_variables_mu
 
 # comparison between BCF models with/without prop scores
 plot_comparison_bcf_models
-
-# convergence of the bcf model analysis
-# patchwork::wrap_plots(list(plot_sigma_bcf), ncol = 1) +
-#   patchwork::plot_annotation(title = "Parameters for BCF")
 
 # Standardised residuals for the bcf model
 plot_residuals
@@ -981,8 +1077,8 @@ patchwork::wrap_plots(list(plot_effect_2_male, plot_effect_2_female), ncol = 2) 
 
 # validation of treatment effects for development cohort
 patchwork::wrap_plots(list(plot_ATE_dev_prop_score_matching_1_1 + ggtitle("Match 1:1"),
-                                plot_ATE_dev_prop_score_matching_1_1_adjust + ggtitle("Match 1:1 adjusted"),
-                                plot_ATE_adjust_validation_dev + ggtitle("Adjusted")), ncol = 3) +
+                           plot_ATE_dev_prop_score_matching_1_1_adjust + ggtitle("Match 1:1 adjusted"),
+                           plot_ATE_adjust_validation_dev + ggtitle("Adjusted")), ncol = 3) +
   patchwork::plot_layout(guides = "collect") +
   patchwork::plot_annotation(tag_levels = "A",
                              title = "Training cohort: Treatment effect validation", # title of full plot
@@ -1000,34 +1096,10 @@ patchwork::wrap_plots(list(plot_ATE_val_prop_score_matching_1_1 + ggtitle("Match
                                            legend.position = "bottom")) # center title of full plot
 
 
-
-
-# patchwork::wrap_plots(list(plot_ATE_dev_prop_score_weighting, plot_ATE_val_prop_score_weighting)) +
-#   patchwork::plot_annotation(tag_levels = "A",
-#                              title = "Effects validation propensity score weighting (A-Development)", # title of full plot
-#                              theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
-#
-#
-# patchwork::wrap_plots(list(plot_ATE_dev_prop_score_stabilised, plot_ATE_val_prop_score_stabilised)) +
-#   patchwork::plot_annotation(tag_levels = "A",
-#                              title = "Effects validation propensity score weighting stabilised (A-Development)", # title of full plot
-#                              theme = theme(plot.title = element_text(hjust = 0.5))) # center title of full plot
-
-
 dev.off()
 
 #:-------------------------------------------------------------------------------------
-
-
-# testing_var_selection <- hba1c.train.complete.vs %>%
-#   cbind(effects = colMeans(bcf_model$tau))
-# 
-# m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + sex + drugline + ncurrtx + rms::rcs(hba1cmonth, 3) + rms::rcs(prehba1c, 3) + rms::rcs(preegfr, 3) + preihd + preneuropathy + preretinopathy + preaf, data = testing_var_selection, x = TRUE, y = TRUE)
-# 
-# m2 <- lm(effects ~ rms::rcs(agetx, 3) + sex + drugline + ncurrtx + rms::rcs(hba1cmonth, 3) + rms::rcs(prehba1c, 3) + rms::rcs(preegfr, 3) + preihd + preneuropathy + preretinopathy + preaf, data = testing_var_selection, x = TRUE, y = TRUE)
-#
-# plot(anova(m1), what = 'proportion R2')
-
+## Decision tree - pseudo variable importance
 
 library(rpart)
 library(rattle)
@@ -1081,11 +1153,11 @@ interim.dataset <- full.cohort[!(full.cohort$pated %in% patient_effects$pated),]
 
 
 if (class(try(
-
+  
   patient_effects <- readRDS(paste0(output_path, "/response_model_bcf/patient_effects.rds"))
-
+  
   , silent = TRUE)) == "try-error") {
-
+  
   predictions.interim <- predict(object = bcf_model,
                                  x_predict_control = interim.dataset %>%
                                    select(
@@ -1106,18 +1178,18 @@ if (class(try(
                                    unlist(),
                                  save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
   
-
-
+  
+  
   patient_effects <- patient_effects %>%
     rbind(
       interim.dataset %>%
         select(patid, pated) %>%
         cbind(effects = colMeans(predictions.interim$tau))
     )
-
-
+  
+  
   saveRDS(patient_effects, paste0(output_path, "/response_model_bcf/patient_effects.rds"))
-
+  
 }
 
 
