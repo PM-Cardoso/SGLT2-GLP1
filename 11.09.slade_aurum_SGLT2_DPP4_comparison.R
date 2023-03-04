@@ -4,29 +4,18 @@
 ##    to the predictions form the SGLT2/DPP4 linear model.
 ####################
 
-
+## Load libraries
 library(rms)
 library(tidyverse)
 library(scales)
 
-## path to output folder
-output_path <- "Samples"
-## make directory for outputs
+## Set up directory path to save files (stagered to ensure folders are created)
 
-dir.create(output_path)
-
-output_path <- "Samples/SGLT2-GLP1"
-
-## make directory for outputs
-dir.create(output_path)
+dir.create("Samples")
+dir.create("Samples/SGLT2-GLP1")
 
 output_path <- "Samples/SGLT2-GLP1/Aurum"
-
-## make directory for outputs
 dir.create(output_path)
-
-## make directory for outputs
-# dir.create(paste0(output_path, "/linear_model_comparison"))
 
 ## make directory for outputs
 dir.create("Plots")
@@ -38,6 +27,7 @@ dir.create("Plots")
 ###############################################################################
 ###############################################################################
 
+## Load functions required
 source("11.02.slade_aurum_set_data.R")
 
 ###############################################################################
@@ -49,11 +39,11 @@ source("11.02.slade_aurum_set_data.R")
 # read in predictions from BCF model
 patient_predicted_outcomes <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_predicted_outcomes.rds")
 
-# load in linear regression model
+# load the object for the Linear model. This model object is the object used
+#   in the SGLT2vsDPP4 model by John Dennis et al.
 load("m1_hba1cmodel_SGLT2_DPP4.Rdata")
 
-
-# read in full cohort with modifications for linear model
+# Collect the full cohort from CPRD Aurum that can be used to fit the SGLT2vsDPP4 linear model
 full.cohort.updated <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   select(patid, pated, prehba1c, drugclass, drugline, ncurrtx, preegfr, prealt, prebmi, agetx, hba1cmonth) %>%
   rename("prealtlog"="prealt",
@@ -64,6 +54,7 @@ full.cohort.updated <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
          drugline = factor(drugline, levels = c("2","3","4","5+"), labels = c("2","3","4","5")),
          hba1cmonth = ifelse(is.na(hba1cmonth), 12, hba1cmonth)) %>%
   drop_na() %>%
+  # apply rules from the model
   filter(prehba1cmmol < 120) %>%
   filter(prehba1cmmol >= 53) %>%
   filter(egfr_ckdepi > 45)
@@ -95,6 +86,7 @@ interim.dataset <- full.cohort.updated %>%
               rename("pred.SGLT2.bcf" = "pred.SGLT2"), by = c("patid", "pated")) %>%
   select(-patid, -pated)
 
+# Plot the comparison of SGLT2 predictions from the linear SGLT2vsDPP4 model vs SGLT2vsGLP1 model
 plot_comparison <- interim.dataset %>%
   ggplot(aes(y = pred.SGLT2.bcf, x = pred.SGLT2.lm)) +
   geom_point() +
@@ -107,11 +99,12 @@ plot_comparison <- interim.dataset %>%
   ggtitle(paste0("Comparison of SGLT2 predictions using Linear Regression and BCF (n=", interim.dataset %>% nrow(), ")")) +
   theme_bw()
 
-  
+## PDF with the plot for the comparison  
 pdf(width = 7, height = 7, "Plots/11.09.plot_1.pdf")
 plot_comparison
 dev.off()
   
+
 ## What drug is best:
 #-----------------
 # Using SGLT2 BCF
@@ -125,6 +118,7 @@ interim.dataset <- patient_predicted_outcomes %>%
                                    ifelse(pred.DPP4 < pred.SGLT2 & pred.DPP4 < pred.GLP1, "DPP4i", NA))),
          best_drug = factor(best_drug))
 
+# Plot bar plot of the numbers of best drugs
 plot_bar <- interim.dataset %>%
   select(best_drug) %>%
   table() %>%
@@ -141,12 +135,14 @@ plot_bar <- interim.dataset %>%
   theme(legend.position = "none") +
   scale_y_continuous(label=comma)
 
+## PDF with the plot for the best therapy
 pdf(width = 7, height = 7, "Plots/11.09.plot_2.pdf")
 plot_bar
 dev.off()
 
 
 #---------------
+## Plot the differential treatment effect: best vs closest other
 interim.dataset <- patient_predicted_outcomes %>%
   left_join(full.cohort.updated %>%
               select(patid, pated) %>%
@@ -163,6 +159,7 @@ interim.dataset <- patient_predicted_outcomes %>%
                                               ifelse(best_drug == "Favours DPP4i" & pred.SGLT2 < pred.GLP1, pred.DPP4 - pred.SGLT2,
                                                      ifelse(best_drug == "Favours DPP4i" & pred.GLP1 < pred.SGLT2, pred.DPP4 - pred.GLP1, NA))))))) 
 
+# Plot histogram of predicted differential treatment effect: best vs closest other
 plot_histogram <- interim.dataset %>%
   select(best_drug, effect) %>%
   ggplot(aes(x = effect, fill = best_drug)) +
@@ -177,7 +174,7 @@ plot_histogram <- interim.dataset %>%
   facet_wrap(~best_drug, nrow = 1) +
   scale_y_continuous(label=comma)
   
-  
+## PDF with the plot for the differential treatment effects
 pdf(width = 9, height = 4, "Plots/11.09.plot_3.pdf")
 plot_histogram
 dev.off()
@@ -214,7 +211,7 @@ full.cohort.decision <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   drop_na(best_drug) %>%
   select(-hba1cmonth, -patid, -pated)
 
-
+# Load libraries
 library(rpart)
 library(rattle)
 library(rpart.plot)
@@ -249,6 +246,7 @@ qpdf::pdf_combine(input = c("Plots/11.09.plot_1.pdf",
                             "Plots/11.09.plot_4.pdf"),
                   output = "Plots/11.09.comparison_SGLT2_GLP1_DPP4.pdf")
 
+# delete old pdfs
 file.remove(c("Plots/11.09.plot_1.pdf", "Plots/11.09.plot_2.pdf", "Plots/11.09.plot_3.pdf", "Plots/11.09.plot_4.pdf"))
 
 
