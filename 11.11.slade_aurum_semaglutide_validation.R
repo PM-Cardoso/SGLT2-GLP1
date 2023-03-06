@@ -4,23 +4,15 @@
 ####################
 
 
-## libraries
+## Load libraries
 library(tidyverse)
 
-## path to output folder
-output_path <- "Samples"
-## make directory for outputs
+## Set up directory path to save files (stagered to ensure folders are created)
 
-dir.create(output_path)
-
-output_path <- "Samples/SGLT2-GLP1"
-
-## make directory for outputs
-dir.create(output_path)
+dir.create("Samples")
+dir.create("Samples/SGLT2-GLP1")
 
 output_path <- "Samples/SGLT2-GLP1/Aurum"
-
-## make directory for outputs
 dir.create(output_path)
 
 ## make directory for outputs
@@ -36,6 +28,8 @@ dir.create(paste0(output_path, "/semaglutide"))
 ###############################################################################
 ###############################################################################
 
+## Load functions required
+
 source("11.01.slade_aurum_functions.R")
 source("11.02.slade_aurum_set_data.R")
 
@@ -45,7 +39,7 @@ source("11.02.slade_aurum_set_data.R")
 ###############################################################################
 ###############################################################################
 
-
+## Load dataset
 semaglutide.dataset <- set_up_data_sglt2_glp1(dataset.type="semaglutide.dataset")
 
 # load in variables used in the model
@@ -55,20 +49,25 @@ variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.
 
 bcf_model <- readRDS(paste0(output_path, "/response_model_bcf/bcf_model.rds"))
 
-
+# Create interim dataset with the variables needed
 interim.dataset <- semaglutide.dataset %>%
   # select variables to make prediction
   select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau))))) %>%
   drop_na()
 
+# BCF has a quirk where you can only make predicted if both drugs are in the dataset
 interim.dataset <- rbind(interim.dataset,
                          interim.dataset %>%
                            slice(1) %>%
                            mutate(drugclass = factor("SGLT2", levels = c("GLP1", "SGLT2"))))
 
+
+# Predict treatment effect for these patients from our model
 if (class(try(
   
   patient_effects <- readRDS(paste0(output_path, "/semaglutide/patient_effects.rds"))
+  
+  # predictions.interim <- readRDS(paste0(output_path, "/semaglutide/predictions.interim.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -97,7 +96,7 @@ if (class(try(
   
   saveRDS(predictions.interim, paste0(output_path, "/semaglutide/predictions.interim.rds"))
   
-  
+  # Combine and remove the extra iteration added
   patient_effects <- interim.dataset %>%
     select(patid, pated) %>%
     cbind(effects = colMeans(predictions.interim$tau)) %>%
@@ -114,7 +113,7 @@ if (class(try(
 #:-------------------------------------------------------------------------------
 #:-------------------------------------------------------------------------------
 
-### Validation of treatment effects
+### Validation of treatment effects - test to check if the model needs any adjustment (intercept or intercept + slope)
 
 #closed testing function
 closedtest <- function(cohort,dataset,observed,predicted,p.value){
@@ -219,7 +218,7 @@ closedtest <- function(cohort,dataset,observed,predicted,p.value){
 }
 
 
-#global settings
+# global settings
 p.value <- 0.05
 ncolx <- 10
 sample_frac <- 1
@@ -229,32 +228,32 @@ cohort <- "semaglutide"
 observed <- interim.dataset$posthba1cfinal[-nrow(interim.dataset)]
 predicted <- colMeans(predictions.interim$mu)[-nrow(interim.dataset)]
 
-
-
+# dataset required for the calibration
 dataset <- semaglutide.dataset %>%
   # select variables to make prediction
   select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau))))) %>%
   drop_na()
 
-#Test
+# Run test
 semaglutide.test <- closedtest(cohort,dataset,observed,predicted,p.value)
 
-
+# Calculate the new adjusted predicted treatment effects
 adjusted_effect <- patient_effects %>%
   mutate(effects = effects - semaglutide.test$intercept[2]) %>%
   mutate(best_drug = ifelse(effects > 0, "Favours GLP1", "Favours SGLT2"))
 
-
+# Table of new optimal therapy
 adjusted_effect_table <- adjusted_effect %>%
   select(best_drug) %>%
   table()/nrow(adjusted_effect)
 
 
+# Plot new predicted treatment effects
 adjusted_effect_hist <- hist_plot(adjusted_effect %>% rename("mean" = "effects"), 
                                   xmin = -10, xmax = 35, 
                                   title = paste0("Semaglutide cohort (n=", nrow(adjusted_effect), ") - adjusted intercept (SGLT2=", round(adjusted_effect_table[2]*100), "%, GLP1=", round(adjusted_effect_table[1]*100), "%)"))
 
-
+# PDF with new predicted treatment effect histogram
 pdf(width = 7, height = 5, "Plots/11.11.semaglutide_validation.pdf")
 adjusted_effect_hist
 dev.off()
