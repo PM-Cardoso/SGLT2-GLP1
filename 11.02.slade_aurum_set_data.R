@@ -31,8 +31,8 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   # If 'dataset.type' is not a character string, error.
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
   # If 'dataset.type' is not one of the options in this list, error
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset", "insulin.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset / insulin.dataset")
   }
   # If 'drugs' is not supplied, error.
   if (missing(drugs)) {stop("'drugs' needs to be supplied")}
@@ -116,9 +116,21 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     
   }
   
-  cprd <- cprd %>% 
-    filter(INS == 0)      
   
+  if (dataset.type == "insulin.dataset") {
+    
+    # select those treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 1)   
+    
+  } else {
+    
+    # select those not treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 0)      
+    
+  }
+    
   ################################################
   ##### Drop patients with ESRD
   ################################################
@@ -495,7 +507,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset" | dataset.type == "insulin.dataset") {
     return(final.dataset)
   }
   
@@ -2737,8 +2749,8 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   # If 'dataset.type' is not a character string, error.
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
   # If 'dataset.type' is not one of the options in this list, error.
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset", "insulin.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset / insulin.dataset")
   }
   
   ##### Start of the function:
@@ -2816,8 +2828,19 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     
   }
   
-  cprd <- cprd %>% 
-    filter(INS == 0)      
+  if (dataset.type == "insulin.dataset") {
+    
+    # select those treated with insulin
+    cprd <- cprd %>%
+      filter(INS == 1)
+    
+  } else {
+    
+    # select those not treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 0)  
+    
+  }
   
   ################################################
   ##### Drop patients with ESRD
@@ -3195,7 +3218,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset" | dataset.type == "insulin.dataset") {
     return(final.dataset)
   }
   
