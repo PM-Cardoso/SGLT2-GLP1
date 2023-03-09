@@ -13,6 +13,11 @@ library(scales)
 source("11.01.slade_aurum_functions.R")
 source("11.02.slade_aurum_set_data.R")
 
+
+## make directory for outputs
+dir.create("Plots/DUK_2023")
+
+
 #### Presentation plots - Diabetes UK
 
 
@@ -33,7 +38,7 @@ plot_duk_1 <- hist_plot(data = patient_effects %>%
   geom_vline(aes(xintercept = 5), lty = "dashed", colour = "red")
 
 # PDF with plot
-pdf(width = 6, height = 5, "Plots/11.08.plot_duk_1.pdf")
+pdf(width = 6, height = 5, "Plots/DUK_2023/11.08.plot_duk_1.pdf")
 plot_duk_1
 dev.off()
 
@@ -62,7 +67,7 @@ plot_ATE_adjust_validation_val <- ATE_plot(ATE_adjust_validation_val[["effects"]
 plot_duk_2 <- patchwork::wrap_plots(list(plot_ATE_adjust_validation_dev, plot_ATE_adjust_validation_val), ncol = 2, nrow = 1)
 
 # PDF with plot
-pdf(width = 9, height = 5, "Plots/11.08.plot_duk_2.pdf")
+pdf(width = 9, height = 5, "Plots/DUK_2023/11.08.plot_duk_2.pdf")
 plot_duk_2
 dev.off()
 
@@ -150,7 +155,7 @@ plot_duk_3 <- rbind(
                h_10 = "black")
 
 # PDF with plot
-pdf(width = 7, height = 4, "Plots/11.08.plot_duk_3.pdf")
+pdf(width = 7, height = 4, "Plots/DUK_2023/11.08.plot_duk_3.pdf")
 plot_duk_3
 dev.off()
 
@@ -239,7 +244,7 @@ plot_duk_4 <- rbind(
                h_10 = "black")
 
 # PDF with plot
-pdf(width = 7, height = 5, "Plots/11.08.plot_duk_4.pdf")
+pdf(width = 7, height = 5, "Plots/DUK_2023/11.08.plot_duk_4.pdf")
 plot_duk_4
 dev.off()
 
@@ -324,7 +329,7 @@ plot_duk_5 <- rbind(
                h_10 = "black")
 
 # PDF with plots
-pdf(width = 7, height = 5, "Plots/11.08.plot_duk_5.pdf")
+pdf(width = 7, height = 5, "Plots/DUK_2023/11.08.plot_duk_5.pdf")
 plot_duk_5
 dev.off()
 
@@ -417,7 +422,7 @@ plot_duk_6 <- rbind(
                h_10 = "black")
 
 # PDF with plots
-pdf(width = 7, height = 5, "Plots/11.08.plot_duk_6.pdf")
+pdf(width = 7, height = 5, "Plots/DUK_2023/11.08.plot_duk_6.pdf")
 plot_duk_6
 dev.off()
 
@@ -492,7 +497,7 @@ plot_duk_7 <- rbind(
                h_10 = "black")
 
 # PDF with plots
-pdf(width = 7, height = 5, "Plots/11.08.plot_duk_7.pdf")
+pdf(width = 7, height = 5, "Plots/DUK_2023/11.08.plot_duk_7.pdf")
 plot_duk_7
 dev.off()
 
@@ -568,7 +573,7 @@ plot_duk_8 <- rbind(
                h_10 = "black")
 
 # PDF with plots
-pdf(width = 7, height = 5, "Plots/11.08.plot_duk_8.pdf")
+pdf(width = 7, height = 5, "Plots/DUK_2023/11.08.plot_duk_8.pdf")
 plot_duk_8
 dev.off()
 
@@ -671,7 +676,7 @@ plot_duk_9 <- patchwork::wrap_plots(list(plot_1, plot_2, plot_3), ncol = 1) +
   )
 
 # PDF with plots
-pdf(width = 8, height = 6, "Plots/11.08.plot_duk_9.pdf")
+pdf(width = 8, height = 6, "Plots/DUK_2023/11.08.plot_duk_9.pdf")
 plot_duk_9
 dev.off()
 
@@ -775,7 +780,7 @@ plot_duk_10 <- patchwork::wrap_plots(list(plot_1, plot_2, plot_3), ncol = 1) +
   )
 
 # PDF with plots
-pdf(width = 8, height = 6, "Plots/11.08.plot_duk_10.pdf")
+pdf(width = 8, height = 6, "Plots/DUK_2023/11.08.plot_duk_10.pdf")
 plot_duk_10
 dev.off()
 
@@ -830,7 +835,7 @@ plot_duk_11 <- rbind(
                h_10 = "black")
 
 # PDF with plot
-pdf(width = 7.5, height = 4, "Plots/11.08.plot_duk_11.pdf")
+pdf(width = 7.5, height = 4, "Plots/DUK_2023/11.08.plot_duk_11.pdf")
 plot_duk_11
 dev.off()
 
