@@ -13,6 +13,13 @@ library(scales)
 source("11.01.slade_aurum_functions.R")
 source("11.02.slade_aurum_set_data.R")
 
+## make directory for outputs
+dir.create("Plots/Paper")
+
+## make directory for outputs
+dir.create("Plots/Paper/Manuscript")
+
+
 #### Main manuscript plots
 
 #:------------------------------------------------------------------------------
@@ -58,7 +65,7 @@ plot_main_1 <- plot_main_1.1 +
   plot_annotation(tag_levels = "A",
                   theme = theme(legend.position = "bottom"))
 
-pdf(width = 15, height = 6, "Plots/11.08.plot_main_1.pdf")
+pdf(width = 15, height = 6, "Plots/Paper/Manuscript/11.08.plot_main_1.pdf")
 plot_main_1
 dev.off()
 
@@ -364,7 +371,7 @@ plot_prebmi_strata <- group_values(data = full.cohort,
         strip.background = element_rect(fill="white"))
 
 
-pdf(width = 17, height = 12, "Plots/11.08.plot_main_2.pdf")
+pdf(width = 17, height = 12, "Plots/Paper/Manuscript/11.08.plot_main_2.pdf")
 
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(nrow = 5,
@@ -869,7 +876,7 @@ plot_f <- rbind(
 
 
 
-pdf(width = 20, height = 10, "Plots/11.08.plot_main_3.pdf")
+pdf(width = 20, height = 10, "Plots/Paper/Manuscript/11.08.plot_main_3.pdf")
 
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(nrow = 2,
