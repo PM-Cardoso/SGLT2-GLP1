@@ -1,6 +1,6 @@
 ####################
 ## Description:
-##  - In this file we create the plots used in the paper
+##  - In this file we create the plots used in the Diabetes UK conference 2023
 ####################
 
 
@@ -813,12 +813,12 @@ plot_duk_11 <- rbind(
   mutate(obs = as.numeric(obs),
          lci = as.numeric(lci),
          uci = as.numeric(uci),
-         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(1)%>%unlist(), ")"), 
-                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(2)%>%unlist(), ")"), 
-                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(3)%>%unlist(), ")"), 
-                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(4)%>%unlist(), ")"), 
-                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(5)%>%unlist(), ")"),
-                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", ATE_adjust_validation_subgroups%>%select(N)%>%slice(6)%>%unlist(), ")"), intervals))))))) %>%
+         intervals = ifelse(intervals == 1, paste0(">5 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(1)%>%unlist(),big.mark=",",scientific=FALSE), ")"), 
+                            ifelse(intervals == 2, paste0("3-5 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(2)%>%unlist(),big.mark=",",scientific=FALSE), ")"), 
+                                   ifelse(intervals == 3, paste0("0-3 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(3)%>%unlist(),big.mark=",",scientific=FALSE), ")"), 
+                                          ifelse(intervals == 4, paste0("0-3 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(4)%>%unlist(),big.mark=",",scientific=FALSE), ")"), 
+                                                 ifelse(intervals == 5, paste0("3-5 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(5)%>%unlist(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == 6, paste0(">5 mmol/mol (n=", format(ATE_adjust_validation_subgroups%>%select(N)%>%slice(6)%>%unlist(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
   rename("mean" = "obs", "lower" = "lci", "upper" = "uci") %>%
   forestplot(labeltext = intervals,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
@@ -829,7 +829,7 @@ plot_duk_11 <- rbind(
              boxsize = .1,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
              xlab = "Average HbA1c treatment effect (mmol/mol)") %>%
-  fp_add_header(paste0("Overall population (n=", sum(ATE_adjust_validation_subgroups$N), ")")) %>%
+  fp_add_header(paste0("Overall population (n=", format(sum(ATE_adjust_validation_subgroups$N),big.mark=",",scientific=FALSE), ")")) %>%
   fp_add_lines(h_2 = "black",
                h_6 = gpar(col = "black", lty = 2),
                h_10 = "black")
