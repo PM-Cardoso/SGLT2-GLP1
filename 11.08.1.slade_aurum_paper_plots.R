@@ -71,7 +71,7 @@ dev.off()
 
 
 #:------------------------------------------------------------------------------
-# Figure 2: 6 panel plot: 
+# Figure 2: 3 panel plot: 
 #   -A. Variable importance linear projection
 #   -B. Overall cohort histogram split by sex
 #   -C. Differential treatment effect
