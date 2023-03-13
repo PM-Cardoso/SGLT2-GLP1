@@ -56,17 +56,17 @@ calc_assessment <- function(data, posteriors, outcome_variable) {
   # Calculate R2
   r2 <- posteriors %>%
     apply(MARGIN = 1, function(x) rsq(data[,outcome_variable], x)) %>%
-    quantile(probs = c(0.05, 0.5, 0.95))
+    quantile(probs = c(0.025, 0.5, 0.975))
   
   # Calculate RSS: residual sum of squares
   RSS <- posteriors %>%
     apply(MARGIN = 1, function(x) sum((data[,outcome_variable] - x)^2)) %>%
-    quantile(probs = c(0.05, 0.5, 0.95))
+    quantile(probs = c(0.025, 0.5, 0.975))
   
   # Calculate RMSE: root mean square error
   RMSE <- posteriors %>%
     apply(MARGIN = 1, function(x) sqrt(sum((data[,outcome_variable] - x)^2)/nrow(data))) %>%
-    quantile(probs = c(0.05, 0.5, 0.95))
+    quantile(probs = c(0.025, 0.5, 0.975))
   
   # return data.frame with all assessments
   assessment_values <- list(r2 = r2, RSS = RSS, RMSE = RMSE)
