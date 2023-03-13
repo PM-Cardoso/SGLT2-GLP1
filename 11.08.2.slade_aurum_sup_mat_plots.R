@@ -22,9 +22,85 @@ dir.create("Plots/Paper")
 dir.create("Plots/Paper/Sup_Mat")
 
 
-#### Supplementary manuscript plots
+#### Supplementary manuscript plots / stuff
 
 
+## Flowchart 1
+
+# Finding the number of individuals discarded for the training/validation dataset used in the model
+
+# training dataset
+hba1c.train <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train")
+
+hba1c.train.complete <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness (>40%)
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame()
+
+# nrow(hba1c.train)
+# nrow(hba1c.train.complete)
+
+# validation dataset
+
+hba1c.test <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test")
+
+hba1c.test.complete <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+  # selected variables from SparseBCF
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame()
+
+# nrow(hba1c.test)
+# nrow(hba1c.test.complete)
+
+
+
+## Flowchart 2
+
+# Finding the number of individuals discarded for the weight dataset (incomplete vars)
+
+# weight dataset
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset")
+
+weight.dataset.effects <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  drop_na(effects)
+
+# nrow(weight.dataset)
+# nrow(weight.dataset.effects)
+
+# no comorbidities
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type = "no_co.dataset")
+
+no_co.dataset.effects <- set_up_data_sglt2_glp1(dataset.type = "no_co.dataset") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  drop_na(effects)
+
+# nrow(no_co.dataset)
+# nrow(no_co.dataset.effects)
+
+# discontinuation
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset")
+
+discontinuation.dataset.effects <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  drop_na(effects)
+
+# nrow(discontinuation.dataset)
+# nrow(discontinuation.dataset.effects)
+
+# microvascular complications
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type = "micro_comp.dataset")
+
+micro_comp.dataset.effects <- set_up_data_sglt2_glp1(dataset.type = "micro_comp.dataset") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  drop_na(effects)
+
+# nrow(micro_comp.dataset)
+# nrow(micro_comp.dataset.effects)
 
 #:--------------------------------------------------------------------------------
 ### Variable selection from the Sparse BCF model
@@ -334,6 +410,8 @@ dev.off()
 #:--------------------------------------------------------------------------------
 ### Figure of risk of developing CKD (40% drop of Stage 5)
 
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
 patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
 
 no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
@@ -423,7 +501,7 @@ plot_psm <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             title = "PSM (1:1)",
+             # title = "PSM (1:1)",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -462,7 +540,7 @@ plot_psm_adusted <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             title = "PSM (1:1) and adjustment",
+             # title = "PSM (1:1) and adjustment",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -500,7 +578,7 @@ plot_adusted <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             title = "Adjustment",
+             # title = "Adjustment",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -535,6 +613,10 @@ pushViewport(viewport(layout.pos.row = 3,
                       layout.pos.col = 1))
 plot_adusted
 upViewport()
+
+grid.text(expression(bold("A")), vp = viewport(layout.pos.row = 1, layout.pos.col = 1), hjust = 28.5, vjust = -15)
+grid.text(expression(bold("B")), vp = viewport(layout.pos.row = 2, layout.pos.col = 1), hjust = 28.5, vjust = -15)
+grid.text(expression(bold("C")), vp = viewport(layout.pos.row = 3, layout.pos.col = 1), hjust = 28.5, vjust = -15)
 
 dev.off()
 
@@ -589,8 +671,8 @@ plot_sup_5.1 <- interim.dataset %>%
   geom_point() +
   geom_abline(aes(intercept = 0, slope = 1), colour = "red", linetype = "dashed") +
   stat_smooth() +
-  ylab("SGLT2 predictions with BCF") +
-  xlab("SGLT2 predictions with Linear Regression") +
+  ylab("SGLT2i predictions with BCF") +
+  xlab("SGLT2i predictions with Linear Regression") +
   ylim(min(interim.dataset), max(interim.dataset)) +
   xlim(min(interim.dataset), max(interim.dataset)) +
   ggtitle(paste0("Comparison of SGLT2i predictions (mmol/mol) (n=", format(interim.dataset %>% nrow(),big.mark=",",scientific=FALSE), ")")) +
@@ -608,13 +690,12 @@ plot_sup_5.2 <- interim.dataset %>%
         axis.ticks.y = element_blank(),
         axis.text.y = element_blank())
 
-
-## PDF with the plot for the comparison  
-pdf(width = 7, height = 7, "Plots/Paper/Sup_Mat/11.08.plot_sup_5.pdf")
-
 plot_sup_5 <- patchwork::wrap_plots(list(plot_sup_5.1, plot_sup_5.2), ncol = 2, nrow = 1) +
   plot_annotation(tag_levels = "A")
 
+## PDF with the plot for the comparison  
+pdf(width = 11, height = 5, "Plots/Paper/Sup_Mat/11.08.plot_sup_5.pdf")
+plot_sup_5
 dev.off()
 
 
@@ -663,7 +744,7 @@ dev.off()
 #:--------------------------------------------------------------------------------
 ### ROC AUC curve for propensity score model
 
-require(ROCR)
+require(pROC)
 
 # load PS model
 bart_ps_model_final <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/bart_ps_model_final.rds")
@@ -919,4 +1000,1191 @@ dev.off()
 
 
 
+#:--------------------------------------------------------------------------------
+### Calibration of the model using PSM and PSM + adjusted
+
+# load development cohort model calibration
+ATE_matching_1_1_validation_dev <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_matching_1_1_validation_dev.rds")
+
+ATE_matching_1_1_validation_val <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_matching_1_1_validation_val.rds")
+
+ATE_matching_1_1_adjust_validation_dev <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_dev.rds")
+
+ATE_matching_1_1_adjust_validation_val <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_matching_1_1_adjust_validation_val.rds")
+
+# plot development cohort calibration
+plot_ATE_matching_1_1_validation_dev <- ATE_plot(ATE_matching_1_1_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Development cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching"
+  )
+
+plot_ATE_matching_1_1_validation_val <- ATE_plot(ATE_matching_1_1_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching"
+  )
+
+plot_ATE_matching_1_1_adjust_validation_dev <- ATE_plot(ATE_matching_1_1_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Development cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching + adjustment"
+  )
+
+plot_ATE_matching_1_1_adjust_validation_val <- ATE_plot(ATE_matching_1_1_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching + adjustment"
+  )
+
+plot_sup_10 <- (plot_ATE_matching_1_1_validation_dev | plot_ATE_matching_1_1_validation_val) / (plot_ATE_matching_1_1_adjust_validation_dev | plot_ATE_matching_1_1_adjust_validation_val) +
+  plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2")))
+
+
+## PDF with the plot for the best therapy
+pdf(width = 10, height = 10, "Plots/Paper/Sup_Mat/11.08.plot_sup_10.pdf")
+plot_sup_10
+dev.off()
+
+
+
+#:--------------------------------------------------------------------------------
+### Clinical subgroup HbA1c outcome
+
+## PSM
+
+# levels needed
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+
+## Read in propensity scores
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+## Read in treatment effects
+treatment_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+full.dataset <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(hba1c.change = posthba1cfinal - prehba1c,
+         drugclass = factor(drugclass, levels = c("GLP1", "SGLT2")))
+
+# still population into subgroups
+group.full.dataset <- group_values(data = full.dataset,
+                                   variable = "effects",
+                                   breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.full.dataset[,breakdown_adjust], is.factor)
+
+matching_hba1c <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ agetx + t2dmduration + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.full.dataset,
+  method = "nearest",
+  distance = group.full.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_hba1c, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_hba1c$match.matrix))
+
+group.full.dataset.matched <- group.full.dataset %>%
+  slice(which(matching_hba1c$weights == 1))
+
+
+# predictions for the hba1c adjusted model
+predictions_hba1c_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_hba1c_stan_psm_1_1_overall.rds") %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci))
+
+predictions_hba1c_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_hba1c_stan_psm_1_1_full.rds") %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci))
+
+# calculate axis limits for the plots
+hba1c_strata_axis_min <- plyr::round_any(floor(min(c(predictions_hba1c_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% min(),
+                                                     predictions_hba1c_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% min()))), 5, f = floor)
+
+hba1c_strata_axis_max <- plyr::round_any(floor(max(c(predictions_hba1c_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% max(),
+                                                     predictions_hba1c_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% max()))), 5, f = ceiling)
+
+
+# plot predicted hba1c change
+plot_a <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = 50, lci = 50, uci = 50, drugclass = "SGLT2"),
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = 50, lci = 50, uci = 50, drugclass = "GLP1"),
+  predictions_hba1c_stan_psm_1_1_overall %>% select(intervals, drugclass, mean, lci, uci) %>% slice(1:6),
+  cbind(intervals = "Predicted HbA1c benefit on GLP-1 RA", mean = 50, lci = 50, uci = 50, drugclass = "SGLT2"),
+  cbind(intervals = "Predicted HbA1c benefit on GLP-1 RA", mean = 50, lci = 50, uci = 50, drugclass = "GLP1"),
+  predictions_hba1c_stan_psm_1_1_overall %>% select(intervals, drugclass, mean, lci, uci) %>% slice(7:12),
+  predictions_hba1c_stan_psm_1_1_full %>% select(drugclass, mean, lci, uci) %>% mutate(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.full.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.full.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.full.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.full.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.full.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.full.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  mutate(group = ifelse(group == "SGLT2", "SGLT2i", "GLP-1RA")) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Predicted HbA1c change",
+             clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 5),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted HbA1c change (mmol/mol)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.full.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### B - Weight
+
+## Read in data for weight
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(w.change = postweight - preweight)
+
+
+group.weight.dataset <- group_values(data = weight.dataset,
+                                     variable = "effects",
+                                     breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
+
+matching_weight <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ preweight + agetx + t2dmduration + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.weight.dataset,
+  method = "nearest",
+  distance = group.weight.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_weight, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_weight$match.matrix))
+
+group.weight.dataset.matched <- group.weight.dataset %>%
+  slice(which(matching_weight$weights == 1))
+
+
+# predictions for the weight adjusted model
+predictions_weight_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_psm_1_1_overall.rds")
+
+# predictions for the weight adjusted model full
+predictions_weight_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_psm_1_1_full.rds")
+
+
+weight_strata_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                      predictions_weight_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 1, f = floor)
+
+weight_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                        predictions_weight_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+
+
+plot_b <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_psm_1_1_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_psm_1_1_overall %>%
+    slice(-c(1:6)),
+  predictions_weight_stan_psm_1_1_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Predicted weight change",
+             clip = c(weight_strata_axis_min, weight_strata_axis_max),
+             xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.weight.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### C - Discontinuation
+
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
+
+group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.discontinuation.dataset[,breakdown_adjust], is.factor)
+
+matching_discontinuation <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ agetx + t2dmduration +  + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.discontinuation.dataset,
+  method = "nearest",
+  distance = group.discontinuation.dataset[,"prop.score"], 
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_discontinuation, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_discontinuation$match.matrix))
+
+group.discontinuation.dataset.matched <- group.discontinuation.dataset %>%
+  slice(which(matching_discontinuation$weights == 1))
+
+
+# predictions for the discontinuation adjusted model
+predictions_discontinuation_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_psm_1_1_overall.rds")
+
+# predictions for the discontinuation model sex strata
+predictions_discontinuation_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_psm_1_1_full.rds")
+
+discontinuation_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                  predictions_discontinuation_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+discontinuation_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_psm_1_1_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                 predictions_discontinuation_stan_psm_1_1_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+
+plot_c <- rbind(
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_discontinuation_stan_psm_1_1_overall %>%
+    slice(c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_discontinuation_stan_psm_1_1_overall %>%
+    slice(-c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  predictions_discontinuation_stan_psm_1_1_full %>% cbind(intervals = "Average treatment effect") %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100)
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[1])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[2])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[3])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[4])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[5])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[6])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Risk of discontinuation",
+             clip = c(0, discontinuation_overall_axis_max),
+             xticks = seq(0, discontinuation_overall_axis_max, 5),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Discontinuation (%)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.discontinuation.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### D - Risk of developing microvascular complications
+
+
+patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
+
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.micro_comp.dataset <- group_values(data = micro_comp.dataset,
+                                         variable = "effects",
+                                         breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+matching_micro_comp <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.micro_comp.dataset,
+  method = "nearest",
+  distance = group.micro_comp.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+
+# require(cobalt)
+# cobalt::love.plot(matching_micro_comp, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_micro_comp$match.matrix))
+
+group.micro_comp.dataset.matched <- group.micro_comp.dataset %>%
+  slice(which(matching_micro_comp$weights == 1))
+
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_psm_1_1_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_psm_1_1_full.rds")
+
+# plot of forest plot
+plot_d <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_overall %>% slice(4:6),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[1])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[2])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[3])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[4])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[5])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[6])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Microvascular complications",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.micro_comp.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### E - Risk of developing MACE/CVD
+
+
+patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
+
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+
+matching_no_co <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.no_co.dataset,
+  method = "nearest",
+  distance = group.no_co.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_no_co, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_no_co$match.matrix))
+
+group.no_co.dataset.matched <- group.no_co.dataset %>%
+  slice(which(matching_no_co$weights == 1))
+
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_cvd_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_cvd_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full.rds")
+
+
+# plot of forest plot
+plot_e <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_overall %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Major adverse cardiovascular events",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.no_co.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### F - Risk of developing Heart Failure
+
+
+# predictions for the HF outcomes in the population with no CVD/HF/CKD
+predictions_no_co_hf_stan_psm_1_1_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_hf_stan_psm_1_1_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_full.rds")
+
+plot_f <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_overall %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Heart failure",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.no_co.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+pdf(width = 20, height = 10, "Plots/Paper/Sup_Mat/11.08.plot_sup_11.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 2,
+                                           ncol = 3, heights = unit(c(5, 5), "null"))))
+# 1 2 3
+# 4 5 6
+# first plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 1))
+plot_a
+upViewport()
+
+# second plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 2))
+plot_b
+upViewport()
+
+# third plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 3))
+plot_c
+upViewport()
+
+# forth plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_d
+upViewport()
+
+# fifth plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_e
+upViewport()
+
+# third plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 3))
+plot_f
+upViewport()
+
+# add legends
+grid.text(expression(bold("A.1")), vp = viewport(layout.pos.row = 1, layout.pos.col = 1), hjust = 12, vjust = -18)
+grid.text(expression(bold("A.2")), vp = viewport(layout.pos.row = 1, layout.pos.col = 2), hjust = 12, vjust = -18)
+grid.text(expression(bold("A.3")), vp = viewport(layout.pos.row = 1, layout.pos.col = 3), hjust = 12, vjust = -17.5)
+grid.text(expression(bold("B.1")), vp = viewport(layout.pos.row = 2, layout.pos.col = 1), hjust = 12, vjust = -18)
+grid.text(expression(bold("B.2")), vp = viewport(layout.pos.row = 2, layout.pos.col = 2), hjust = 12, vjust = -18)
+grid.text(expression(bold("B.3")), vp = viewport(layout.pos.row = 2, layout.pos.col = 3), hjust = 12, vjust = -17.5)
+
+dev.off()
+
+
+
+#:--------------------------------------------------------------------------------
+### Clinical subgroup HbA1c outcome
+
+## PSM + adjust
+
+# levels needed
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+
+## Read in propensity scores
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+## Read in treatment effects
+treatment_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+full.dataset <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(hba1c.change = posthba1cfinal - prehba1c,
+         drugclass = factor(drugclass, levels = c("GLP1", "SGLT2")))
+
+# still population into subgroups
+group.full.dataset <- group_values(data = full.dataset,
+                                   variable = "effects",
+                                   breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.full.dataset[,breakdown_adjust], is.factor)
+
+matching_hba1c <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ agetx + t2dmduration + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.full.dataset,
+  method = "nearest",
+  distance = group.full.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_hba1c, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_hba1c$match.matrix))
+
+group.full.dataset.matched <- group.full.dataset %>%
+  slice(which(matching_hba1c$weights == 1))
+
+
+# predictions for the hba1c adjusted model
+predictions_hba1c_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_hba1c_stan_psm_1_1_adjusted_overall.rds") %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci))
+
+predictions_hba1c_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_hba1c_stan_psm_1_1_adjusted_full.rds") %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci))
+
+# calculate axis limits for the plots
+hba1c_strata_axis_min <- plyr::round_any(floor(min(c(predictions_hba1c_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% min(),
+                                                     predictions_hba1c_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% min()))), 5, f = floor)
+
+hba1c_strata_axis_max <- plyr::round_any(floor(max(c(predictions_hba1c_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% max(),
+                                                     predictions_hba1c_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% max()))), 5, f = ceiling)
+
+
+# plot predicted hba1c change
+plot_a <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = 50, lci = 50, uci = 50, drugclass = "SGLT2"),
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = 50, lci = 50, uci = 50, drugclass = "GLP1"),
+  predictions_hba1c_stan_psm_1_1_adjusted_overall %>% select(intervals, drugclass, mean, lci, uci) %>% slice(1:6),
+  cbind(intervals = "Predicted HbA1c benefit on GLP-1 RA", mean = 50, lci = 50, uci = 50, drugclass = "SGLT2"),
+  cbind(intervals = "Predicted HbA1c benefit on GLP-1 RA", mean = 50, lci = 50, uci = 50, drugclass = "GLP1"),
+  predictions_hba1c_stan_psm_1_1_adjusted_overall %>% select(intervals, drugclass, mean, lci, uci) %>% slice(7:12),
+  predictions_hba1c_stan_psm_1_1_adjusted_full %>% select(drugclass, mean, lci, uci) %>% mutate(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.full.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.full.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.full.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.full.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.full.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.full.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.full.dataset.matched%>%filter(intervals == levels(group.full.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  mutate(group = ifelse(group == "SGLT2", "SGLT2i", "GLP-1RA")) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Predicted HbA1c change",
+             clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 5),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted HbA1c change (mmol/mol)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.full.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### B - Weight
+
+## Read in data for weight
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(w.change = postweight - preweight)
+
+
+group.weight.dataset <- group_values(data = weight.dataset,
+                                     variable = "effects",
+                                     breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.weight.dataset[,breakdown_adjust], is.factor)
+
+matching_weight <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ preweight + agetx + t2dmduration + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.weight.dataset,
+  method = "nearest",
+  distance = group.weight.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_weight, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_weight$match.matrix))
+
+group.weight.dataset.matched <- group.weight.dataset %>%
+  slice(which(matching_weight$weights == 1))
+
+
+# predictions for the weight adjusted model
+predictions_weight_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted_overall.rds")
+
+# predictions for the weight adjusted model full
+predictions_weight_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_psm_1_1_adjusted_full.rds")
+
+
+weight_strata_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                      predictions_weight_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 1, f = floor)
+
+weight_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                        predictions_weight_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+
+
+plot_b <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_psm_1_1_adjusted_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_weight_stan_psm_1_1_adjusted_overall %>%
+    slice(-c(1:6)),
+  predictions_weight_stan_psm_1_1_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                            ifelse(intervals == levels(group.weight.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.weight.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                          ifelse(intervals == levels(group.weight.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                 ifelse(intervals == levels(group.weight.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.weight.dataset.matched%>%filter(intervals==levels(group.weight.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Predicted weight change",
+             clip = c(weight_strata_axis_min, weight_strata_axis_max),
+             xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Predicted weight change (kg)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.weight.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### C - Discontinuation
+
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
+
+group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.discontinuation.dataset[,breakdown_adjust], is.factor)
+
+matching_discontinuation <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~ agetx + t2dmduration +  + prehba1c + preegfr + prealt +", paste(breakdown_adjust[factors], collapse = "+"))),
+  data = group.discontinuation.dataset,
+  method = "nearest",
+  distance = group.discontinuation.dataset[,"prop.score"], 
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_discontinuation, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_discontinuation$match.matrix))
+
+group.discontinuation.dataset.matched <- group.discontinuation.dataset %>%
+  slice(which(matching_discontinuation$weights == 1))
+
+
+# predictions for the discontinuation adjusted model
+predictions_discontinuation_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_psm_1_1_adjusted_overall.rds")
+
+# predictions for the discontinuation model sex strata
+predictions_discontinuation_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_psm_1_1_adjusted_full.rds")
+
+
+
+discontinuation_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                  predictions_discontinuation_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+discontinuation_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_psm_1_1_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                 predictions_discontinuation_stan_psm_1_1_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+
+plot_c <- rbind(
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_discontinuation_stan_psm_1_1_adjusted_overall %>%
+    slice(c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  predictions_discontinuation_stan_psm_1_1_adjusted_overall %>%
+    slice(-c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  predictions_discontinuation_stan_psm_1_1_adjusted_full %>% cbind(intervals = "Average treatment effect") %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100)
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[1])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[2])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[3])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[4])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[5])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.discontinuation.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset.matched%>%filter(intervals==levels(group.discontinuation.dataset.matched$intervals)[6])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Risk of discontinuation",
+             clip = c(0, discontinuation_overall_axis_max),
+             xticks = seq(0, discontinuation_overall_axis_max, 5),
+             boxsize = .2,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Discontinuation (%)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.discontinuation.dataset.matched%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### D - Risk of developing microvascular complications
+
+
+patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
+
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.micro_comp.dataset <- group_values(data = micro_comp.dataset,
+                                         variable = "effects",
+                                         breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+matching_micro_comp <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.micro_comp.dataset,
+  method = "nearest",
+  distance = group.micro_comp.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+
+# require(cobalt)
+# cobalt::love.plot(matching_micro_comp, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_micro_comp$match.matrix))
+
+group.micro_comp.dataset.matched <- group.micro_comp.dataset %>%
+  slice(which(matching_micro_comp$weights == 1))
+
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_full.rds")
+
+# plot of forest plot
+plot_d <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_overall %>% slice(4:6),
+  predictions_micro_comp_micro_comp_stan_psm_1_1_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[1])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[2])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[3])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[4])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[5])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.micro_comp.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset.matched%>%filter(intervals==levels(group.micro_comp.dataset.matched$intervals)[6])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Microvascular complications",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.micro_comp.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### E - Risk of developing MACE/CVD
+
+
+patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
+
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+breakdown_adjust <- unique(c(variables_mu, variables_tau))
+# categorical variables in breakdown
+factors <- sapply(group.no_co.dataset[,breakdown_adjust], is.factor)
+
+matching_no_co <- MatchIt::matchit(
+  formula = formula(paste0("drugclass ~  agetx + t2dmduration + prehba1c + preegfr + prealt + drugline + ncurrtx + sex + preneuropathy + preretinopathy")),
+  data = group.no_co.dataset,
+  method = "nearest",
+  distance = group.no_co.dataset[,"prop.score"],
+  replace = FALSE,
+  m.order = "largest",
+  caliper = 0.05,
+  mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
+)
+
+# require(cobalt)
+# cobalt::love.plot(matching_no_co, binary = "std", thresholds = c(m = .1), sample.names = c("Unmatched", "Matched"), title = "Full dataset")
+
+n_drug <- 2*sum(!is.na(matching_no_co$match.matrix))
+
+group.no_co.dataset.matched <- group.no_co.dataset %>%
+  slice(which(matching_no_co$weights == 1))
+
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_cvd_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_cvd_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_adjusted_full.rds")
+
+
+# plot of forest plot
+plot_e <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_overall %>% slice(4:6),
+  predictions_no_co_cvd_stan_psm_1_1_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_mace_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Major adverse cardiovascular events",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.no_co.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+### F - Risk of developing Heart Failure
+
+
+# predictions for the HF outcomes in the population with no CVD/HF/CKD
+predictions_no_co_hf_stan_psm_1_1_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_no_co_hf_stan_psm_1_1_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_hf_stan_psm_1_1_adjusted_full.rds")
+
+plot_f <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP1-RA", mean = NA, lci = NA, uci = NA),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_overall %>% slice(4:6),
+  predictions_no_co_hf_stan_psm_1_1_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[1], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[1])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[2], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[2])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[3], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[3])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[4], paste0("0-3 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[4])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[5], paste0("3-5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[5])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.no_co.dataset.matched$intervals)[6], paste0(">5 mmol/mol (n=", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.no_co.dataset.matched%>%filter(intervals==levels(group.no_co.dataset.matched$intervals)[6])%>%filter(postdrug_hf_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Heart failure",
+             xlog = TRUE,
+             ci.vertices.height = 0.05,
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.no_co.dataset.matched),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+pdf(width = 20, height = 10, "Plots/Paper/Sup_Mat/11.08.plot_sup_12.pdf")
+
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(nrow = 2,
+                                           ncol = 3, heights = unit(c(5, 5), "null"))))
+# 1 2 3
+# 4 5 6
+# first plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 1))
+plot_a
+upViewport()
+
+# second plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 2))
+plot_b
+upViewport()
+
+# third plot
+pushViewport(viewport(layout.pos.row = 1,
+                      layout.pos.col = 3))
+plot_c
+upViewport()
+
+# forth plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 1))
+plot_d
+upViewport()
+
+# fifth plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 2))
+plot_e
+upViewport()
+
+# third plot
+pushViewport(viewport(layout.pos.row = 2,
+                      layout.pos.col = 3))
+plot_f
+upViewport()
+
+# add legends
+grid.text(expression(bold("A.1")), vp = viewport(layout.pos.row = 1, layout.pos.col = 1), hjust = 12, vjust = -18)
+grid.text(expression(bold("A.2")), vp = viewport(layout.pos.row = 1, layout.pos.col = 2), hjust = 12, vjust = -18)
+grid.text(expression(bold("A.3")), vp = viewport(layout.pos.row = 1, layout.pos.col = 3), hjust = 12, vjust = -17.5)
+grid.text(expression(bold("B.1")), vp = viewport(layout.pos.row = 2, layout.pos.col = 1), hjust = 12, vjust = -18)
+grid.text(expression(bold("B.2")), vp = viewport(layout.pos.row = 2, layout.pos.col = 2), hjust = 12, vjust = -18)
+grid.text(expression(bold("B.3")), vp = viewport(layout.pos.row = 2, layout.pos.col = 3), hjust = 12, vjust = -17.5)
+
+dev.off()
 
