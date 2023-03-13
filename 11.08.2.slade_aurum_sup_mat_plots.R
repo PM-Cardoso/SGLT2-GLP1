@@ -222,7 +222,62 @@ dev.off()
 #:--------------------------------------------------------------------------------
 ### Sex difference in trials
 
-# plot_sup_2
+# create dataset
+df <- cbind(
+  dataset = c("CPRD (n=11,296)", "PRIBA (n=550)", "Harmony 7 RCT Liraglutide (n=389)", "Harmony RCT (pooled) Albiglutide (n=1,682)", "CPRD (n=40,915)", "Trials meta-analysis (n=7,119)", "Scottish dataset (n=1,837)", "Scottish dataset (n=415)"),
+  drug = c("GLP-1 receptor agonists", "GLP-1 receptor agonists", "GLP-1 receptor agonists", "GLP-1 receptor agonists", "SGLT2-inhibitors", "SGLT2-inhibitors", "SGLT2-inhibitors", "GLP-1 receptor agonists"),
+  n = c(11296, 550, 389, 1682, 40915, 7119, 1837, 415),
+  beta = c(2.0257, 2.972881, 4.403, 1.029, -0.9015, -1.05, -2.22353, 0.65486),
+  lci = c(1.4409514, 0.4652423, 2.2, 0.14, -1.1514, -1.63, -3.3612905, -2.4401361),
+  uci = c(2.61047723, 5.480521, 6.3, 1.9, -0.6516, -0.47, -1.0857777, 3.7498463)
+) %>%
+  as.data.frame() %>%
+  mutate(n = as.numeric(n),
+         beta = as.numeric(beta),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci))
+
+# make plot
+plot_sup_2.1 <- df %>%
+  filter(drug == "GLP-1 receptor agonists") %>%
+  ggplot(aes(x = beta, y = dataset)) +
+  geom_vline(aes(xintercept = 0), colour = "black") +
+  geom_point(colour = "dodgerblue2") +
+  geom_errorbar(aes(xmin = lci, xmax = uci), colour = "dodgerblue2", width = 0.3) +
+  ggtitle("GLP-1 receptor agonist") +
+  xlab("HbA1c response difference in males versus females (mmol/mol)") +
+  xlim(min(df%>%select(beta, lci, uci)%>%unlist()), max(df%>%select(beta, lci, uci)%>%unlist())) +
+  theme_classic() +
+  theme(axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_line(colour = "white"))
+
+plot_sup_2.2 <- df %>%
+  filter(drug == "SGLT2-inhibitors") %>%
+  ggplot(aes(x = beta, y = dataset)) +
+  geom_vline(aes(xintercept = 0), colour = "black") +
+  geom_point(colour = "#f1a340") +
+  geom_errorbar(aes(xmin = lci, xmax = uci), colour = "#f1a340", width = 0.3) +
+  ggtitle("SGLT2-inhibitors") +
+  xlab("HbA1c response difference in males versus females (mmol/mol)") +
+  xlim(min(df%>%select(beta, lci, uci)%>%unlist()), max(df%>%select(beta, lci, uci)%>%unlist())) +
+  theme_classic() +
+  theme(axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_line(colour = "white"))
+
+
+plot_sup_2 <- patchwork::wrap_plots(list(plot_sup_2.1, plot_sup_2.2), ncol = 1, nrow = 2) +
+  plot_annotation(tag_levels = c("A"))
+
+
+# pdf of plot
+pdf(width = 8, height = 6, "Plots/Paper/Sup_Mat/11.08.plot_sup_2.pdf")
+plot_sup_2
+dev.off()
+
+
+
 
 
 #:--------------------------------------------------------------------------------
