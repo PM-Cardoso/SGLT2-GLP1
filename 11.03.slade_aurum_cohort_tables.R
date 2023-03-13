@@ -133,7 +133,7 @@ table(full.cohort.any_benefit.simple$sex, full.cohort.any_benefit.simple$benefit
 
 
 #:-----------------------------------------------------------------------------
-############## Generic tabl description
+############## Generic table description
 
 ### Full cohort
 full.cohort.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
@@ -236,12 +236,43 @@ variables_mu <- readRDS(paste0(output_path, "/response_model_bcf/variables_mu.rd
 variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.rds"))
 
 #### Tables containing the numerical results for clinical utilities
-### HbA1c
+### HbA1c predictions of change
 
 model_variables <- unique(c(variables_mu, variables_tau))[which(unique(c(variables_mu, variables_tau)) != "sex")]
 
 ## CPRD
+## HbA1c clinical subgroups - predicted hba1c benefit
+full.dataset <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(hba1c.change = posthba1cfinal - prehba1c,
+         drugclass = factor(drugclass, levels = c("GLP1", "SGLT2")))
 
+# still population into subgroups
+group.full.dataset <- group_values(data = full.dataset,
+                                   variable = "effects",
+                                   breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+
+
+# predictions for the hba1c adjusted model
+predictions_hba1c_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hba1c_stan_adjusted_overall.rds")) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci))
+
+# predictions for the hba1c adjusted model full
+predictions_hba1c_stan_adjusted_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hba1c_stan_adjusted_full.rds")) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci))
+
+
+print(predictions_hba1c_stan_adjusted_full, digits = 4)
+print(predictions_hba1c_stan_adjusted_overall, digits = 2)
+
+
+### HbA1c treatment effect
 # combine everyone that can be included in the HbA1c analysis
 hba1c <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(patient_prop_scores, by = c("patid", "pated")) %>%
@@ -370,6 +401,18 @@ print(ATE_adjust_hba1c_female[["effects"]], digits =3)
 ## CPRD
 
 # Full dataset
+
+## Read in data for weight
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(w.change = postweight - preweight)
+
+
+group.weight.dataset <- group_values(data = weight.dataset,
+                                     variable = "effects",
+                                     breaks = interval_breaks) %>%
+  drop_na(intervals)
 
 #-- PSM
 predictions_weight_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_full.rds"))
@@ -556,6 +599,16 @@ print(predictions_egfr_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean = as.
 
 ## CPRD
 
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
+
+group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals)
+
 # Full dataset
 
 #-- PSM
@@ -585,9 +638,9 @@ predictions_discontinuation_stan_adjusted_full <- readRDS(paste0(output_path, "/
 predictions_discontinuation_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_discontinuation_stan_adjusted_overall.rds"))
 
 
-print(predictions_discontinuation_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_discontinuation_stan_adjusted_full%>%mutate(mean = as.numeric(mean)*100, lci = as.numeric(lci)*100, uci = as.numeric(uci)*100), digits = 3)
 
-print(predictions_discontinuation_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_discontinuation_stan_adjusted_overall%>%mutate(mean = as.numeric(mean)*100, lci = as.numeric(lci)*100, uci = as.numeric(uci)*100), digits = 3)
 
 # Strata by sex
 
@@ -652,6 +705,17 @@ print(predictions_discontinuation_stan_adjusted%>%filter(sex=="Female")%>%mutate
 
 # Full dataset
 
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals)
+
 #-- PSM
 
 predictions_no_co_cvd_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full.rds"))
@@ -680,9 +744,9 @@ predictions_no_co_cvd_stan_adjusted_full <- readRDS(paste0(output_path, "/additi
 predictions_no_co_cvd_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_overall.rds"))
 
 
-print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 3)
 
-print(predictions_no_co_cvd_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_cvd_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 3)
 
 
 # Strata by sex
@@ -740,6 +804,33 @@ print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = as.numeric(mean),
 
 print(predictions_no_co_cvd_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
 
+### Microvascular complications
+
+## CPRD 
+
+# Full dataset
+
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.micro_comp.dataset <- group_values(data = micro_comp.dataset,
+                                         variable = "effects",
+                                         breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+
+# predictions for the Microvascular complications outcomes in the population with no Microvascular complications
+predictions_micro_comp_micro_comp_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_overall.rds"))
+
+# predictions for the Microvascular complications outcomes in the population with no Microvascular complications
+predictions_micro_comp_micro_comp_stan_adjusted_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_full.rds"))
+
+print(predictions_micro_comp_micro_comp_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
+
+print(predictions_micro_comp_micro_comp_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
 
 ### HF
@@ -776,9 +867,9 @@ predictions_no_co_hf_stan_adjusted_full <- readRDS(paste0(output_path, "/additio
 predictions_no_co_hf_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_overall.rds"))
 
 
-print(predictions_no_co_hf_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_hf_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
-print(predictions_no_co_hf_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_hf_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
 
 # Strata by sex
