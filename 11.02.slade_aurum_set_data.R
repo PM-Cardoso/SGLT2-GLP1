@@ -2511,7 +2511,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   if (dataset.type == "diagnostics") {
     
     print("################################################")
-    print("##### CVD model - final")
+    print("##### Microvascular complications model - final")
     print("################################################")
     print(nrow(final.micro_comp.dataset))
     print(table(final.micro_comp.dataset$drugclass))
@@ -5218,7 +5218,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   if (dataset.type == "diagnostics") {
     
     print("################################################")
-    print("##### CVD model - final")
+    print("##### Microvacular complications model - final")
     print("################################################")
     print(nrow(final.micro_comp.dataset))
     print(table(final.micro_comp.dataset$drugclass))
