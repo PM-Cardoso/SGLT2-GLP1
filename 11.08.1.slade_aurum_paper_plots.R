@@ -558,12 +558,12 @@ plot_a <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted HbA1c change",
+             title = "Average HbA1c change",
              clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
              xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 5),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Predicted HbA1c change (mmol/mol)") %>%
+             xlab = "Average HbA1c change (mmol/mol)") %>%
   fp_add_header(paste0("Overall population (n=", format(group.hba1c.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE)) %>%
@@ -625,12 +625,12 @@ plot_b <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted weight change",
+             title = "Average weight change",
              clip = c(weight_strata_axis_min, weight_strata_axis_max),
              xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
              boxsize = .2,
              txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
-             xlab = "Predicted weight change (kg)") %>%
+             xlab = "Average weight change (kg)") %>%
   fp_add_header(paste0("Overall population (n=", format(group.weight.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
   fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
                default = gpar(vertices = TRUE)) %>%
