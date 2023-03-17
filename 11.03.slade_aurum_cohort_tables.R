@@ -929,4 +929,19 @@ print(predictions_no_co_hf_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean =
 
 
 
+### CKD
+
+#-- Adjust
+
+# predictions for the CKD - stage 3/4/5 outcomes in the population with no CVD/HF/CKD
+predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall.rds")
+
+# predictions for the CKD - stage 3/4/5 outcomes in the population with no CVD/HF/CKD
+predictions_no_co_egfr40_or_ckd5_stan_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_egfr40_or_ckd5_stan_adjusted_full.rds")
+
+
+print(predictions_no_co_egfr40_or_ckd5_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
+
+print(predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
+
 
