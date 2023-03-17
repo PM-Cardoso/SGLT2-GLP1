@@ -143,16 +143,17 @@ plot_variables_tau <- variables_tau %>%
   gather(key, value) %>%
   arrange(desc(value)) %>%
   mutate(key = factor(key),
-         colour = ifelse(value > 0.023, "Above", "Below")) %>%
+         colour = ifelse(value > 0.023, "Above", "Below"),
+         value = value*100) %>%
   ggplot(aes(y = forcats::fct_reorder(key, value), x = value, colour = colour)) +
-  geom_vline(aes(xintercept = 0.023), colour = "red") +
+  geom_vline(aes(xintercept = 0.023 * 100), colour = "red") +
   geom_segment(aes(x = 0, xend = value, yend = forcats::fct_reorder(key, value)), linetype = "dashed") +
   geom_point(size = 2) +
-  ggtitle("Moderator model") +
-  xlab("Posterior splitting probabilities") +
+  ggtitle("Moderator component") +
+  xlab("Posterior inclusion proportions (%)") +
   scale_colour_manual(values = c("Above" = "black", "Below" = "grey")) +
   theme_light() +
-  theme(axis.text.y = element_text(angle = 30, face = "bold"),
+  theme(axis.text.y = element_text(angle = 30, face = "bold", colour = c(rep("grey70", 18), rep("black", 12))),
         axis.title.y = element_blank(),
         legend.position = "none")
 
@@ -195,16 +196,17 @@ plot_variables_mu <- variables_mu %>%
   gather(key, value) %>%
   arrange(desc(value)) %>%
   mutate(key = factor(key),
-         colour = ifelse(value > 0.023, "Above", "Below")) %>%
+         colour = ifelse(value > 0.023, "Above", "Below"),
+         value = value*100) %>%
   ggplot(aes(y = forcats::fct_reorder(key, value), x = value, colour = colour)) +
-  geom_vline(aes(xintercept = 0.023), colour = "red") +
+  geom_vline(aes(xintercept = 0.023 * 100), colour = "red") +
   geom_segment(aes(x = 0, xend = value, yend = forcats::fct_reorder(key, value)), linetype = "dashed") +
   geom_point(size = 2) +
-  ggtitle("Control model") +
-  xlab("Posterior splitting probabilities") +
+  ggtitle("Prognostic component") +
+  xlab("Posterior inclusion proportions (%)") +
   scale_colour_manual(values = c("Above" = "black", "Below" = "grey")) +
   theme_light() +
-  theme(axis.text.y = element_text(angle = 30, face = "bold"),
+  theme(axis.text.y = element_text(angle = 30, face = "bold", colour = c(rep("grey70", 21), rep("black", 9))),
         axis.title.y = element_blank(),
         legend.position = "none")
 
@@ -221,6 +223,10 @@ dev.off()
 
 #:--------------------------------------------------------------------------------
 ### Sex difference in trials
+
+## glp1 order: Liraglutide, albi, priba, CPRD, scotland
+
+## sglt2 order: trials, cprd, scotland 
 
 # create dataset
 df <- cbind(
@@ -239,21 +245,8 @@ df <- cbind(
 
 # make plot
 plot_sup_2.1 <- df %>%
-  filter(drug == "GLP-1 receptor agonists") %>%
-  ggplot(aes(x = beta, y = dataset)) +
-  geom_vline(aes(xintercept = 0), colour = "black") +
-  geom_point(colour = "dodgerblue2") +
-  geom_errorbar(aes(xmin = lci, xmax = uci), colour = "dodgerblue2", width = 0.3) +
-  ggtitle("GLP-1 receptor agonist") +
-  xlab("HbA1c response difference in males versus females (mmol/mol)") +
-  xlim(min(df%>%select(beta, lci, uci)%>%unlist()), max(df%>%select(beta, lci, uci)%>%unlist())) +
-  theme_classic() +
-  theme(axis.title.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.line.y = element_line(colour = "white"))
-
-plot_sup_2.2 <- df %>%
   filter(drug == "SGLT2-inhibitors") %>%
+  mutate(dataset = factor(dataset, levels = c("Scottish dataset (n=1,837)", "CPRD (n=40,915)", "Trials meta-analysis (n=7,119)"))) %>%
   ggplot(aes(x = beta, y = dataset)) +
   geom_vline(aes(xintercept = 0), colour = "black") +
   geom_point(colour = "#f1a340") +
@@ -266,6 +259,20 @@ plot_sup_2.2 <- df %>%
         axis.ticks.y = element_blank(),
         axis.line.y = element_line(colour = "white"))
 
+plot_sup_2.2 <- df %>%
+  filter(drug == "GLP-1 receptor agonists") %>%
+  mutate(dataset = factor(dataset, levels = c("Scottish dataset (n=415)", "CPRD (n=11,296)", "PRIBA (n=550)", "Harmony RCT (pooled) Albiglutide (n=1,682)", "Harmony 7 RCT Liraglutide (n=389)"))) %>%
+  ggplot(aes(x = beta, y = dataset)) +
+  geom_vline(aes(xintercept = 0), colour = "black") +
+  geom_point(colour = "dodgerblue2") +
+  geom_errorbar(aes(xmin = lci, xmax = uci), colour = "dodgerblue2", width = 0.3) +
+  ggtitle("GLP-1 receptor agonist") +
+  xlab("HbA1c response difference in males versus females (mmol/mol)") +
+  xlim(min(df%>%select(beta, lci, uci)%>%unlist()), max(df%>%select(beta, lci, uci)%>%unlist())) +
+  theme_classic() +
+  theme(axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_line(colour = "white"))
 
 plot_sup_2 <- patchwork::wrap_plots(list(plot_sup_2.1, plot_sup_2.2), ncol = 1, nrow = 2) +
   plot_annotation(tag_levels = c("A"))
@@ -556,7 +563,7 @@ plot_psm <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             # title = "PSM (1:1)",
+             title = "Propensity score matching individuals",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -595,7 +602,7 @@ plot_psm_adusted <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             # title = "PSM (1:1) and adjustment",
+             title = "Propensity score matching individuals and adjustment of estimates",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -633,7 +640,7 @@ plot_adusted <- rbind(
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices = TRUE,
              zero = 1,
-             # title = "Adjustment",
+             title = "Adjustment of estimates",
              xlog = TRUE,
              clip = c(axis_min, axis_max),
              ci.vertices.height = 0.05,
@@ -784,7 +791,7 @@ plot_sup_6 <- interim.dataset %>%
   geom_text(aes(label = format(Freq,big.mark=",",scientific=FALSE)), vjust = -0.5) +
   xlab("Optimal predicted therapy") +
   ylab("Number of patients") +
-  ggtitle(paste0("Predicted optimal therapy (n=", format(interim.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) +
+  # ggtitle(paste0("Predicted optimal therapy (n=", format(interim.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) +
   scale_fill_manual(values = c("red", "dodgerblue2", "#f1a340")) +
   theme_bw() +
   theme(legend.position = "none") +
@@ -823,7 +830,7 @@ plot_sup_7.1 <- ggroc(performance.train, legacy.axes = "TRUE") +
   labs(
     x = "1 - Specificity",
     y = "Sensitivity",
-    title = paste0("Development cohort (n=", format(nrow(ps.model.train),big.mark=",",scientific=FALSE), ")"),
+    title = paste0("Derivation cohort (n=", format(nrow(ps.model.train),big.mark=",",scientific=FALSE), ")"),
     subtitle = "Sensitivity vs 1-Specificity"
   )
 
@@ -840,7 +847,7 @@ plot_sup_7.2 <- precision_recall.train %>%
   labs(
     x = "Recall",
     y = "Precision",
-    title = paste0("Development cohort (n=", format(nrow(ps.model.train),big.mark=",",scientific=FALSE), ")"),
+    title = paste0("Derivation cohort (n=", format(nrow(ps.model.train),big.mark=",",scientific=FALSE), ")"),
     subtitle = "Precision vs Recall"
   )
 
@@ -962,10 +969,10 @@ df <- t(apply(vs_bart_ps_model$permute_mat, 2, range)) %>%
 plot_sup_8 <- df %>%
   ggplot(aes(x = labels, y = plot.values)) +
   geom_boxplot(width = 0, colour = "chartreuse4") +
-  geom_point(aes(y = true.prop, shape = colour.toggle)) +
+  geom_point(aes(y = true.prop, shape = colour.toggle), size = 3) +
   scale_shape_manual(values = c(1, 16)) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour = c(rep("black", 6), "grey70", rep("black", 3), rep("grey70", 2), rep("black", 2), "grey70", "black", rep("grey70", 2), "black", rep("grey70", 44))),
         legend.position = "none",
         axis.title.x = element_blank()) +
   labs(
@@ -977,7 +984,6 @@ plot_sup_8 <- df %>%
 pdf(width = 11, height = 5, "Plots/Paper/Sup_Mat/11.08.plot_sup_8.pdf")
 plot_sup_8
 dev.off()
-
 
 
 #:--------------------------------------------------------------------------------
@@ -992,15 +998,52 @@ prop.score.comparison.tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bc
 # plot comparisons
 plot_sup_9 <- patchwork::wrap_plots(
   
-  # scatter plot of tau values
-  prop.score.comparison.tau %>%
+  # scatter plot of mu values
+  prop.score.comparison.mu %>%
     as.data.frame() %>%
     ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
     geom_abline(aes(intercept = 0, slope = 1), colour = "red", lty = "dashed") +
     geom_point() +
-    ggtitle("Predicted conditional average treatment effects (CATE)") +
-    xlab("BCF model with propensity score") +
-    ylab("BCF model without propensity score")
+    theme_bw() +
+    labs(
+      x = "BCF model with propensity score",
+      y = "BCF model without propensity score",
+      title = "Predicted HbA1c outcome (mmol/mol)",
+      subtitle = "BCF without propensity score vs BCF with propensity score"
+    )
+      
+  ,
+  
+  # density plot of residuals for mu (BCF without prop - BCF with prop)
+  prop.score.comparison.mu %>%
+    as.data.frame() %>%
+    mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
+    ggplot() +
+    theme_bw() +
+    geom_density(aes(x = effect.difference)) +
+    labs(
+      x = "Difference in predicted HbA1c outcome (mmol/mol)",
+      y = "density",
+      title = "Predicted HbA1c outcome (mmol/mol)",
+      subtitle = "BCF without propensity score - BCF with propensity score"
+    ) +
+    xlim(-10, 10)
+  
+  ,
+  
+  # scatter plot of tau values
+  prop.score.comparison.tau %>%
+    as.data.frame() %>%
+    ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
+    theme_bw() +
+    geom_abline(aes(intercept = 0, slope = 1), colour = "red", lty = "dashed") +
+    geom_point() +
+    labs(
+      x = "BCF model with propensity score",
+      y = "BCF model without propensity score",
+      title = "Predicted conditional average treatment effects (CATE)",
+      subtitle = "BCF without propensity score vs BCF with propensity score"
+    )
   
   ,
   
@@ -1009,38 +1052,15 @@ plot_sup_9 <- patchwork::wrap_plots(
     as.data.frame() %>%
     mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
     ggplot() +
+    theme_bw() +
     geom_density(aes(x = effect.difference)) +
     labs(
       x = "Difference in predicted CATE (mmol/mol)",
+      y = "density",
+      title = "Predicted conditional average treatment effects (CATE)",
       subtitle = "BCF without propensity score - BCF with propensity score"
     ) +
-    theme(axis.title.y = element_blank())
-  
-  ,
-  
-  # scatter plot of mu values
-  prop.score.comparison.mu %>%
-    as.data.frame() %>%
-    ggplot(aes(x = bcf_prop, y = bcf_no_prop)) +
-    geom_abline(aes(intercept = 0, slope = 1), colour = "red", lty = "dashed") +
-    geom_point() +
-    ggtitle("Predicted HbA1c outcome (mmol/mol)") +
-    xlab("BCF model with propensity score") +
-    ylab("BCF model without propensity score")
-  
-  ,
-  
-  # density plot of residuals for mu (BCF without prop - BCF with prop)
-  prop.score.comparison.mu %>%
-    as.data.frame() %>%
-    mutate(effect.difference = bcf_no_prop - bcf_prop) %>%
-    ggplot() +
-    geom_density(aes(x = effect.difference)) +
-    labs(
-      x = "Difference in predicted HbA1c outcome (mmol/mol)",
-      subtitle = "BCF without propensity score - BCF with propensity score"
-    ) +
-    theme(axis.title.y = element_blank())
+    xlim(-4, 4)
   
   , ncol = 2, nrow = 2) +
   plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2")))
@@ -1071,29 +1091,29 @@ ATE_matching_1_1_adjust_validation_val <- readRDS("Samples/SGLT2-GLP1/Aurum/resp
 plot_ATE_matching_1_1_validation_dev <- ATE_plot(ATE_matching_1_1_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
-    title = paste0("Development cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    title = paste0("Derivation cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching"
   )
 
 plot_ATE_matching_1_1_validation_val <- ATE_plot(ATE_matching_1_1_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
-    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching"
   )
 
 plot_ATE_matching_1_1_adjust_validation_dev <- ATE_plot(ATE_matching_1_1_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
-    title = paste0("Development cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
-    subtitle = "Propensity score matching + adjustment"
+    title = paste0("Derivation cohort (n=", format(sum(ATE_matching_1_1_validation_dev[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching and estimate adjustment"
   )
 
 plot_ATE_matching_1_1_adjust_validation_val <- ATE_plot(ATE_matching_1_1_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
-    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
-    subtitle = "Propensity score matching + adjustment"
+    title = paste0("Validation cohort (n=", format(sum(ATE_matching_1_1_validation_val[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching and estimate adjustment"
   )
 
 plot_sup_10 <- (plot_ATE_matching_1_1_validation_dev | plot_ATE_matching_1_1_validation_val) / (plot_ATE_matching_1_1_adjust_validation_dev | plot_ATE_matching_1_1_adjust_validation_val) +
@@ -1208,7 +1228,7 @@ plot_a <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted HbA1c change",
+             title = "Average HbA1c change",
              clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
              xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 5),
              boxsize = .2,
@@ -1300,7 +1320,7 @@ plot_b <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted weight change",
+             title = "Average weight change",
              clip = c(weight_strata_axis_min, weight_strata_axis_max),
              xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
              boxsize = .2,
@@ -1776,7 +1796,7 @@ plot_a <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted HbA1c change",
+             title = "Average HbA1c change",
              clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
              xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 5),
              boxsize = .2,
@@ -1868,7 +1888,7 @@ plot_b <- rbind(
   forestplot(ci.vertices = TRUE,
              fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
              ci.vertices.height = 0.1,
-             title = "Predicted weight change",
+             title = "Average weight change",
              clip = c(weight_strata_axis_min, weight_strata_axis_max),
              xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
              boxsize = .2,
@@ -2242,4 +2262,237 @@ grid.text(expression(bold("B.2")), vp = viewport(layout.pos.row = 2, layout.pos.
 grid.text(expression(bold("B.3")), vp = viewport(layout.pos.row = 2, layout.pos.col = 3), hjust = 12, vjust = -17.5)
 
 dev.off()
+
+
+
+#:--------------------------------------------------------------------------------
+### Validation hold-out cohort with/without CVD calibration
+
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+
+hba1c.test <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds"), by = c("patid", "pated"))
+
+hba1c.test.with.cvd <- hba1c.test %>%
+  filter(preangina == "Yes" | preaf == "Yes" | prerevasc == "Yes" | preheartfailure == "Yes" | prehypertension == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prestroke == "Yes" | pretia == "Yes") %>%
+  mutate(hba1c_diff.q = ntile(effects, 10)) %>%
+  rename("hba1c_diff" = "effects") %>%
+  drop_na(hba1c_diff.q)
+
+ATE_psm_1_1_hba1c.test.with.cvd <- calc_ATE(data = hba1c.test.with.cvd,
+                                        validation_type = "PSM", variable = "posthba1cfinal",
+                                        quantile_var = "hba1c_diff.q", prop_scores = hba1c.test.with.cvd$prop.score, 
+                                        order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+ATE_psm_1_1_adjusted_hba1c.test.with.cvd <- calc_ATE(data = hba1c.test.with.cvd,
+                                                     validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                                     quantile_var = "hba1c_diff.q", prop_scores = hba1c.test.with.cvd$prop.score, 
+                                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+ATE_adjusted_hba1c.test.with.cvd <- calc_ATE(data = hba1c.test.with.cvd,
+                                             validation_type = "Adjust", variable = "posthba1cfinal",
+                                             quantile_var = "hba1c_diff.q",
+                                             order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+
+plot_ATE_psm_1_1_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort with CVD (n=", format(sum(ATE_psm_1_1_hba1c.test.with.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching"
+  )
+
+plot_ATE_psm_1_1_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort with CVD (n=", format(sum(ATE_psm_1_1_adjusted_hba1c.test.with.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching and estimate adjustment"
+  )
+
+plot_ATE_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort with CVD (n=", format(sum(ATE_adjusted_hba1c.test.with.cvd[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Estimate adjustment"
+  )
+
+
+hba1c.test.without.cvd <- hba1c.test %>%
+  filter(!pated %in% hba1c.test.with.cvd$pated) %>%
+  mutate(hba1c_diff.q = ntile(effects, 10)) %>%
+  rename("hba1c_diff" = "effects") %>%
+  drop_na(hba1c_diff.q)
+
+ATE_psm_1_1_hba1c.test.without.cvd <- calc_ATE(data = hba1c.test.without.cvd,
+                                            validation_type = "PSM", variable = "posthba1cfinal",
+                                            quantile_var = "hba1c_diff.q", prop_scores = hba1c.test.without.cvd$prop.score, 
+                                            order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+ATE_psm_1_1_adjusted_hba1c.test.without.cvd <- calc_ATE(data = hba1c.test.without.cvd,
+                                                     validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                                     quantile_var = "hba1c_diff.q", prop_scores = hba1c.test.without.cvd$prop.score, 
+                                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+ATE_adjusted_hba1c.test.without.cvd <- calc_ATE(data = hba1c.test.without.cvd,
+                                             validation_type = "Adjust", variable = "posthba1cfinal",
+                                             quantile_var = "hba1c_diff.q",
+                                             order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+
+
+plot_ATE_psm_1_1_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort without CVD (n=", format(sum(ATE_psm_1_1_hba1c.test.without.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching"
+  )
+
+plot_ATE_psm_1_1_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort without CVD (n=", format(sum(ATE_psm_1_1_adjusted_hba1c.test.without.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Propensity score matching and estimate adjustment"
+  )
+
+plot_ATE_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(
+    title = paste0("Cohort without CVD (n=", format(sum(ATE_adjusted_hba1c.test.without.cvd[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
+    subtitle = "Estimate adjustment"
+  )
+
+plot_sup_13 <- (plot_ATE_psm_1_1_hba1c.test.with.cvd | plot_ATE_psm_1_1_hba1c.test.without.cvd) / (plot_ATE_psm_1_1_adjusted_hba1c.test.with.cvd | plot_ATE_psm_1_1_adjusted_hba1c.test.without.cvd) / (plot_ATE_adjusted_hba1c.test.with.cvd | plot_ATE_adjusted_hba1c.test.without.cvd) +
+  plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2", "C.1", "C.2")))
+
+
+pdf(width = 10, height = 15, "Plots/Paper/Sup_Mat/11.08.plot_sup_13.pdf")
+plot_sup_13
+dev.off()
+
+
+
+
+#:--------------------------------------------------------------------------------
+### Variables ranges across HbA1c benefit subgroups 
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+# Full cohort for average values
+full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated"))
+
+group.full.cohort <- group_values(data = full.cohort,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals) 
+
+group.full.cohort <- group.full.cohort %>%
+  mutate(intervals = ifelse(intervals == levels(group.full.cohort$intervals)[1], "SGLT2i benefit >5 mmol/mol",
+                            ifelse(intervals == levels(group.full.cohort$intervals)[2], "SGLT2i benefit 3-5 mmol/mol",
+                                   ifelse(intervals == levels(group.full.cohort$intervals)[3], "SGLT2i benefit 0-3 mmol/mol",
+                                          ifelse(intervals == levels(group.full.cohort$intervals)[4], "GLP1-RA benefit 0-3 mmol/mol",
+                                                 ifelse(intervals == levels(group.full.cohort$intervals)[5], "GLP1-RA benefit 3-5 mmol/mol",
+                                                        ifelse(intervals == levels(group.full.cohort$intervals)[6], "GLP1-RA benefit >5 mmol/mol", intervals))))))
+  ) %>%
+  mutate(intervals = factor(intervals, levels = c("SGLT2i benefit >5 mmol/mol", "SGLT2i benefit 3-5 mmol/mol", "SGLT2i benefit 0-3 mmol/mol", "GLP1-RA benefit 0-3 mmol/mol", "GLP1-RA benefit 3-5 mmol/mol", "GLP1-RA benefit >5 mmol/mol")))
+
+levels(group.full.cohort$sex) <- c("Females", "Males")
+levels(group.full.cohort$ncurrtx) <- c("0", "1", "2", "3", "4+")
+
+# number of other current drugs
+plot_ncurrtx_strata <- group.full.cohort %>%
+  select(ncurrtx, intervals) %>%
+  ggplot(aes(x = intervals)) +
+  geom_bar(aes(fill = ncurrtx), position = "fill") +
+  ggtitle("Number of other current\nglucose-lowering drugs") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+plot_sex_strata <- group.full.cohort %>%
+  select(sex, intervals) %>%
+  ggplot(aes(x = intervals)) +
+  geom_bar(aes(fill = sex), position = "fill") +
+  ggtitle("Sex") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+plot_prehba1c_strata <- group.full.cohort %>%
+  select(intervals, prehba1c) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = prehba1c)) +
+  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  ggtitle("HbA1c") +
+  ylim(25, 150) +
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+plot_preegfr_strata <- group.full.cohort %>%
+  select(intervals, preegfr) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = preegfr)) +
+  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  ggtitle("eGFR") +
+  ylim(20, 140) +
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+plot_agetx_strata <- group.full.cohort %>%
+  select(intervals, agetx) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = agetx)) +
+  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  ggtitle("Current age") +
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+plot_prebmi_strata <- group.full.cohort %>%
+  select(intervals, prebmi) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = prebmi)) +
+  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  ggtitle("BMI") +
+  ylim(12.5, 62.5) +
+  theme_bw() +
+  theme(axis.title = element_blank(),
+        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        strip.background = element_rect(fill = "white"),
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+  
+
+plot_sup_14 <- patchwork::wrap_plots(list(plot_ncurrtx_strata, plot_sex_strata, plot_prehba1c_strata, plot_preegfr_strata, plot_agetx_strata, plot_prebmi_strata), nrow = 1)
+
+
+pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.pdf")
+plot_sup_14
+dev.off()
+
+
+
 
