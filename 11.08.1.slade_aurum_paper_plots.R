@@ -46,7 +46,7 @@ ATE_adjust_validation_dev <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bc
 # plot development cohort calibration
 plot_ATE_adjust_validation_dev <- ATE_plot(ATE_adjust_validation_dev[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  ggtitle(paste0("Development cohort (n=", format(sum(ATE_adjust_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"))
+  ggtitle(paste0("Model fitting cohort (n=", format(sum(ATE_adjust_validation_dev[["effects"]]$N),big.mark=",",scientific=FALSE), ")"))
 
 ### C
 
@@ -165,7 +165,7 @@ plot_sex_strata <- full.cohort %>%
   select(sex, effects) %>%
   ggplot(aes(x = sex, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.1) +
   ylim(-10, 10) +
   ggtitle("Sex") +
   ylab("Predicted treatment effects (mmol/mol)") +
@@ -195,7 +195,7 @@ plot_prepad_strata <- full.cohort %>%
   select(prepad, effects, sex) %>%
   ggplot(aes(x = prepad, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.3) +
   facet_wrap(~sex) +
   ylim(-10, 10) +
   ggtitle("Peripheral arterial disease") +
@@ -211,7 +211,7 @@ plot_preihd_strata <- full.cohort %>%
   select(preihd, effects, sex) %>%
   ggplot(aes(x = preihd, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.3) +
   facet_wrap(~sex) +
   ylim(-10, 10) +
   ggtitle("Ischaemic heart disease") +
@@ -227,7 +227,7 @@ plot_preneuropathy_strata <- full.cohort %>%
   select(preneuropathy, effects, sex) %>%
   ggplot(aes(x = preneuropathy, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.3) +
   facet_wrap(~sex) +
   ylim(-10, 10) +
   ggtitle("Neuropathy") +
@@ -243,7 +243,7 @@ plot_preretinopathy_strata <- full.cohort %>%
   select(preretinopathy, effects, sex) %>%
   ggplot(aes(x = preretinopathy, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.3) +
   facet_wrap(~sex) +
   ylim(-10, 10) +
   ggtitle("Retinopathy") +
@@ -259,7 +259,7 @@ plot_preheartfailure_strata <- full.cohort %>%
   select(preheartfailure, effects, sex) %>%
   ggplot(aes(x = preheartfailure, y = effects)) +
   geom_hline(aes(yintercept = 0), colour = "red") +
-  geom_boxplot(outlier.shape = NA) +
+  geom_boxplot(outlier.shape = NA, width = 0.3) +
   facet_wrap(~sex) +
   ylim(-10, 10) +
   ggtitle("Heart failure") +
