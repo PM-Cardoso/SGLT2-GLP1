@@ -91,12 +91,17 @@ Files:
     - .03: Descriptive analysis of datasets.
     - .04: Propensity score model.
     - .05: Model heterogeneity.
-    - .06: Risks/Benefits: weight change, eGFR change, discontinuation, CVD/HF/CKD outcomes.
+    - .06: Risks/Benefits: hba1c change, eight change, eGFR change, discontinuation, CVD/HF/CKD outcomes, microvascular complications.
     - .07: Differential treatment effects.
     - .08: Paper plots.
+        - .1: Main plots of paper
+        - .2: Supplementary plots of paper
+        - .3: Plots for DUK.
     - .09: Comparison of SGLT2vsGLP1 BCF model to SGLT2vsDPP4 linear model (John Dennis).
     - .10: Validation of treatment effects splitting by ethnicity.
     - .11: Validation of the excluded individuals that were prescribed semaglutide.
+    - .12: Validation of treatment effects in those insulin treated.
+    - .13: Validation of treatment effects in those with/without baseline CVD.
 
 
     
