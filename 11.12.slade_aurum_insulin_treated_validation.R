@@ -19,7 +19,7 @@ dir.create(output_path)
 dir.create("Plots")
 
 ## male directory for outputs
-dir.create(paste0(output_path, "/semaglutide"))
+dir.create(paste0(output_path, "/insulin_treated"))
 
 
 ###############################################################################
@@ -40,7 +40,7 @@ source("11.02.slade_aurum_set_data.R")
 ###############################################################################
 
 ## Load dataset
-semaglutide.dataset <- set_up_data_sglt2_glp1(dataset.type="semaglutide.dataset")
+insulin.dataset <- set_up_data_sglt2_glp1(dataset.type="insulin.dataset")
 
 # load in variables used in the model
 variables_mu <- readRDS(paste0(output_path, "/response_model_bcf/variables_mu.rds"))
@@ -50,24 +50,17 @@ variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.
 bcf_model <- readRDS(paste0(output_path, "/response_model_bcf/bcf_model.rds"))
 
 # Create interim dataset with the variables needed
-interim.dataset <- semaglutide.dataset %>%
+interim.dataset <- insulin.dataset %>%
   # select variables to make prediction
   select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau))))) %>%
   drop_na()
 
-# BCF has a quirk where you can only make predicted if both drugs are in the dataset
-interim.dataset <- rbind(interim.dataset,
-                         interim.dataset %>%
-                           slice(1) %>%
-                           mutate(drugclass = factor("SGLT2", levels = c("GLP1", "SGLT2"))))
-
-
 # Predict treatment effect for these patients from our model
 if (class(try(
   
-  patient_effects <- readRDS(paste0(output_path, "/semaglutide/patient_effects.rds"))
+  patient_effects <- readRDS(paste0(output_path, "/insulin_treated/patient_effects.rds"))
   
-  # predictions.interim <- readRDS(paste0(output_path, "/semaglutide/predictions.interim.rds"))
+  # predictions.interim <- readRDS(paste0(output_path, "/insulin_treated/predictions.interim.rds"))
   
   , silent = TRUE)) == "try-error") {
   
@@ -94,20 +87,53 @@ if (class(try(
                                  save_tree_directory = paste0(output_path, "/response_model_bcf/trees_no_prop"))
   
   
-  saveRDS(predictions.interim, paste0(output_path, "/semaglutide/predictions.interim.rds"))
+  saveRDS(predictions.interim, paste0(output_path, "/insulin_treated/predictions.interim.rds"))
   
   # Combine and remove the extra iteration added
   patient_effects <- interim.dataset %>%
     select(patid, pated) %>%
-    cbind(effects = colMeans(predictions.interim$tau)) %>%
-    slice(-nrow(interim.dataset))
+    cbind(effects = colMeans(predictions.interim$tau))
+    # slice(-nrow(interim.dataset))
   
   
-  saveRDS(patient_effects, paste0(output_path, "/semaglutide/patient_effects.rds"))
+  saveRDS(patient_effects, paste0(output_path, "/insulin_treated/patient_effects.rds"))
   
 }
 
 
+#:-------------------------------------------------------------------------------
+## Validation of individualised treatment effects
+
+### create dataset with treatment effect
+predicted_observed <- interim.dataset %>%
+  left_join(patient_effects, by = c("patid", "pated")) %>%
+  rename("hba1c_diff" = "effects") %>%
+  mutate(hba1c_diff.q = ntile(hba1c_diff, 10))
+
+
+# posthba1c ~ drugclass + adjust (all variables used in bcf)
+if (class(try(
+  
+  ATE_adjust_validation <- readRDS(paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  ATE_adjust_validation <- calc_ATE(data = predicted_observed,
+                                        validation_type = "Adjust", variable = "posthba1cfinal",
+                                        quantile_var = "hba1c_diff.q",
+                                        order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
+  
+  saveRDS(ATE_adjust_validation, paste0(output_path, "/response_model_bcf/assessment/ATE_adjust_validation.rds"))
+}
+
+# Plot calibration of treatment effects
+plot_ATE_adjust_validation <- ATE_plot(ATE_adjust_validation[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", ymin = -12, ymax = 12) +
+  ggtitle(paste0("Adjusted model (n=", format(nrow(predicted_observed),big.mark=",",scientific=FALSE), ")"))
+
+
+pdf("Plots/11.12.insulin_treated.pdf")
+plot_ATE_adjust_validation
+dev.off()
 
 #:-------------------------------------------------------------------------------
 #:-------------------------------------------------------------------------------
@@ -223,37 +249,18 @@ p.value <- 0.05
 ncolx <- 10
 sample_frac <- 1
 
-cohort <- "semaglutide"
+cohort <- "insulin"
 
-observed <- interim.dataset$posthba1cfinal[-nrow(interim.dataset)]
-predicted <- colMeans(predictions.interim$mu)[-nrow(interim.dataset)]
+observed <- interim.dataset$posthba1cfinal
+predicted <- colMeans(predictions.interim$mu)
 
 # dataset required for the calibration
-dataset <- semaglutide.dataset %>%
+dataset <- insulin.dataset %>%
   # select variables to make prediction
   select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau))))) %>%
   drop_na()
 
 # Run test
-semaglutide.test <- closedtest(cohort,dataset,observed,predicted,p.value)
-
-# Calculate the new adjusted predicted treatment effects
-adjusted_effect <- patient_effects %>%
-  mutate(effects = effects - semaglutide.test$intercept[2]) %>%
-  mutate(best_drug = ifelse(effects > 0, "Favours GLP1", "Favours SGLT2"))
-
-# Table of new optimal therapy
-adjusted_effect_table <- adjusted_effect %>%
-  select(best_drug) %>%
-  table()/nrow(adjusted_effect)
+insulin.test <- closedtest(cohort,dataset,observed,predicted,p.value)
 
 
-# Plot new predicted treatment effects
-adjusted_effect_hist <- hist_plot(adjusted_effect %>% rename("mean" = "effects"), 
-                                  xmin = -10, xmax = 35, 
-                                  title = paste0("Semaglutide cohort (n=", nrow(adjusted_effect), ") - adjusted intercept (SGLT2=", round(adjusted_effect_table[2]*100), "%, GLP1=", round(adjusted_effect_table[1]*100), "%)"))
-
-# PDF with new predicted treatment effect histogram
-pdf(width = 7, height = 5, "Plots/11.11.semaglutide_validation.pdf")
-adjusted_effect_hist
-dev.off()

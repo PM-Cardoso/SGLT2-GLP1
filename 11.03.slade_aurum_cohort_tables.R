@@ -2,73 +2,47 @@
 ## Description:
 ##  - In this file we:
 ##    - Produce tables to describe cohorts
+##    - Produce tables to describe forest plots.
 ####################
 
 
+### Load libraries required
 library(tidyverse)
 library(tableone)
 
-
+### Load functions required
 source("11.02.slade_aurum_set_data.R")
 source("11.01.slade_aurum_functions.R")
 
-####
+#:--------------------------------------------------------------------------------------
+## Start of the file
 
-# Inclusion criteria
+### Run through the inclusion criteria to make all necessary datasets.
 
 set_up_data_sglt2_glp1(dataset.type = "diagnostics")
 
-###
+### Make tables for each of the datasets
 
-vars <- c("yrdrugstart","agetx", "t2dmduration", "sex", "ethnicity", "drug_canagliflozin", "drug_dapagliflozin", "drug_empagliflozin", "drug_ertugliflozin",
-          "drug_dulaglutide", "drug_exenatide_short", "drug_exenatide_long", "drug_liraglutide", "drug_lixisenatide", "deprivation", "smoke", "drugline", 
-          "ncurrtx", "MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1", "prehba1c", "prehba1c_na", "prebmi", "prebmi_na", "preegfr", "preegfr_na", 
-          "prehdl", "prehdl_na", "prealt", "prealt_na", "prealbuminblood", "prealbuminblood_na", "prebilirubin", "prebilirubin_na", 
-          "pretotalcholesterol", "pretotalcholesterol_na", "premap", "premap_na", "prediabeticnephropathy", "preneuropathy", "preretinopathy", "preangina",
-          "CV_problems", "microvascular_complications", "ASCVD", "preaf", "prerevasc", "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction", "prepad", "prestroke",
-          "pretia", "preckd", "precld", "posthba1cfinal", "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
+# Variables to be used in the table
 
-####
+vars <- c("yrdrugstart","agetx", "t2dmduration", "sex", "ethnicity", "drug_canagliflozin",
+          "drug_dapagliflozin", "drug_empagliflozin", "drug_ertugliflozin", "drug_dulaglutide",
+          "drug_exenatide_short", "drug_exenatide_long", "drug_liraglutide", "drug_lixisenatide",
+          "deprivation", "smoke", "drugline", "ncurrtx", "MFN", "SU", "DPP4", "SGLT2", "TZD",
+          "GLP1", "prehba1c", "prehba1c_na", "prebmi", "prebmi_na", "preegfr", "preegfr_na", 
+          "prehdl", "prehdl_na", "prealt", "prealt_na", "prealbuminblood", "prealbuminblood_na",
+          "prebilirubin", "prebilirubin_na", "pretotalcholesterol", "pretotalcholesterol_na",
+          "premap", "premap_na", "prediabeticnephropathy", "preneuropathy", "preretinopathy",
+          "preangina","CV_problems", "microvascular_complications", "ASCVD", "preaf", 
+          "prerevasc", "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
+          "prepad", "prestroke","pretia", "preckd", "precld", "posthba1cfinal",
+          "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
 
-new.vars <- function(data){
-  # data = dataset that needs new vars
-  
-  data.new <- data %>%
-    left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort"), by = c("patid", "pated")) %>%
-    mutate(microvascular_complications = ifelse(prediabeticnephropathy == "Yes" | preneuropathy == "Yes" | preretinopathy == "Yes", "Yes", "No"),
-           CV_problems = ifelse(preangina == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prepad == "Yes" | prerevasc == "Yes" | prestroke == "Yes" | pretia == "Yes" | preaf == "Yes", "Yes", "No"),
-           ASCVD = ifelse(premyocardialinfarction == "Yes" | prestroke == "Yes" | preihd == "Yes" | prepad == "Yes" | prerevasc == "Yes", "Yes", "No"),
-           deprivation = factor(deprivation, labels = c("1", "1", "2", "2", "3", "3", "4", "4", "5", "5")),
-           preckd = factor(preckd, labels = c("stage_1/2", "stage_1/2", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4", "stage_3a/stage_3b/stage_4")),
-           drug_canagliflozin = ifelse(drugsubstances == "Canagliflozin" | drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Canagliflozin & Empagliflozin", "Yes", "No"),
-           drug_dapagliflozin = ifelse(drugsubstances == "Canagliflozin & Dapagliflozin" | drugsubstances == "Dapagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin", "Yes", "No"),
-           drug_empagliflozin = ifelse(drugsubstances == "Canagliflozin & Empagliflozin" | drugsubstances == "Dapagliflozin & Empagliflozin" | drugsubstances == "Empagliflozin", "Yes", "No"),
-           drug_ertugliflozin = ifelse(drugsubstances == "Ertugliflozin", "Yes", "No"),
-           drug_dulaglutide = ifelse(drugsubstances == "Dulaglutide" | drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Dulaglutide & Liraglutide", "Yes", "No"),
-           drug_exenatide_short = ifelse(drugsubstances == "Dulaglutide & Exenatide" | drugsubstances == "Exenatide" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Liraglutide", "Yes", "No"),
-           drug_exenatide_long = ifelse(drugsubstances == "Dulaglutide & Exenatide prolonged-release" | drugsubstances == "Exenatide & Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release" | drugsubstances == "Exenatide prolonged-release & Liraglutide", "Yes", "No"),
-           drug_liraglutide = ifelse(drugsubstances == "Dulaglutide & Liraglutide" | drugsubstances == "Exenatide & Liraglutide" | drugsubstances == "Exenatide prolonged-release & Liraglutide" | drugsubstances == "Liraglutide" | drugsubstances == "Liraglutide & Lixisenatide", "Yes", "No"),
-           drug_lixisenatide = ifelse(drugsubstances == "Liraglutide & Lixisenatide" | drugsubstances == "Lixisenatide", "Yes", "No"),
-           prehba1c_na = ifelse(is.na(prehba1c), "Yes", "No"),
-           prebmi_na = ifelse(is.na(prebmi), "Yes", "No"),
-           preegfr_na = ifelse(is.na(preegfr), "Yes", "No"),
-           prehdl_na = ifelse(is.na(prehdl), "Yes", "No"),
-           prealt_na = ifelse(is.na(prealt), "Yes", "No"),
-           prealbuminblood_na = ifelse(is.na(prealbuminblood), "Yes", "No"),
-           prebilirubin_na = ifelse(is.na(prebilirubin), "Yes", "No"),
-           pretotalcholesterol_na = ifelse(is.na(pretotalcholesterol), "Yes", "No"),
-           premap_na = ifelse(is.na(premap), "Yes", "No"),
-           posthba1cfinal_na = ifelse(is.na(posthba1cfinal), "Yes", "No"),
-           hba1cmonth_na = ifelse(is.na(hba1cmonth), "Yes", "No"))
-  
-  return(data.new)
-  
-}
+#:-----------------------
+############## Predicted treatment benefits
+####### > 5 mmol for either drug
 
-#:-----------------------------------------------------------------------------
-############## Benefits
-
-### HbA1c train - complete dataset used for fitting the model (smaller than hba1c.train)
+### HbA1c train - dataset with complete variables used for fitting the model (smaller than hba1c.train)
 hba1c.train.complete.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum//ps_model/patient_prop_scores.rds"), by = c("patid", "pated")) %>%
   # drop the variables with the most missingness
@@ -92,11 +66,11 @@ tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN"
 print(tab.benefits, smd = TRUE)
 
 
-### HbA1c test - complete dataset used for validation
+### HbA1c test - dataset with complete variables used for validation
 hba1c.test.complete.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum//ps_model/patient_prop_scores.rds"), by = c("patid", "pated")) %>%
   # selected variables from SparseBCF
-  select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau)), prop.score) %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum//response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds"))), prop.score) %>%
   # only complete cases
   drop_na() %>%
   as.data.frame() %>%
@@ -109,8 +83,6 @@ hba1c.test.complete.benefit <- new.vars(hba1c.test.complete.benefit.simple)
 tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = hba1c.test.complete.benefit, test = FALSE)
 ## Show table with SMD
 print(tab.benefits, smd = TRUE)
-
-
 
 
 ### HbA1c train
@@ -127,7 +99,22 @@ tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN"
 print(tab.benefits, smd = TRUE)
 
 
-### Full cohort (any benefit)
+### Full cohort
+full.cohort.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_))) %>%
+  select(patid, pated, benefit)
+
+full.cohort.benefit <- new.vars(full.cohort.benefit.simple)
+
+tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = full.cohort.benefit, test = FALSE)
+## Show table with SMD
+print(tab.benefits, smd = TRUE)
+
+
+####### any benefit for either drug
+
+### Full cohort
 full.cohort.any_benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
   mutate(benefit = ifelse(effects < 0, "SGLT2i", ifelse(effects > 0, "GLP1-RA", NA_real_))) %>%
@@ -142,22 +129,11 @@ print(tab.benefits, smd = TRUE)
 
 table(full.cohort.any_benefit.simple$sex, full.cohort.any_benefit.simple$benefit)
 
-### Full cohort (max benefit)
-full.cohort.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
-  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
-  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_))) %>%
-  select(patid, pated, benefit)
-
-full.cohort.benefit <- new.vars(full.cohort.benefit.simple)
-
-tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = full.cohort.benefit, test = FALSE)
-## Show table with SMD
-print(tab.benefits, smd = TRUE)
 
 
 
 #:-----------------------------------------------------------------------------
-############## Generic tabl description
+############## Generic table description
 
 ### Full cohort
 full.cohort.simple <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
@@ -260,12 +236,43 @@ variables_mu <- readRDS(paste0(output_path, "/response_model_bcf/variables_mu.rd
 variables_tau <- readRDS(paste0(output_path, "/response_model_bcf/variables_tau.rds"))
 
 #### Tables containing the numerical results for clinical utilities
-### HbA1c
+### HbA1c predictions of change
 
 model_variables <- unique(c(variables_mu, variables_tau))[which(unique(c(variables_mu, variables_tau)) != "sex")]
 
 ## CPRD
+## HbA1c clinical subgroups - predicted hba1c benefit
+full.dataset <- set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(hba1c.change = posthba1cfinal - prehba1c,
+         drugclass = factor(drugclass, levels = c("GLP1", "SGLT2")))
 
+# still population into subgroups
+group.full.dataset <- group_values(data = full.dataset,
+                                   variable = "effects",
+                                   breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+
+
+# predictions for the hba1c adjusted model
+predictions_hba1c_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hba1c_stan_adjusted_overall.rds")) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci))
+
+# predictions for the hba1c adjusted model full
+predictions_hba1c_stan_adjusted_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_hba1c_stan_adjusted_full.rds")) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci))
+
+
+print(predictions_hba1c_stan_adjusted_full, digits = 4)
+print(predictions_hba1c_stan_adjusted_overall, digits = 2)
+
+
+### HbA1c treatment effect
 # combine everyone that can be included in the HbA1c analysis
 hba1c <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(patient_prop_scores, by = c("patid", "pated")) %>%
@@ -394,6 +401,18 @@ print(ATE_adjust_hba1c_female[["effects"]], digits =3)
 ## CPRD
 
 # Full dataset
+
+## Read in data for weight
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(w.change = postweight - preweight)
+
+
+group.weight.dataset <- group_values(data = weight.dataset,
+                                     variable = "effects",
+                                     breaks = interval_breaks) %>%
+  drop_na(intervals)
 
 #-- PSM
 predictions_weight_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_weight_stan_psm_1_1_full.rds"))
@@ -580,6 +599,16 @@ print(predictions_egfr_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean = as.
 
 ## CPRD
 
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
+
+group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals)
+
 # Full dataset
 
 #-- PSM
@@ -609,9 +638,9 @@ predictions_discontinuation_stan_adjusted_full <- readRDS(paste0(output_path, "/
 predictions_discontinuation_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_discontinuation_stan_adjusted_overall.rds"))
 
 
-print(predictions_discontinuation_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_discontinuation_stan_adjusted_full%>%mutate(mean = as.numeric(mean)*100, lci = as.numeric(lci)*100, uci = as.numeric(uci)*100), digits = 3)
 
-print(predictions_discontinuation_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_discontinuation_stan_adjusted_overall%>%mutate(mean = as.numeric(mean)*100, lci = as.numeric(lci)*100, uci = as.numeric(uci)*100), digits = 3)
 
 # Strata by sex
 
@@ -676,6 +705,17 @@ print(predictions_discontinuation_stan_adjusted%>%filter(sex=="Female")%>%mutate
 
 # Full dataset
 
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+no_co.dataset <- set_up_data_sglt2_glp1(dataset.type="no_co.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.no_co.dataset <- group_values(data = no_co.dataset,
+                                    variable = "effects",
+                                    breaks = interval_breaks) %>%
+  drop_na(intervals)
+
 #-- PSM
 
 predictions_no_co_cvd_stan_psm_1_1_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_psm_1_1_full.rds"))
@@ -704,9 +744,9 @@ predictions_no_co_cvd_stan_adjusted_full <- readRDS(paste0(output_path, "/additi
 predictions_no_co_cvd_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_cvd_stan_adjusted_overall.rds"))
 
 
-print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 3)
 
-print(predictions_no_co_cvd_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_cvd_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 3)
 
 
 # Strata by sex
@@ -764,6 +804,33 @@ print(predictions_no_co_cvd_stan_adjusted_full%>%mutate(mean = as.numeric(mean),
 
 print(predictions_no_co_cvd_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
 
+### Microvascular complications
+
+## CPRD 
+
+# Full dataset
+
+patient_prop_scores_qrisk <- readRDS(paste0(output_path, "/additional_outcomes/patient_prop_scores_qrisk.rds"))
+
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+group.micro_comp.dataset <- group_values(data = micro_comp.dataset,
+                                         variable = "effects",
+                                         breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+
+# predictions for the Microvascular complications outcomes in the population with no Microvascular complications
+predictions_micro_comp_micro_comp_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_overall.rds"))
+
+# predictions for the Microvascular complications outcomes in the population with no Microvascular complications
+predictions_micro_comp_micro_comp_stan_adjusted_full <- readRDS(paste0(output_path, "/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_full.rds"))
+
+print(predictions_micro_comp_micro_comp_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
+
+print(predictions_micro_comp_micro_comp_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
 
 ### HF
@@ -800,9 +867,9 @@ predictions_no_co_hf_stan_adjusted_full <- readRDS(paste0(output_path, "/additio
 predictions_no_co_hf_stan_adjusted_overall <- readRDS(paste0(output_path, "/additional_outcomes/predictions_no_co_hf_stan_adjusted_overall.rds"))
 
 
-print(predictions_no_co_hf_stan_adjusted_full%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_hf_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
-print(predictions_no_co_hf_stan_adjusted_overall%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
+print(predictions_no_co_hf_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
 
 # Strata by sex
@@ -861,5 +928,20 @@ print(predictions_no_co_hf_stan_adjusted_full%>%mutate(mean = as.numeric(mean), 
 print(predictions_no_co_hf_stan_adjusted%>%filter(sex=="Female")%>%mutate(mean = as.numeric(mean), lci = as.numeric(lci), uci = as.numeric(uci)), digits = 3)
 
 
+
+### CKD
+
+#-- Adjust
+
+# predictions for the CKD - stage 3/4/5 outcomes in the population with no CVD/HF/CKD
+predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall.rds")
+
+# predictions for the CKD - stage 3/4/5 outcomes in the population with no CVD/HF/CKD
+predictions_no_co_egfr40_or_ckd5_stan_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_no_co_egfr40_or_ckd5_stan_adjusted_full.rds")
+
+
+print(predictions_no_co_egfr40_or_ckd5_stan_adjusted_full%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
+
+print(predictions_no_co_egfr40_or_ckd5_stan_adjusted_overall%>%mutate(mean = exp(as.numeric(mean)), lci = exp(as.numeric(lci)), uci = exp(as.numeric(uci))), digits = 2)
 
 

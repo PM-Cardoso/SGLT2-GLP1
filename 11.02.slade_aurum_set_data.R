@@ -14,24 +14,40 @@ require(tidyverse)
 ###############################################################################
 
 set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
+  ##### Explanation of the function:
+  # This function retrieve the original CPRD dataset, and applies all the exclusion
+  # criteria required for obtaining one of the post-datasets required for analysis.
+  # Throughout the function, there are snippets of code 'dataset.type == "diagnostics"'.
+  # This provides a breakdown of the number of people excluded/collected at each stage.
+  
   ##### Input variables
   # dataset.type: a character string mentioning the type of dataset required
+  # drugs: a vector with the names of drugs required for the dataset
   
-  # initial checks
+  ##### Initial checks required for running the function:
+  
+  # If 'dataset.type' is not supplied, error.
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
+  # If 'dataset.type' is not a character string, error.
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
+  # If 'dataset.type' is not one of the options in this list, error
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset", "insulin.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset / insulin.dataset")
   }
+  # If 'drugs' is not supplied, error.
   if (missing(drugs)) {stop("'drugs' needs to be supplied")}
+  # If 'drugs is not a character string, error.
   if (!is.character(drugs)) {stop("'drugs' must be a character string")}
+  # If 'drugs' is not one of the options in this list, error.
   for (i in 1:length(drugs)) {
     if (!(drugs[i] %in% c("DPP4", "GLP1", "INS", "MFN", "SGLT2", "SU", "TZD"))) {
       stop("'drugs' must be one of: DPP4 / GLP1 / INS / MFN / SGLT2 / SU / TZD")
     }
   }
   
-  # load original dataset # name - t2d_1stinstance
+  ##### Start of the function:
+  
+  # load original dataset
   load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
@@ -54,7 +70,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     print(table(cprd$drugclass))
     
   }
-  
   
   ################################################
   ##### Drop patients initiating before 1/1/2013
@@ -101,9 +116,21 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
     
   }
   
-  cprd <- cprd %>% 
-    filter(INS == 0)      
   
+  if (dataset.type == "insulin.dataset") {
+    
+    # select those treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 1)   
+    
+  } else {
+    
+    # select those not treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 0)      
+    
+  }
+    
   ################################################
   ##### Drop patients with ESRD
   ################################################
@@ -229,14 +256,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   
   cprd <- cprd %>%
     #####   - Drugs taken alongside treatment
-    # #####     - SU
-    # #####     - MFN
-    # #####     - DPP4
-    # #####     - TZD
-    # mutate(SU = factor(SU, levels = c(0, 1), labels = c("No", "Yes")),
-    #        MFN = factor(MFN, levels = c(0, 1), labels = c("No", "Yes")),
-    #        DPP4 = factor(DPP4, levels = c(0, 1), labels = c("No", "Yes")),
-    #        TZD = factor(TZD, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     mutate(ncurrtx = DPP4 + SGLT2 + GLP1 + TZD + SU + MFN) %>%
     mutate(ncurrtx = ifelse(ncurrtx > 4, 5, ncurrtx)) %>%
     mutate(ncurrtx = factor(ncurrtx, levels = c(1, 2, 3, 4, 5), labels = c("1", "2", "3", "4", "5+"))) %>%
@@ -347,7 +366,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
                     select(patid, next_sglt2=dstartdate)), by="patid") %>%
       filter(next_sglt2>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE)) %>%
+      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -358,7 +377,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
                     select(patid, next_glp1=dstartdate)), by="patid") %>%
       filter(next_glp1>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE)) %>%
+      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -369,7 +388,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
                     select(patid, next_tzd=dstartdate)), by="patid") %>%
       filter(next_tzd>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE)) %>%
+      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -488,7 +507,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset" | dataset.type == "insulin.dataset") {
     return(final.dataset)
   }
   
@@ -2492,7 +2511,7 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   if (dataset.type == "diagnostics") {
     
     print("################################################")
-    print("##### CVD model - final")
+    print("##### Microvascular complications model - final")
     print("################################################")
     print(nrow(final.micro_comp.dataset))
     print(table(final.micro_comp.dataset$drugclass))
@@ -2609,9 +2628,6 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
   ##### Drop if retinopathy
   ################################################
   
-  # ckd.dataset <- ckd.dataset %>%
-  #   mutate(no_retinopat = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
-  
   # printing inclusion patients
   if (dataset.type == "diagnostics") {
     
@@ -2716,17 +2732,30 @@ set_up_data <- function(dataset.type, drugs = c("GLP1", "SGLT2")) {
 
 
 set_up_data_sglt2_glp1 <- function(dataset.type) {
+  ##### Explanation of the function:
+  # This function retrieves the original CPRD dataset, and applies all the exclusion
+  # criteria required for obtaining one of the post-datasets required for analysis.
+  # Throughout the function, there are snippets of code 'dataset.type == "diagnositcs"'.
+  # These provide a breakdown of the number of people excluded/collected at each stage.
+  
+  
   ##### Input variables
   # dataset.type: a character string mentioning the type of dataset required
   
-  # initial checks
+  ##### Initial checks required for running the function:
+  
+  # If 'dataset.type' is not supplied, error.
   if (missing(dataset.type)) {stop("'dataset.type' needs to be supplied")}
+  # If 'dataset.type' is not a character string, error.
   if (!is.character(dataset.type)) {stop("'dataset.type' must be a character string")}
-  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset"))) {
-    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset")
+  # If 'dataset.type' is not one of the options in this list, error.
+  if (!(dataset.type %in% c("diagnostics", "synthetic", "full.cohort", "ps.model.train", "ps.model.test", "hba1c.train", "hba1c.test", "weight.dataset", "discontinuation.dataset", "egfr.dataset", "ckd.dataset" , "cvd.dataset", "hf.dataset", "no_co.dataset", "semaglutide.dataset", "micro_comp.dataset", "retinopathy.dataset", "insulin.dataset"))) {
+    stop("'dataset.type' must be one of: diagnostics / synthetic / full.cohort / ps.model.train / ps.model.test / hba1c.train / hba1c.test / weight.dataset / discontinuation.dataset / egfr.dataset / ckd.dataset / cvd.dataset / hf.dataset / no_co.dataset / semaglutide.dataset / micro_comp.dataset / retinopathy.dataset / insulin.dataset")
   }
   
-  # load original dataset # name - t2d_1stinstance
+  ##### Start of the function:
+  
+  # load original dataset
   load("/slade/CPRD_data/mastermind_2022/20221205_t2d_1stinstance.Rda")
   
   cprd <- t2d_1stinstance
@@ -2763,42 +2792,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     mutate(yrdrugstart = format(dstartdate, format = "%Y")) %>%
     mutate(yrdrugstart = as.numeric(yrdrugstart))
   
-  # 
-  # # table(cprd$drugclass, cprd$yrdrugstart)
-  # #        2005  2007  2008  2009  2010  2011  2012  2013  2014  2015  2016  2017  2018  2019  2020
-  # # GLP1      1   231  1711  3355  4810  4674  6074  4773  4359  4851  4674  5221  5845  7634  4822
-  # # SGLT2     0     0     0     0     0     0     1  1624  7083 13057 14286 15707 17356 19328 11408
-  # 
-  # 
-  # cprd <- cprd %>%
-  #   mutate(adj_posthba1c = ifelse(is.na(posthba1c12m), posthba1c6m - prehba1c, posthba1c12m - prehba1c))
-  # 
-  # cprd <- cprd %>%
-  #   mutate(adj_posthba1c = ifelse(is.na(posthba1c12m), posthba1c6m, posthba1c12m),
-  #          ncurrtx = DPP4 + SGLT2 + GLP1 + TZD + SU + MFN) %>%
-  #   mutate(ncurrtx = as.factor(ncurrtx))
-  # 
-  # cprd <- cprd %>%
-  #   filter(!str_detect(drugsubstances, "&"))
-  # 
-  # # change drugclass to drugsubstances
-  # 
-  # m1 <- ols(adj_posthba1c~prehba1c+rcs(yrdrugstart,3)*drugclass + drugline + ncurrtx,data=cprd,x=TRUE,y=TRUE)
-  # 
-  # m1.p <- Predict(m1,prehba1c=median(cprd$prehba1c, na.rm = TRUE),drugclass = c("SGLT2", "GLP1"), yrdrugstart=c(seq(2007,2020)), drugline=c(2), ncurrtx = c(1)) %>%
-  #   as.data.frame() %>%
-  #   mutate(Response = yhat-prehba1c,
-  #          ci.l = lower - prehba1c,
-  #          ci.u = upper - prehba1c) %>%
-  #   mutate(Response = ifelse(drugclass == "SGLT2" & yrdrugstart < 2013, NA, Response),
-  #          ci.l = ifelse(drugclass == "SGLT2" & yrdrugstart < 2013, NA, Response),
-  #          ci.u = ifelse(drugclass == "SGLT2" & yrdrugstart < 2013, NA, Response))
-  # 
-  # m1.p %>%
-  #   ggplot() + theme_bw() +
-  #   geom_line(aes(x = yrdrugstart, y = Response, colour = drugclass)) +
-  #   xlab("Year of drug start") + ylab("HbA1c change")
-    
   #######################
   
   
@@ -2835,8 +2828,19 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
     
   }
   
-  cprd <- cprd %>% 
-    filter(INS == 0)      
+  if (dataset.type == "insulin.dataset") {
+    
+    # select those treated with insulin
+    cprd <- cprd %>%
+      filter(INS == 1)
+    
+  } else {
+    
+    # select those not treated with insulin
+    cprd <- cprd %>% 
+      filter(INS == 0)  
+    
+  }
   
   ################################################
   ##### Drop patients with ESRD
@@ -2965,14 +2969,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   
   cprd <- cprd %>%
     #####   - Drugs taken alongside treatment
-    # #####     - SU
-    # #####     - MFN
-    # #####     - DPP4
-    # #####     - TZD
-    # mutate(SU = factor(SU, levels = c(0, 1), labels = c("No", "Yes")),
-    #        MFN = factor(MFN, levels = c(0, 1), labels = c("No", "Yes")),
-    #        DPP4 = factor(DPP4, levels = c(0, 1), labels = c("No", "Yes")),
-    #        TZD = factor(TZD, levels = c(0, 1), labels = c("No", "Yes"))) %>%
     mutate(ncurrtx = DPP4 + SGLT2 + GLP1 + TZD + SU + MFN) %>%
     mutate(ncurrtx = ifelse(ncurrtx > 4, 5, ncurrtx)) %>%
     mutate(ncurrtx = factor(ncurrtx, levels = c(1, 2, 3, 4, 5), labels = c("1", "2", "3", "4", "5+"))) %>%
@@ -3083,7 +3079,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                     select(patid, next_sglt2=dstartdate)), by="patid") %>%
       filter(next_sglt2>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE)) %>%
+      summarise(next_sglt2_start=min(next_sglt2, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -3094,7 +3090,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                     select(patid, next_glp1=dstartdate)), by="patid") %>%
       filter(next_glp1>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE)) %>%
+      summarise(next_glp1_start=min(next_glp1, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -3105,7 +3101,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
                     select(patid, next_tzd=dstartdate)), by="patid") %>%
       filter(next_tzd>dstartdate) %>%
       group_by(patid, dstartdate) %>%
-      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE)) %>%
+      summarise(next_tzd_start=min(next_tzd, na.rm=TRUE), .groups = "drop_last") %>%
       ungroup()
     
     
@@ -3120,12 +3116,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
       left_join(ckd_outcomes, by=c("patid", "dstartdate", "drugclass"))
     
     
-      
-    
-    
   }
-  
-  
   
   
   ###############################################################################
@@ -3227,7 +3218,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   }
   
   # if full cohort was requested
-  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset") {
+  if (dataset.type == "full.cohort" | dataset.type == "semaglutide.dataset" | dataset.type == "insulin.dataset") {
     return(final.dataset)
   }
   
@@ -5227,7 +5218,7 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   if (dataset.type == "diagnostics") {
     
     print("################################################")
-    print("##### CVD model - final")
+    print("##### Microvacular complications model - final")
     print("################################################")
     print(nrow(final.micro_comp.dataset))
     print(table(final.micro_comp.dataset$drugclass))
@@ -5343,9 +5334,6 @@ set_up_data_sglt2_glp1 <- function(dataset.type) {
   ################################################
   ##### Drop if retinopathy
   ################################################
-  
-  # ckd.dataset <- ckd.dataset %>%
-  #   mutate(no_retinopat = ifelse(!is.na(preckd) & (preckd=="stage_3a" | preckd=="stage_3b" | preckd=="stage_4"), 1, NA_real_))
   
   # printing inclusion patients
   if (dataset.type == "diagnostics") {
