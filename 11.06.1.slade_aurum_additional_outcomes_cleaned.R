@@ -114,42 +114,78 @@ group.hba1c.dataset.female <- group.hba1c.dataset %>% filter(sex == "Female")
 
 # Propensity score matching - calibration
 ## Overall
-ATE_psm_1_1_hba1c <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
+ATE_psm_1_1_hba1c <- calc_ATE(data = group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)),
+                              validation_type = "PSM", variable = "posthba1cfinal",
+                              quantile_var = "intervals", prop_scores = group.hba1c.dataset$prop.score, 
+                              order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Male
-ATE_psm_1_1_hba1c_male <- calc_ATE_validation_prop_matching(group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.male$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
+ATE_psm_1_1_hba1c_male <- calc_ATE(data = group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)),
+                                   validation_type = "PSM", variable = "posthba1cfinal",
+                                   quantile_var = "intervals", prop_scores = group.hba1c.dataset.male$prop.score, 
+                                   order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Female
-ATE_psm_1_1_hba1c_female <- calc_ATE_validation_prop_matching(group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.female$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
+ATE_psm_1_1_hba1c_female <- calc_ATE(data = group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)),
+                                     validation_type = "PSM", variable = "posthba1cfinal",
+                                     quantile_var = "intervals", prop_scores = group.hba1c.dataset.female$prop.score, 
+                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Average treatment effect - whole population
-ATE_psm_1_1_hba1c_full <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(1)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", adjust = FALSE, order = "largest")
+ATE_psm_1_1_hba1c_full <- calc_ATE(data = group.hba1c.dataset%>%mutate(intervals = as.numeric(1)),
+                                   validation_type = "PSM", variable = "posthba1cfinal",
+                                   quantile_var = "intervals", prop_scores = group.hba1c.dataset$prop.score, 
+                                   order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 # Propensity score matching + adjust - calibration
 ## Overall
-ATE_psm_1_1_adjust_hba1c <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+ATE_psm_1_1_adjust_hba1c <- calc_ATE(data = group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)),
+                                     validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                     quantile_var = "intervals", prop_scores = group.hba1c.dataset$prop.score, 
+                                     order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Male
-ATE_psm_1_1_adjust_hba1c_male <- calc_ATE_validation_prop_matching(group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.male$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+ATE_psm_1_1_adjust_hba1c_male <- calc_ATE(data = group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)),
+                                          validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                          quantile_var = "intervals", prop_scores = group.hba1c.dataset.male$prop.score, 
+                                          order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Female
-ATE_psm_1_1_adjust_hba1c_female <- calc_ATE_validation_prop_matching(group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)), "posthba1cfinal", group.hba1c.dataset.female$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+ATE_psm_1_1_adjust_hba1c_female <- calc_ATE(data = group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)),
+                                            validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                            quantile_var = "intervals", prop_scores = group.hba1c.dataset.female$prop.score, 
+                                            order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Average treatment effect - whole population
-ATE_psm_1_1_adjust_hba1c_full <- calc_ATE_validation_prop_matching(group.hba1c.dataset%>%mutate(intervals = as.numeric(1)), "posthba1cfinal", group.hba1c.dataset$prop.score, quantile_var = "intervals", breakdown = model_variables, adjust = TRUE, order = "largest")
+ATE_psm_1_1_adjust_hba1c_full <- calc_ATE(data = group.hba1c.dataset%>%mutate(intervals = as.numeric(1)),
+                                          validation_type = "PSM + adjust", variable = "posthba1cfinal",
+                                          quantile_var = "intervals", prop_scores = group.hba1c.dataset$prop.score, 
+                                          order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 # Adjust - calibration
 ## Overall
-ATE_adjust_hba1c <- calc_ATE_validation_adjust(group.hba1c.dataset, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+ATE_adjust_hba1c <- calc_ATE(data = group.hba1c.dataset%>%mutate(intervals = as.numeric(intervals)),
+                             validation_type = "Adjust", variable = "posthba1cfinal",
+                             quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Male
-ATE_adjust_hba1c_male <- calc_ATE_validation_adjust(group.hba1c.dataset.male, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+ATE_adjust_hba1c_male <- calc_ATE(data = group.hba1c.dataset.male%>%mutate(intervals = as.numeric(intervals)),
+                                  validation_type = "Adjust", variable = "posthba1cfinal",
+                                  quantile_var = "intervals",
+                                  order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Female
-ATE_adjust_hba1c_female <- calc_ATE_validation_adjust(group.hba1c.dataset.female, "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+ATE_adjust_hba1c_female <- calc_ATE(data = group.hba1c.dataset.female%>%mutate(intervals = as.numeric(intervals)),
+                                    validation_type = "Adjust", variable = "posthba1cfinal",
+                                    quantile_var = "intervals",
+                                    order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 ## Average treatment effect - whole population
-ATE_adjust_hba1c_full <- calc_ATE_validation_adjust(group.hba1c.dataset %>% mutate(intervals = as.numeric(1)), "posthba1cfinal", quantile_var = "intervals", breakdown = model_variables, adjust = TRUE)
+ATE_adjust_hba1c_full <- calc_ATE(data = group.hba1c.dataset.female%>%mutate(intervals = as.numeric(1)),
+                                  validation_type = "Adjust", variable = "posthba1cfinal",
+                                  quantile_var = "intervals",
+                                  order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 
 # Set up axis for the plots
