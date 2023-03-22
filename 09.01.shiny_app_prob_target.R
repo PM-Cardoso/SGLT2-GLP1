@@ -239,7 +239,7 @@ server <- function(input, output, session) {
     
     patient <- patient()
     
-    bart_model <- readRDS("Shiny App/bart_model.rds")
+    bart_model <- readRDS("Shiny App - GOLD/bart_model.rds")
     
     patient$drugclass <- factor("SGLT2", levels = c("GLP1", "SGLT2"))
     patient <- rbind(patient,
@@ -257,7 +257,7 @@ server <- function(input, output, session) {
     
     patient <- patient()
     
-    bart_model_weights <- readRDS("Shiny App/bart_model_weights.rds")
+    bart_model_weights <- readRDS("Shiny App - GOLD/bart_model_weights.rds")
     
     patient <- patient %>%
       mutate(drugclass = factor("SGLT2", levels = c("GLP1", "SGLT2")))
