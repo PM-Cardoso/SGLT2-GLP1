@@ -5,7 +5,12 @@
 
 
 new.vars <- function(data){
-  # data = dataset that needs new vars
+  ##### Explanation of the function:
+  # This function appends all the variables needed to make a table of characteristics.
+  # These variables are not originally included in the dataset.
+  
+  ##### Input variables
+  # data - dataset that needs new vars
   
   data.new <- data %>%
     left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort"), by = c("patid", "pated")) %>%
@@ -44,10 +49,13 @@ new.vars <- function(data){
 
 
 ## Calculate assessments of prediction
-
 rsq <- function (x, y) cor(x, y) ^ 2
 
 calc_assessment <- function(data, posteriors, outcome_variable) {
+  ##### Explanation of the function:
+  # This function calculated R2, RSS and RMSE from posterior distributions of
+  # outcome against observed
+  
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
@@ -77,6 +85,10 @@ calc_assessment <- function(data, posteriors, outcome_variable) {
 
 ## Calculate residuals
 calc_resid <- function(data, posteriors, outcome_variable) {
+  ##### Explanation of the function:
+  # This function calculates the residuals from the posterior distributions of 
+  # predicted outcomes. Both normal and standardised.
+  
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
@@ -114,35 +126,15 @@ calc_resid <- function(data, posteriors, outcome_variable) {
 
 ## Plot predicted vs observed and standardised residuals
 resid_plot <- function(pred_dev, pred_val, title) {
-  ##### Imput variables
+  ##### Explanation of the function:
+  # This function plots the predicted outcome against the observed outcome with 
+  # error bars (standardised residuals)
+  
+  ##### Input variables
   # pred_dev - predicted/observed values for development dataset
   # pred_val - predicted/observed values for validation dataset
   # title - plot title
-  # 
-  # # Plot of predicted vs observed for development dataset
-  # plot_dev_pred <- pred_dev %>%
-  #   ggplot() +
-  #   theme_bw() +
-  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-  #   geom_point(aes(x = orig, y = mean)) +
-  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
-  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   xlab("Observed HbA1c (mmol/mol)") +
-  #   ylab("Predicted HbA1c (mmol/mol)")
-  # 
-  # # Plot of predicted vs observed for validation dataset
-  # plot_val_pred <- pred_val %>%
-  #   ggplot() +
-  #   theme_bw() +
-  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-  #   geom_point(aes(x = orig, y = mean)) +
-  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
-  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   xlab("Observed HbA1c (mmol/mol)") +
-  #   ylab("Predicted HbA1c (mmol/mol)")
-  # 
+  
   # Plot of standardised residuals for development dataset
   plot_dev_std <- pred_dev %>%
     ggplot() +
@@ -181,13 +173,16 @@ resid_plot <- function(pred_dev, pred_val, title) {
 
 
 hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/mol)", ytitle = "Number of people") {
-  ### Input variables
-  # data: dataset with column 'mean' corresponding to treatment effect
-  # title: title for the plot
-  # xmin: lower limit of x axis
-  # xmax: upper limit of x axis
-  # xtitle: title of x axis
-  # ytitle: title of y axis
+  ##### Explanation of the function:
+  # This function plots the histogram of predicted treatment effects
+  
+  ##### Input variables
+  # data - dataset with column 'mean' corresponding to treatment effect
+  # title - title for the plot
+  # xmin - lower limit of x axis
+  # xmax - upper limit of x axis
+  # xtitle - title of x axis
+  # ytitle - title of y axis
   
   # define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean< 0, "Favours SGLT2i", "Favours GLP1-RA")) %>%
@@ -715,6 +710,10 @@ calc_ATE <- function(data, validation_type, variable, quantile_var, breakdown = 
 ### inverse propensity score weighting 
 
 calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q") {
+  ##### Explanation of the function:
+  # This function checks the calibration of the model using inverse propensity 
+  # score weighting
+  
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (quantile_var)
   # variable - variable with y values
@@ -788,6 +787,10 @@ calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_scor
 ### inverse propensity score weighting stabilised
 
 calc_ATE_validation_inverse_prop_weighting_stabilised <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q") {
+  ##### Explanation of the function:
+  # This function checks the calibration of the model using inverse propensity
+  # weighting stabilised.
+  
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (quantile_var)
   # variable - variable with y values
@@ -872,13 +875,17 @@ calc_ATE_validation_inverse_prop_weighting_stabilised <- function(data, variable
 
 #Function to output ATE by subgroup
 ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_background = FALSE) {
-  ###
-  # data: dataset used in fitting,
-  # pred: column with predicted values
-  # obs: observed values
-  # obslowerci: lower bound of CI for prediction
-  # obsupperci: upper bound of CI for prediction
-  # colour_background: colour of drug benefit on the background
+  ##### Explanation of the function:
+  # This function plots the average treatment effects (ATE) calculations output
+  # from the calibration functions
+  
+  ##### Input variables
+  # data - dataset used in fitting,
+  # pred - column with predicted values
+  # obs - observed values
+  # obslowerci - lower bound of CI for prediction
+  # obsupperci - upper bound of CI for prediction
+  # colour_background - colour of drug benefit on the background
   
   if (missing(ymin)) {
     ymin <- plyr::round_any(floor(min(c(unlist(data[obslowerci]), unlist(data[pred])))), 2, f = floor)
@@ -915,10 +922,13 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_bac
 
 # Function for grouping values into intervals
 group_values <- function(data, variable, breaks) {
-  ### Input variables
-  # data: dataset used in splitting
-  # variable: variable with values to be split
-  # breaks: break points between values
+  ##### Explanation of the function:
+  # This function groups individuals according to the 'breaks' provided
+  
+  ##### Input variables
+  # data - dataset used in splitting
+  # variable - variable with values to be split
+  # breaks - break points between values
   
   # stop in case 'variable' is not included in 'data'
   if (is.null(data[, variable])) {stop("'variable' not included in 'data'")}
