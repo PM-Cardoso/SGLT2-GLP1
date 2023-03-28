@@ -2277,7 +2277,7 @@ hba1c.test <- set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds"), by = c("patid", "pated"))
 
 hba1c.test.with.cvd <- hba1c.test %>%
-  filter(preangina == "Yes" | preaf == "Yes" | prerevasc == "Yes" | preheartfailure == "Yes" | prehypertension == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prestroke == "Yes" | pretia == "Yes") %>%
+  filter(preangina == "Yes" | preaf == "Yes" | prerevasc == "Yes" | preheartfailure == "Yes" | preihd == "Yes" | premyocardialinfarction == "Yes" | prestroke == "Yes" | pretia == "Yes") %>%
   mutate(hba1c_diff.q = ntile(effects, 10)) %>%
   rename("hba1c_diff" = "effects") %>%
   drop_na(hba1c_diff.q)
@@ -2298,21 +2298,21 @@ ATE_adjusted_hba1c.test.with.cvd <- calc_ATE(data = hba1c.test.with.cvd,
                                              order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 
-plot_ATE_psm_1_1_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_psm_1_1_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort with CVD (n=", format(sum(ATE_psm_1_1_hba1c.test.with.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching"
   )
 
-plot_ATE_psm_1_1_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_psm_1_1_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort with CVD (n=", format(sum(ATE_psm_1_1_adjusted_hba1c.test.with.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching and estimate adjustment"
   )
 
-plot_ATE_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_adjusted_hba1c.test.with.cvd <- ATE_plot(ATE_adjusted_hba1c.test.with.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort with CVD (n=", format(sum(ATE_adjusted_hba1c.test.with.cvd[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
@@ -2342,21 +2342,21 @@ ATE_adjusted_hba1c.test.without.cvd <- calc_ATE(data = hba1c.test.without.cvd,
                                              order = "largest", breakdown = unique(c(variables_tau, variables_mu)))
 
 
-plot_ATE_psm_1_1_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_psm_1_1_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort without CVD (n=", format(sum(ATE_psm_1_1_hba1c.test.without.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching"
   )
 
-plot_ATE_psm_1_1_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_psm_1_1_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_psm_1_1_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort without CVD (n=", format(sum(ATE_psm_1_1_adjusted_hba1c.test.without.cvd[["effects"]]$n_drug1)*2,big.mark=",",scientific=FALSE), ")"),
     subtitle = "Propensity score matching and estimate adjustment"
   )
 
-plot_ATE_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -10, 10) +
+plot_ATE_adjusted_hba1c.test.without.cvd <- ATE_plot(ATE_adjusted_hba1c.test.without.cvd[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -12, 12) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   labs(
     title = paste0("Cohort without CVD (n=", format(sum(ATE_adjusted_hba1c.test.without.cvd[["effects"]]$N),big.mark=",",scientific=FALSE), ")"),
@@ -2401,20 +2401,34 @@ group.full.cohort <- group.full.cohort %>%
 levels(group.full.cohort$sex) <- c("Females", "Males")
 levels(group.full.cohort$ncurrtx) <- c("0", "1", "2", "3", "4+")
 
-# number of other current drugs
-plot_ncurrtx_strata <- group.full.cohort %>%
-  select(ncurrtx, intervals) %>%
-  ggplot(aes(x = intervals)) +
-  geom_bar(aes(fill = ncurrtx), position = "fill") +
-  ggtitle("Number of other current\nglucose-lowering drugs") +
-  scale_y_continuous(labels = scales::percent) +
+
+plot_t2dmduration_strata <- group.full.cohort %>%
+  select(intervals, t2dmduration) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = t2dmduration)) +
+  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  ggtitle("Duration of diabetes") +
+  ylim(0, 30) +
   theme_bw() +
-  theme(legend.position = "bottom",
-        axis.title = element_blank(),
+  theme(axis.title = element_blank(),
         axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
+
+# plot_ncurrtx_strata <- group.full.cohort %>%
+#   select(ncurrtx, intervals) %>%
+#   ggplot(aes(x = intervals)) +
+#   geom_bar(aes(fill = ncurrtx), position = "fill") +
+#   ggtitle("Number of other current\nglucose-lowering drugs") +
+#   scale_y_continuous(labels = scales::percent) +
+#   theme_bw() +
+#   theme(legend.position = "bottom",
+#         axis.title = element_blank(),
+#         axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+#         strip.background = element_rect(fill = "white"),
+#         legend.title = element_blank(),
+#         plot.title = element_text(hjust = 0.5))
 
 plot_sex_strata <- group.full.cohort %>%
   select(sex, intervals) %>%
@@ -2484,15 +2498,27 @@ plot_prebmi_strata <- group.full.cohort %>%
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
-  
 
-plot_sup_14 <- patchwork::wrap_plots(list(plot_ncurrtx_strata, plot_sex_strata, plot_prehba1c_strata, plot_preegfr_strata, plot_agetx_strata, plot_prebmi_strata), nrow = 1)
+
+plot_sup_14 <- patchwork::wrap_plots(list(
+  # plot_ncurrtx_strata, 
+  plot_sex_strata, 
+  plot_prehba1c_strata, 
+  plot_preegfr_strata, 
+  plot_agetx_strata, 
+  plot_prebmi_strata
+), nrow = 1)
 
 
 pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.pdf")
 plot_sup_14
 dev.off()
 
+
+
+pdf(width = 5, height = 7, "Plots/Paper/Sup_Mat/11.08.plot_sup_15.pdf")
+plot_t2dmduration_strata
+dev.off()
 
 
 
