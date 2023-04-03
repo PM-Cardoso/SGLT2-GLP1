@@ -1295,8 +1295,56 @@ if (class(try(
 
 
 
+#:---------------------------------------------------------------------------------
+# best linear projections
+
+# load variables used in the BCF model
+variables_tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")
+variables_mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds")
+
+# load BCF model
+bcf_model <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/bcf_model.rds")
+
+# load development dataset
+hba1c.train.cleaned_up <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau))) %>%
+  cbind(effects = colMeans(bcf_model$tau))
 
 
+m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + sex + ncurrtx + rms::rcs(prehba1c, 3) + rms::rcs(prebmi, 3) + rms::rcs(preegfr, 3) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = hba1c.train.cleaned_up, x = TRUE, y = TRUE)
+
+
+# make a matrix, with samples for every iteration of the treatment effect model
+samples <- matrix(nrow = nrow(bcf_model$tau), ncol = length(m1$coef))
+
+hba1c.train.cleaned <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(variables_mu, variables_tau)))
+
+for (i in 1:nrow(bcf_model$tau)) {
+  
+  hba1c.train.cleaned_effect <- hba1c.train.cleaned %>%
+    cbind(effects = bcf_model$tau[i, ])
+    
+  m1 <- rms::ols(effects ~ rms::rcs(agetx, 3) + sex + ncurrtx + rms::rcs(prehba1c, 3) + rms::rcs(prebmi, 3) + rms::rcs(preegfr, 3) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = hba1c.train.cleaned_effect, x = TRUE, y = TRUE)
+  
+  samples[i,] <- unlist(m1$coef)
+  
+  print(i)
+  
+}
+
+
+saveRDS(samples, paste0(output_path, "/response_model_bcf/best_linear_projection.rds"))
 
 
 
