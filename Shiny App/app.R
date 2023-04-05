@@ -19,24 +19,24 @@ ui <- fluidPage(
   tags$head(tags$style(HTML(".title-blue {color: #0000CC;}"))),
   
   # Title of the page
-  h1("SGLT2-inhibitor and GLP-1 receptor agonist Treatment Selection Decision Aid", 
+  h2("SGLT2-inhibitor and GLP-1 receptor agonist Research Tool Decision Aid", 
      style="font-weight:bold;"),
   # PSA for using the app
-  h4("Prease note this is a beta version provided for academic research and vlaidation purposes and should not be used for clinical decision making.", 
+  h5("Please note this is a beta version provided for academic research and validation purposes and should not be used for clinical decision making.", 
      style="font-weight:bold;"),
   # Info about what the app does
-  h4("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
+  h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
   # App title
-  titlePanel("HbA1c prediction"),
+  h3("HbA1c prediction"),
   
   fluidRow(
     class = "grey-row",
     column(2,
-           h3(class = "title-blue", "Clinical information:"),
+           h5(class = "title-blue", "Clinical information:"),
            actionButton("calculate", "Calculate"),
            ),
     column(2,
-           h4("Biomarkers:"),
+           h5("Biomarkers:"),
            selectInput("sex_select",
                        label = h6("Sex"),
                        choices = list("Male",
@@ -47,6 +47,11 @@ ui <- fluidPage(
                         value = 65,
                         min = 18,
                         max = 120),
+           numericInput("t2dmduration_num",
+                        label = h6("T2D duration"),
+                        value = 8,
+                        min = 0,
+                        max = 102),
            numericInput("bmi_num",
                         label = h6("BMI ( kg / m", tags$sup("2"), ")"),
                         value = 40,
@@ -61,6 +66,11 @@ ui <- fluidPage(
                         value = 65,
                         min = 25,
                         max = 120),
+           numericInput("alt_num",
+                        label = h6("ALT ( U / L )"),
+                        value = 35,
+                        min = 0,
+                        max = 200),
            numericInput("egfr_num",
                         label = h6("eGFR ( ml / min / 1.73 m", tags$sup("2"), ")"),
                         value = 90,
@@ -73,7 +83,7 @@ ui <- fluidPage(
                         max = 400)
            ),
     column(2,
-           h4("Cardiovascular conditions:"),
+           h5("Cardiovascular conditions:"),
            selectInput("prepad_select",
                        label = h6("Peripheral arterial disease"),
                        choices = list("No",
@@ -90,18 +100,21 @@ ui <- fluidPage(
                                       "Yes"),
                        selected = "No")
            ),
-    column(2,
-           h4("Microvascular complications:"),
-           selectInput("preneuropathy_select",
-                       label = h6("Neuropathy"),
-                       choices = list("No",
-                                      "Yes"),
-                       selected = "No"),
-           selectInput("preretinopathy_select",
-                       label = h6("Retinopathy"),
-                       choices = list("No",
-                                      "Yes"),
-                       selected = "No")
+    column(3,
+           column(8,
+                  h5("Microvascular complications:"),
+                  selectInput("preneuropathy_select",
+                              label = h6("Neuropathy"),
+                              choices = list("No",
+                                             "Yes"),
+                              selected = "No"),
+                  selectInput("preretinopathy_select",
+                              label = h6("Retinopathy"),
+                              choices = list("No",
+                                             "Yes"),
+                              selected = "No")
+                  )
+           
            )
     ),
   
@@ -111,8 +124,14 @@ ui <- fluidPage(
               input.bmi_num < 15 || input.bmi_num > 100 ||
               input.hba1c_num < 25 || input.hba1c_num > 120 ||
               input.egfr_num < 45 || input.egfr_num > 300 ||
-              input.creatinine_num < 0 || input.creatinine_num > 400",
+              input.creatinine_num < 0 || input.creatinine_num > 400 ||
+              input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+              input.alt_num < 0 || input.alt_num > 200",
     h4("Error:", style="font-weight:bold;")
+  ),
+  conditionalPanel(
+    condition = "input.t2dmduration_num < 0 || input.t2dmduration_num > 102",
+    h4("T2D duration value outside range. Please enter a value between 0 and 102.")
   ),
   conditionalPanel(
     condition = "input.age_num < 18 || input.age_num > 120",
@@ -126,6 +145,10 @@ ui <- fluidPage(
     condition = "input.hba1c_num < 25 || input.hba1c_num > 120",
     h4("Baseline HbA1c value outside range. Please enter a value between 25 and 120.")
     ),
+  conditionalPanel(
+    condition = "input.alt_num < 0 || input.alt_num > 200",
+    h4("ALT value outside range. Please enter a value between 0 and 200.")
+  ),
   conditionalPanel(
     condition = "input.egfr_num < 45 || input.egfr_num > 300",
     h4("eGFR value outside range. Please enter a value between 45 and 300.")
@@ -142,7 +165,9 @@ ui <- fluidPage(
                 input.bmi_num < 15 || input.bmi_num > 100 ||
                 input.hba1c_num < 25 || input.hba1c_num > 120 ||
                 input.egfr_num < 45 || input.egfr_num > 300 ||
-                input.creatinine_num < 0 || input.creatinine_num > 400)",
+                input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                input.alt_num < 0 || input.alt_num > 200)",
     # results in tabs
     tabsetPanel(
       # First tab
@@ -159,7 +184,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_sglt2_5')
                                 ),
@@ -171,7 +198,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_sglt2_3')
                                 ),
@@ -183,7 +212,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_sglt2_0')
                                 ),
@@ -195,7 +226,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_glp1_0')
                                 ),
@@ -207,7 +240,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_glp1_3')
                                 ),
@@ -219,7 +254,9 @@ ui <- fluidPage(
                                             input.bmi_num < 15 || input.bmi_num > 100 ||
                                             input.hba1c_num < 25 || input.hba1c_num > 120 ||
                                             input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400)",
+                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                                            input.alt_num < 0 || input.alt_num > 200)",
                                 # text input
                                 textOutput('clinical_subgroup_glp1_5')
                                 ),
