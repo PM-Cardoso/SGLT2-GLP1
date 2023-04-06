@@ -2379,8 +2379,23 @@ dev.off()
 
 interval_breaks <- c(-5, -3, 0, 3, 5)
 
-# Full cohort for average values
-full.cohort <- set_up_data_sglt2_glp1(dataset.type="full.cohort") %>%
+
+
+full.cohort <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness (>40%)
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+  rbind(
+    set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+      # selected variables from SparseBCF
+      select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+      # only complete cases
+      drop_na() %>%
+      as.data.frame()
+  ) %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated"))
 
 group.full.cohort <- group_values(data = full.cohort,
@@ -2435,10 +2450,10 @@ plot_sex_strata <- group.full.cohort %>%
   ggplot(aes(x = intervals)) +
   geom_bar(aes(fill = sex), position = "fill") +
   ggtitle("Sex") +
+  ylab("Percentage (%)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
   theme(legend.position = "bottom",
-        axis.title = element_blank(),
         axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
@@ -2449,11 +2464,11 @@ plot_prehba1c_strata <- group.full.cohort %>%
   drop_na() %>%
   ggplot(aes(x = intervals, y = prehba1c)) +
   geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
-  ggtitle("HbA1c") +
-  ylim(25, 150) +
+  ggtitle("Baseline HbA1c") +
+  ylab("Baseline HbA1c (mmol/mol)") +
+  ylim(50, 150) +
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
@@ -2464,10 +2479,11 @@ plot_preegfr_strata <- group.full.cohort %>%
   ggplot(aes(x = intervals, y = preegfr)) +
   geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
   ggtitle("eGFR") +
-  ylim(20, 140) +
+  ylab(expression(paste("eGFR (mL/min/1.3", m^{2}, ")"))) +
+  ylim(30, 150) +
+  scale_y_continuous(breaks = c(30, 60, 90, 120, 150)) +
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
@@ -2478,9 +2494,9 @@ plot_agetx_strata <- group.full.cohort %>%
   ggplot(aes(x = intervals, y = agetx)) +
   geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
   ggtitle("Current age") +
+  ylab("Current age (years)") +
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
@@ -2491,10 +2507,10 @@ plot_prebmi_strata <- group.full.cohort %>%
   ggplot(aes(x = intervals, y = prebmi)) +
   geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
   ggtitle("BMI") +
+  ylab(expression(paste("BMI (kg/", m^{2}, ")"))) +
   ylim(12.5, 62.5) +
   theme_bw() +
-  theme(axis.title = element_blank(),
-        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
         strip.background = element_rect(fill = "white"),
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
