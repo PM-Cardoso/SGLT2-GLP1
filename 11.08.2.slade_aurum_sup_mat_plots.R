@@ -2452,6 +2452,7 @@ plot_sex_strata <- group.full.cohort %>%
   ggtitle("Sex") +
   ylab("Percentage (%)") +
   scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Accent") +
   theme_bw() +
   annotate("point", x = 1, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
   annotate("point", x = 2, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
@@ -2469,8 +2470,7 @@ plot_sex_strata <- group.full.cohort %>%
         axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
         plot.title = element_text(hjust = 0.5)) +
-  guides(fill=guide_legend(title="Sex"))
-
+  guides(fill=guide_legend(title="Sex", title.position="top", title.hjust = 0.5))
 
 plot_prehba1c_strata <- group.full.cohort %>%
   select(intervals, prehba1c) %>%
@@ -2520,8 +2520,8 @@ plot_prehba1c_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2574,8 +2574,8 @@ plot_preegfr_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2628,8 +2628,8 @@ plot_agetx_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2681,21 +2681,34 @@ plot_prebmi_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
 
 plot_sup_14 <- patchwork::wrap_plots(list(
-  plot_sex_strata, 
-  plot_prehba1c_strata, 
-  plot_preegfr_strata, 
-  plot_agetx_strata, 
-  plot_prebmi_strata
+  plot_sex_strata +
+    theme(
+      legend.position = "bottom"
+      ), 
+  
+  patchwork::wrap_plots(list(
+    
+    plot_prehba1c_strata, 
+    plot_preegfr_strata, 
+    plot_agetx_strata, 
+    plot_prebmi_strata
+    
+  ), nrow = 1) +
+    plot_layout(guides = "collect") &
+    theme(
+      legend.position = "bottom"
+    )
 ), nrow = 1) +
-  plot_layout(guides = 'collect')  & theme(legend.position = "bottom")
-
+  plot_layout(
+    widths = c(1, 5)
+    )
 
 pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.pdf")
 plot_sup_14
@@ -2718,6 +2731,7 @@ plot_sex_strata <- group.full.cohort %>%
   ggtitle("Sex") +
   ylab("Percentage (%)") +
   scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Accent") +
   theme_bw() +
   annotate("point", x = 1, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
   annotate("point", x = 2, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
@@ -2735,8 +2749,7 @@ plot_sex_strata <- group.full.cohort %>%
         axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
         plot.title = element_text(hjust = 0.5)) +
-  guides(fill=guide_legend(title="Sex"))
-
+  guides(fill=guide_legend(title="Sex", title.position="top", title.hjust = 0.5))
 
 plot_prehba1c_strata <- group.full.cohort %>%
   select(intervals, prehba1c) %>%
@@ -2786,8 +2799,8 @@ plot_prehba1c_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2840,8 +2853,8 @@ plot_preegfr_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2895,11 +2908,9 @@ plot_agetx_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
-
-
 
 plot_prebmi_strata <- group.full.cohort %>%
   select(intervals, prebmi) %>%
@@ -2949,8 +2960,8 @@ plot_prebmi_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -2962,6 +2973,32 @@ plot_sup_14.1 <- patchwork::wrap_plots(list(
   plot_prebmi_strata
 ), nrow = 1) +
   plot_layout(guides = 'collect')  & theme(legend.position = "bottom")
+
+
+
+
+plot_sup_14.1 <- patchwork::wrap_plots(list(
+  plot_sex_strata +
+    theme(
+      legend.position = "bottom"
+    ), 
+  
+  patchwork::wrap_plots(list(
+    
+    plot_prehba1c_strata, 
+    plot_preegfr_strata, 
+    plot_agetx_strata, 
+    plot_prebmi_strata
+    
+  ), nrow = 1) +
+    plot_layout(guides = "collect") &
+    theme(
+      legend.position = "bottom"
+    )
+), nrow = 1) +
+  plot_layout(
+    widths = c(1, 5)
+  )
 
 
 pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.1.pdf")
