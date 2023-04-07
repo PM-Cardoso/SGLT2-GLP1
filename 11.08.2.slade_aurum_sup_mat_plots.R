@@ -2453,77 +2453,248 @@ plot_sex_strata <- group.full.cohort %>%
   ylab("Percentage (%)") +
   scale_y_continuous(labels = scales::percent) +
   theme_bw() +
+  annotate("point", x = 1, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(0, 1), clip = "off") +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill=guide_legend(title="Sex"))
+
 
 plot_prehba1c_strata <- group.full.cohort %>%
   select(intervals, prehba1c) %>%
   drop_na() %>%
   ggplot(aes(x = intervals, y = prehba1c)) +
-  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(outlier.shape = NA, aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
   ggtitle("Baseline HbA1c") +
   ylab("Baseline HbA1c (mmol/mol)") +
-  ylim(50, 150) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  annotate("point", x = 1, y = 42, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 42, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 42, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 42, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 42, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 42, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(50, 150), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
 
 plot_preegfr_strata <- group.full.cohort %>%
   select(intervals, preegfr) %>%
   drop_na() %>%
   ggplot(aes(x = intervals, y = preegfr)) +
-  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(outlier.shape = NA, aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
   ggtitle("eGFR") +
   ylab(expression(paste("eGFR (mL/min/1.3", m^{2}, ")"))) +
-  ylim(30, 150) +
   scale_y_continuous(breaks = c(30, 60, 90, 120, 150)) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  annotate("point", x = 1, y = 19.5, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 19.5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 19.5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 19.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 19.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 19.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(30, 150), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
+
 
 plot_agetx_strata <- group.full.cohort %>%
   select(intervals, agetx) %>%
   drop_na() %>%
   ggplot(aes(x = intervals, y = agetx)) +
-  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(outlier.shape = NA, aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
   ggtitle("Current age") +
   ylab("Current age (years)") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  annotate("point", x = 1, y = 11, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 11, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 11, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 11, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 11, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 11, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(18, 100), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
 
 plot_prebmi_strata <- group.full.cohort %>%
   select(intervals, prebmi) %>%
   drop_na() %>%
   ggplot(aes(x = intervals, y = prebmi)) +
-  geom_boxplot(outlier.shape = NA, fill = c(rep("#f1a340", 3), rep("dodgerblue2", 3)), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(outlier.shape = NA, aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
   ggtitle("BMI") +
   ylab(expression(paste("BMI (kg/", m^{2}, ")"))) +
-  ylim(12.5, 62.5) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 70, vjust = 1, hjust = 1),
+  annotate("point", x = 1, y = 11.5, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 11.5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 11.5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 11.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 11.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 11.5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(15, 55), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
         strip.background = element_rect(fill = "white"),
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
 
 
 plot_sup_14 <- patchwork::wrap_plots(list(
-  # plot_ncurrtx_strata, 
   plot_sex_strata, 
   plot_prehba1c_strata, 
   plot_preegfr_strata, 
   plot_agetx_strata, 
   plot_prebmi_strata
-), nrow = 1)
+), nrow = 1) +
+  plot_layout(guides = 'collect')  & theme(legend.position = "bottom")
 
 
 pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.pdf")
@@ -2535,6 +2706,268 @@ dev.off()
 pdf(width = 5, height = 7, "Plots/Paper/Sup_Mat/11.08.plot_sup_15.pdf")
 plot_t2dmduration_strata
 dev.off()
+
+
+#####################
+
+
+plot_sex_strata <- group.full.cohort %>%
+  select(sex, intervals) %>%
+  ggplot(aes(x = intervals)) +
+  geom_bar(aes(fill = sex), position = "fill") +
+  ggtitle("Sex") +
+  ylab("Percentage (%)") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  annotate("point", x = 1, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = -0.08, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = -0.08, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(0, 1), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
+        strip.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill=guide_legend(title="Sex"))
+
+
+plot_prehba1c_strata <- group.full.cohort %>%
+  select(intervals, prehba1c) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = prehba1c)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
+  ggtitle("Baseline HbA1c") +
+  ylab("Baseline HbA1c (mmol/mol)") +
+  theme_bw() +
+  annotate("point", x = 1, y = 40, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 40, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 40, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 40, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 40, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 40, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(50, 180), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
+        strip.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
+
+plot_preegfr_strata <- group.full.cohort %>%
+  select(intervals, preegfr) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = preegfr)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
+  ggtitle("eGFR") +
+  ylab(expression(paste("eGFR (mL/min/1.3", m^{2}, ")"))) +
+  scale_y_continuous(breaks = c(30, 60, 90, 120, 150)) +
+  theme_bw() +
+  annotate("point", x = 1, y = 9, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 9, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 9, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 9, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 9, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 9, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(20, 160), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
+        strip.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
+
+
+
+plot_agetx_strata <- group.full.cohort %>%
+  select(intervals, agetx) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = agetx)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
+  ggtitle("Current age") +
+  ylab("Current age (years)") +
+  theme_bw() +
+  annotate("point", x = 1, y = 5, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 5, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 5, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(12, 100), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
+        strip.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
+
+
+plot_prebmi_strata <- group.full.cohort %>%
+  select(intervals, prebmi) %>%
+  drop_na() %>%
+  ggplot(aes(x = intervals, y = prebmi)) +
+  geom_point(aes(fill = intervals, colour = intervals), alpha = 0, shape = 15, size = 5) +
+  geom_boxplot(aes(fill = intervals), alpha = c(1, 0.6, 0.2, 0.2, 0.6, 1), show.legend = F) +
+  ggtitle("BMI") +
+  ylab(expression(paste("BMI (kg/", m^{2}, ")"))) +
+  theme_bw() +
+  annotate("point", x = 1, y = 8, shape = 15, colour = "#f1a340", size = 5, alpha = 1) +
+  annotate("point", x = 2, y = 8, shape = 15, colour = "#f1a340", size = 5, alpha = 0.6) +
+  annotate("point", x = 3, y = 8, shape = 15, colour = "#f1a340", size = 5, alpha = 0.2) +
+  annotate("point", x = 4, y = 8, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.2) +
+  annotate("point", x = 5, y = 8, shape = 15, colour = "dodgerblue2", size = 5, alpha = 0.6) +
+  annotate("point", x = 6, y = 8, shape = 15, colour = "dodgerblue2", size = 5, alpha = 1) +
+  coord_cartesian(ylim = c(15, 100), clip = "off") +
+  theme(legend.position = "bottom",
+        axis.text.y = element_text(size = 13),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 13),
+        legend.text = element_text(size= 13 ),
+        legend.title = element_text(size = 13), 
+        axis.title.x = element_text(vjust = -5, colour = "white"),
+        strip.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  scale_colour_manual(
+    name = "HbA1c benefit (mmol/mol)",
+    labels = c("SGLT2i > 5","SGLT2i 3 - 5","SGLT2i 0 - 3","GLP1-RA > 5","GLP1-RA 3 - 5","GLP1-RA 0 - 3"),
+    breaks = c(levels(group.full.cohort$intervals)[1], levels(group.full.cohort$intervals)[2], levels(group.full.cohort$intervals)[3], levels(group.full.cohort$intervals)[6], levels(group.full.cohort$intervals)[5], levels(group.full.cohort$intervals)[4]),
+    values = c("SGLT2i benefit >5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 3-5 mmol/mol" = "#f1a340",
+               "SGLT2i benefit 0-3 mmol/mol" = "#f1a340",
+               "GLP1-RA benefit 0-3 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit 3-5 mmol/mol" = "dodgerblue2",
+               "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
+  ) +
+  guides(
+    fill = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2)), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+  )
+
+
+plot_sup_14.1 <- patchwork::wrap_plots(list(
+  plot_sex_strata, 
+  plot_prehba1c_strata, 
+  plot_preegfr_strata, 
+  plot_agetx_strata, 
+  plot_prebmi_strata
+), nrow = 1) +
+  plot_layout(guides = 'collect')  & theme(legend.position = "bottom")
+
+
+pdf(width = 17, height = 8, "Plots/Paper/Sup_Mat/11.08.plot_sup_14.1.pdf")
+plot_sup_14.1
+dev.off()
+
 
 
 
