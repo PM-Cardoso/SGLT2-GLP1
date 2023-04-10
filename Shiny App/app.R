@@ -13,167 +13,199 @@ library(shiny)
 # Define UI for inputting patient values
 ui <- fluidPage(
   
-  ### colour for the rows
-  tags$head(tags$style(HTML(".grey-row {background-color: #f2f2f2;}"))),
-  ### colour for titles
-  tags$head(tags$style(HTML(".title-blue {color: #0000CC;}"))),
-  
-  # Title of the page
-  h2("SGLT2-inhibitor and GLP-1 receptor agonist Research Tool Decision Aid", 
-     style="font-weight:bold;"),
-  # PSA for using the app
-  h5("Please note this is a beta version provided for academic research and validation purposes and should not be used for clinical decision making.", 
-     style="font-weight:bold;"),
-  # Info about what the app does
-  h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
-  # App title
-  h3("HbA1c prediction"),
+   ### colour for the rows
+   tags$head(tags$style(HTML(".grey-row {background-color: #f2f2f2;}"))),
+   ### colour for titles
+   tags$head(tags$style(HTML(".title-blue {color: #0000CC;}"))),
+   
+   # Title of the page
+   h2("SGLT2-inhibitor and GLP-1 receptor agonist Research Tool Decision Aid", 
+      style="font-weight:bold;"),
+   # PSA for using the app
+   h5("Please note this is a beta version provided for academic research and validation purposes and should not be used for clinical decision making.", 
+      style="font-weight:bold;"),
+   # Info about what the app does
+   h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
+   
+   # patient characteristics
+   
+   column(4,
+          
+          fluidRow(
+            class = "grey-row",
+              column(6,
+                     h4(class = "title-blue", "Clinical information:")
+              )
+          ),
+          
+          fluidRow(
+            class = "grey-row",
+            column(6,
+                   h5("Biomarkers:", style="font-weight:bold;"),
+                   selectInput("sex_select",
+                               label = h6("Sex"),
+                               choices = list("Male",
+                                              "Female"),
+                               selected = "Male"),
+                   numericInput("age_num",
+                                label = h6("Age ( years )"),
+                                value = 65,
+                                min = 18,
+                                max = 120),
+                   numericInput("t2dmduration_num",
+                                label = h6("T2D duration"),
+                                value = 8,
+                                min = 0,
+                                max = 102),
+                   numericInput("bmi_num",
+                                label = h6("BMI ( kg / m", tags$sup("2"), ")"),
+                                value = 40,
+                                min = 15,
+                                max = 100)
+            ),
+            column(6,
+                   br(),
+                   br(),
+                   numericInput("hba1c_num",
+                                label = h6("Baseline HbA1c ( mmol / mol )"),
+                                value = 65,
+                                min = 25,
+                                max = 120),
+                   numericInput("alt_num",
+                                label = h6("ALT ( U / L )"),
+                                value = 35,
+                                min = 0,
+                                max = 200),
+                   numericInput("egfr_num",
+                                label = h6("eGFR ( ml / min / 1.73 m", tags$sup("2"), ")"),
+                                value = 90,
+                                min = 45,
+                                max = 300),
+                   numericInput("creatinine_num",
+                                label = h6("Serum creatinine ( \u03BCmol / L ) [optional]"),
+                                value = NA,
+                                min = 0,
+                                max = 400)
+            
+            )
+          
+          ),
+          
+          fluidRow(
+            class = "grey-row",
+            column(6,
+                   h5("Cardiovascular conditions:", style="font-weight:bold;"),
+                   selectInput("prepad_select",
+                               label = h6("Peripheral arterial disease"),
+                               choices = list("No",
+                                              "Yes"),
+                               selected = "No"),
+                   selectInput("preheartfailure_select",
+                               label = h6("Heart failure"),
+                               choices = list("No",
+                                              "Yes"),
+                               selected = "No"),
+                   selectInput("preihd_select",
+                               label = h6("Ischaemic heart disease"),
+                               choices = list("No",
+                                              "Yes"),
+                               selected = "No")
+            ),
+            column(6,
+                   h5("Microvascular complications:", style="font-weight:bold;"),
+                   selectInput("preneuropathy_select",
+                               label = h6("Neuropathy"),
+                               choices = list("No",
+                                              "Yes"),
+                               selected = "No"),
+                   selectInput("preretinopathy_select",
+                               label = h6("Retinopathy"),
+                               choices = list("No",
+                                              "Yes"),
+                               selected = "No")
+                   
+                   
+            )
+            
+            
+          ),
+          
+          fluidRow(
+            class = "grey-row",
+            column(4,
+                   actionButton("calculate", "Calculate"),
+                   br(),
+                   br()
+            )
+          ),
+   
+   
+),
 
-  fluidRow(
-    class = "grey-row",
-    column(2,
-           h5(class = "title-blue", "Clinical information:"),
-           actionButton("calculate", "Calculate"),
-           ),
-    column(2,
-           h5("Biomarkers:"),
-           selectInput("sex_select",
-                       label = h6("Sex"),
-                       choices = list("Male",
-                                      "Female"),
-                       selected = "Male"),
-           numericInput("age_num",
-                        label = h6("Age ( years )"),
-                        value = 65,
-                        min = 18,
-                        max = 120),
-           numericInput("t2dmduration_num",
-                        label = h6("T2D duration"),
-                        value = 8,
-                        min = 0,
-                        max = 102),
-           numericInput("bmi_num",
-                        label = h6("BMI ( kg / m", tags$sup("2"), ")"),
-                        value = 40,
-                        min = 15,
-                        max = 100)
-           ),
-    column(2,
-           br(),
-           br(),
-           numericInput("hba1c_num",
-                        label = h6("Baseline HbA1c ( mmol / mol )"),
-                        value = 65,
-                        min = 25,
-                        max = 120),
-           numericInput("alt_num",
-                        label = h6("ALT ( U / L )"),
-                        value = 35,
-                        min = 0,
-                        max = 200),
-           numericInput("egfr_num",
-                        label = h6("eGFR ( ml / min / 1.73 m", tags$sup("2"), ")"),
-                        value = 90,
-                        min = 45,
-                        max = 300),
-           numericInput("creatinine_num",
-                        label = h6("Serum creatinine ( \u03BCmol / L ) [optional]"),
-                        value = NA,
-                        min = 0,
-                        max = 400)
-           ),
-    column(2,
-           h5("Cardiovascular conditions:"),
-           selectInput("prepad_select",
-                       label = h6("Peripheral arterial disease"),
-                       choices = list("No",
-                                      "Yes"),
-                       selected = "No"),
-           selectInput("preheartfailure_select",
-                       label = h6("Heart failure"),
-                       choices = list("No",
-                                      "Yes"),
-                       selected = "No"),
-           selectInput("preihd_select",
-                       label = h6("Ischaemic heart disease"),
-                       choices = list("No",
-                                      "Yes"),
-                       selected = "No")
-           ),
-    column(3,
-           column(8,
-                  h5("Microvascular complications:"),
-                  selectInput("preneuropathy_select",
-                              label = h6("Neuropathy"),
-                              choices = list("No",
-                                             "Yes"),
-                              selected = "No"),
-                  selectInput("preretinopathy_select",
-                              label = h6("Retinopathy"),
-                              choices = list("No",
-                                             "Yes"),
-                              selected = "No")
-                  )
-           
-           )
-    ),
+column(8,
+       
+       # Conditional panel in case of error (value outside range)
+       conditionalPanel(
+         condition = "input.age_num < 18 || input.age_num > 120 ||
+                      input.bmi_num < 15 || input.bmi_num > 100 ||
+                      input.hba1c_num < 25 || input.hba1c_num > 120 ||
+                      input.egfr_num < 45 || input.egfr_num > 300 ||
+                      input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                      input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                      input.alt_num < 0 || input.alt_num > 200",
+         h4("Error:", style="font-weight:bold;")
+       ),
+       conditionalPanel(
+         condition = "input.t2dmduration_num < 0 || input.t2dmduration_num > 102",
+         h4("T2D duration value outside range. Please enter a value between 0 and 102.")
+       ),
+       conditionalPanel(
+         condition = "input.age_num < 18 || input.age_num > 120",
+         h4("Age value outside range. Please enter a value between 18 and 120.")
+       ),
+       conditionalPanel(
+         condition = "input.bmi_num < 15 || input.bmi_num > 100",
+         h4("BMI value outside range. Please enter a value between 15 and 100.")
+       ),
+       conditionalPanel(
+         condition = "input.hba1c_num < 25 || input.hba1c_num > 120",
+         h4("Baseline HbA1c value outside range. Please enter a value between 25 and 120.")
+       ),
+       conditionalPanel(
+         condition = "input.alt_num < 0 || input.alt_num > 200",
+         h4("ALT value outside range. Please enter a value between 0 and 200.")
+       ),
+       conditionalPanel(
+         condition = "input.egfr_num < 45 || input.egfr_num > 300",
+         h4("eGFR value outside range. Please enter a value between 45 and 300.")
+       ),
+       conditionalPanel(
+         condition = "input.creatinine_num < 0 || input.creatinine_num > 400",
+         h4("Serum creatinine value outside range. Please enter a value between 0 and 400.")
+       ),
+
+       fluidRow(
+         conditionalPanel(
+           condition = "input.calculate > 0 &
+          !(input.age_num < 18 || input.age_num > 120 ||
+          input.bmi_num < 15 || input.bmi_num > 100 ||
+          input.hba1c_num < 25 || input.hba1c_num > 120 ||
+          input.egfr_num < 45 || input.egfr_num > 300 ||
+          input.creatinine_num < 0 || input.creatinine_num > 400 ||
+          input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+          input.alt_num < 0 || input.alt_num > 200)",
+           # plots
+           plotOutput("hba1c_outcome", height = "250px")
+         )
+       )
+       
+       )
+
+    
   
-  # Conditional panel in case of error (value outside range)
-  conditionalPanel(
-  condition = "input.age_num < 18 || input.age_num > 120 || 
-              input.bmi_num < 15 || input.bmi_num > 100 ||
-              input.hba1c_num < 25 || input.hba1c_num > 120 ||
-              input.egfr_num < 45 || input.egfr_num > 300 ||
-              input.creatinine_num < 0 || input.creatinine_num > 400 ||
-              input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-              input.alt_num < 0 || input.alt_num > 200",
-    h4("Error:", style="font-weight:bold;")
-  ),
-  conditionalPanel(
-    condition = "input.t2dmduration_num < 0 || input.t2dmduration_num > 102",
-    h4("T2D duration value outside range. Please enter a value between 0 and 102.")
-  ),
-  conditionalPanel(
-    condition = "input.age_num < 18 || input.age_num > 120",
-    h4("Age value outside range. Please enter a value between 18 and 120.")
-    ),
-  conditionalPanel(
-    condition = "input.bmi_num < 15 || input.bmi_num > 100",
-    h4("BMI value outside range. Please enter a value between 15 and 100.")
-    ),
-  conditionalPanel(
-    condition = "input.hba1c_num < 25 || input.hba1c_num > 120",
-    h4("Baseline HbA1c value outside range. Please enter a value between 25 and 120.")
-    ),
-  conditionalPanel(
-    condition = "input.alt_num < 0 || input.alt_num > 200",
-    h4("ALT value outside range. Please enter a value between 0 and 200.")
-  ),
-  conditionalPanel(
-    condition = "input.egfr_num < 45 || input.egfr_num > 300",
-    h4("eGFR value outside range. Please enter a value between 45 and 300.")
-    ),
-  conditionalPanel(
-    condition = "input.creatinine_num < 0 || input.creatinine_num > 400",
-    h4("Serum creatinine value outside range. Please enter a value between 0 and 400.")
-    ),
   
-  fluidRow(
-    conditionalPanel(
-      condition = "input.calculate > 0 &
-                    !(input.age_num < 18 || input.age_num > 120 ||
-                    input.bmi_num < 15 || input.bmi_num > 100 ||
-                    input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                    input.egfr_num < 45 || input.egfr_num > 300 ||
-                    input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                    input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                    input.alt_num < 0 || input.alt_num > 200)",
-      # plots
-      plotOutput("hba1c_outcome", height = "250px")
-    )
   )
-  
-)
+
 
 
 
@@ -326,10 +358,10 @@ server <- function(input, output, session) {
       scale_y_continuous(breaks = seq(0, round_any(max(predictions_hba1c$value), 5, f = ceiling), by = 5)) +
       theme_classic() +
       theme(legend.position = "none",
-            title = element_text(size = 20),
+            title = element_text(size = 30),
             axis.title = element_blank(),
-            axis.text.y = element_text(size = 15),
-            axis.text.x = element_text(size = 15),
+            axis.text.y = element_text(size = 25),
+            axis.text.x = element_text(size = 20),
             axis.ticks.y = element_blank()) +
       coord_flip() +
       labs(
