@@ -28,7 +28,7 @@ ui <- fluidPage(
   h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
   # App title
   h3("HbA1c prediction"),
-  
+
   fluidRow(
     class = "grey-row",
     column(2,
@@ -160,122 +160,20 @@ ui <- fluidPage(
   
   fluidRow(
     conditionalPanel(
-    condition = "input.calculate > 0 & 
-                !(input.age_num < 18 || input.age_num > 120 || 
-                input.bmi_num < 15 || input.bmi_num > 100 ||
-                input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                input.egfr_num < 45 || input.egfr_num > 300 ||
-                input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                input.alt_num < 0 || input.alt_num > 200)",
-    # results in tabs
-    tabsetPanel(
-      # First tab
-      tabPanel("Writing",
-               conditionalPanel(condition = "input.calculate > 0",
-                                # text input
-                                textOutput('median_text')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#median_text{font-size: 30px;}")),
-               
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_sglt2_5')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_sglt2_5{font-size: 30px;}")),
-               
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_sglt2_3')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_sglt2_3{font-size: 30px;}")),
-               
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_sglt2_0')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_sglt2_0{font-size: 30px;}")),
-                 
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_glp1_0')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_glp1_0{font-size: 30px;}")),
-               
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_glp1_3')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_glp1_3{font-size: 30px;}")),
-                 
-               conditionalPanel(condition = "input.calculate > 0 & 
-                                            !(input.age_num < 18 || input.age_num > 120 || 
-                                            input.bmi_num < 15 || input.bmi_num > 100 ||
-                                            input.hba1c_num < 25 || input.hba1c_num > 120 ||
-                                            input.egfr_num < 45 || input.egfr_num > 300 ||
-                                            input.creatinine_num < 0 || input.creatinine_num > 400 ||
-                                            input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
-                                            input.alt_num < 0 || input.alt_num > 200)",
-                                # text input
-                                textOutput('clinical_subgroup_glp1_5')
-                                ),
-               ### size of output text
-               tags$head(tags$style("#clinical_subgroup_glp1_5{font-size: 30px;}")),
-               ),
-      
-      tabPanel("Plots",
-               column(5, 
-                      plotOutput("effect_probability", height = "250px")
-                      ),
-               column(6, 
-                      plotOutput("effect_histogram", height = "400px")
-                      ),
-               )
-      )
-    )
+      condition = "input.calculate > 0 &
+                    !(input.age_num < 18 || input.age_num > 120 ||
+                    input.bmi_num < 15 || input.bmi_num > 100 ||
+                    input.hba1c_num < 25 || input.hba1c_num > 120 ||
+                    input.egfr_num < 45 || input.egfr_num > 300 ||
+                    input.creatinine_num < 0 || input.creatinine_num > 400 ||
+                    input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
+                    input.alt_num < 0 || input.alt_num > 200)",
+      # plots
+      plotOutput("hba1c_outcome", height = "250px")
     )
   )
+  
+)
 
 
 
@@ -283,13 +181,12 @@ ui <- fluidPage(
 #:--------------------------------------------------------------------------------
 server <- function(input, output, session) {
   
+  require(plyr)
   require(tidyverse)
-  require(rms)
-  require(patchwork)
-  require(ggtext)
+  require(bcf)
   
   # join patient's data
-  patient <- reactive({
+  patient <- eventReactive(input$calculate, {
     # join patient's data
     patient <- NULL
     # therapy
@@ -320,6 +217,14 @@ server <- function(input, output, session) {
         patient$preegfr <- as.numeric(input$egfr_num)
       }
     }
+    # t2dmduration
+    if (is.na(input$t2dmduration_num)) {patient$agetx <- as.numeric(8)} else {
+      patient$t2dmduration <- as.numeric(input$t2dmduration_num)
+    }
+    # alt
+    if (is.na(input$alt_num)) {patient$prealt <- as.numeric(35)} else {
+      patient$prealt <- as.numeric(input$alt_num)
+    }
     # Peripheral arterial disease
     patient$prepad <- factor(input$prepad_select, levels = c("No", "Yes"))
     # Heart failure
@@ -332,285 +237,110 @@ server <- function(input, output, session) {
     patient$preretinopathy <- factor(input$preretinopathy_select, levels = c("No", "Yes"))
     # ncurrtx
     patient$ncurrtx <- factor("1", levels = c("1", "2", "3", "4", "5+"))
-    
+    # drugline
+    patient$drugline <- factor("2", levels = c("2", "3", "4", "5+"))
+    # hba1cmonth
+    patient$hba1cmonth <- as.numeric(12)
     # turn into data.frame
     patient <- as.data.frame(patient)
   })
   
   
   # Posteriors treatment effect
-  posterior_effect <- reactive({
+  posterior_tau_mu <- eventReactive(input$calculate, {
     
-    # # Show a message to the user that their data is being processed (NOT NEEDED YET SINCE THE MODEL IS FAST)
-    # showModal(modalDialog("Your data is being processed. Please wait...", 
-    #                       footer = NULL,
-    #                       tags$head(
-    #                         tags$style(HTML("
-    #                           .modal {
-    #                             position: fixed;
-    #                             top: 50%;
-    #                             left: 50%;
-    #                             transform: translate(-50%, -50%);
-    #                           }
-    #                         "))
-    #                       )))
+    # Show a message to the user that their data is being processed
+    showModal(modalDialog("Your data is being processed. Please wait...",
+                          footer = NULL,
+                          tags$head(
+                            tags$style(HTML("
+                              .modal {
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                              }
+                            "))
+                          )))
     
     # load patient
-    patient <- patient()
+    patient <- patient() %>%
+      rbind(patient() %>%
+              mutate(drugclass = factor("GLP1", levels = c("GLP1", "SGLT2"))))
     
-    patient.matrix <- model.matrix(~ rcs(patient$agetx, c(45.06724, 58.54890, 71.66600)) + sex + ncurrtx + rms::rcs(prehba1c, c(60, 74, 99)) + rms::rcs(prebmi, c(26.6, 33.5, 43.4)) + rms::rcs(preegfr, c(72.43617, 97.22303, 111.99286)) + preheartfailure + preihd + preneuropathy + prepad + preretinopathy, data = patient) %>%
-      as.matrix()
+    bcf_model <- readRDS("bcf_model.rds")
+    
+    predictions <-  predict(object = bcf_model,
+                            x_predict_control = patient %>%
+                              select(
+                                c("agetx", "t2dmduration", "drugline", "ncurrtx", "hba1cmonth", "prehba1c", "preegfr", "prealt", "prepad")
+                              ) %>%
+                              mutate_all(list(~as.numeric(.))) %>%
+                              as.matrix(),
+                            x_predict_moderate = patient %>%
+                              select(
+                                c("agetx", "sex", "ncurrtx", "prehba1c", "prebmi", "preegfr", "preheartfailure" ,"preihd", "preneuropathy", "prepad" ,"preretinopathy")
+                              ) %>%
+                              mutate_all(list(~as.numeric(.))) %>%
+                              as.matrix(),
+                            pi_pred = c(0.5, 0.5),
+                            z_pred = patient %>%
+                              select(drugclass) %>%
+                              mutate(drugclass = ifelse(drugclass == "GLP1", 0, 1)) %>%
+                              unlist(),
+                            save_tree_directory = "trees_no_prop", 
+                            log_file = NULL)
     
     # calculate effects
-    effects <- patient.matrix %*% t(readRDS("best_linear_projection.rds"))
+    predictions <- predictions
     
-    effects
-    
-  })
-  
-  
-  # Write text about median benefit
-  output$median_text <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    if (mean(posterior_effect) > 0) {
-      paste0("The median predicted benefit is ", abs(round(median(posterior_effect), 1)), " mmol/mol on GLP-1 receptor agonist above SGLT2-inhibitors.")
-    } else {
-      paste0("The median predicted benefit is ", abs(round(median(posterior_effect), 1)), " mmol/mol on SGLT2-inhibitors above GLP-1 receptor agonist.")
-    }
-    
-  })
-  
-  output$clinical_subgroup_sglt2_5 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # SGLT2 >5 mmol/mol
-    probability_SGLT2_5 <- length(which(posterior_effect < -5))/length(posterior_effect)
-    
-    if (round(probability_SGLT2_5*100) == 0) {
-      paste0("Probability of HbA1c benefit on SGLT2i >5 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on SGLT2i >5 mmol/mol: ", round(probability_SGLT2_5*100), "%")
-    }
-    
-  })
-  
-  output$clinical_subgroup_sglt2_3 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # SGLT2 3-5 mmol/mol
-    probability_SGLT2_3 <- length(which(posterior_effect < -3 & posterior_effect > -5))/length(posterior_effect)
-    
-    if (round(probability_SGLT2_3*100) == 0) {
-      paste0("Probability of HbA1c benefit on SGLT2i 3-5 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on SGLT2i 3-5 mmol/mol: ", round(probability_SGLT2_3*100), "%")
-    }
-    
-  })
-  
-  output$clinical_subgroup_sglt2_0 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # SGLT2 0-3 mmol/mol
-    probability_SGLT2_0 <- length(which(posterior_effect < 0 & posterior_effect > -3))/length(posterior_effect)
-    
-    if (round(probability_SGLT2_0*100) == 0) {
-      paste0("Probability of HbA1c benefit on SGLT2i 0-3 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on SGLT2i 0-3 mmol/mol: ", round(probability_SGLT2_0*100), "%")
-    }
-    
-  })
-  
-  output$clinical_subgroup_glp1_0 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # GLP1 0-3 mmol/mol
-    probability_GLP1_0 <- length(which(posterior_effect > 0 & posterior_effect < 3))/length(posterior_effect)
-    
-    if (round(probability_GLP1_0*100) == 0) {
-      paste0("Probability of HbA1c benefit on GLP-1RA 0-3 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on GLP-1RA 0-3 mmol/mol: ", round(probability_GLP1_0*100), "%")
-    }
-    
-  })
-  
-  output$clinical_subgroup_glp1_3 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # GLP1 0-3 mmol/mol
-    probability_GLP1_3 <- length(which(posterior_effect > 3 & posterior_effect < 5))/length(posterior_effect)
-    
-    if (round(probability_GLP1_3*100) == 0) {
-      paste0("Probability of HbA1c benefit on GLP-1RA 3-5 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on GLP-1RA 3-5 mmol/mol: ", round(probability_GLP1_3*100), "%")
-    }
-    
-  })
-  
-  output$clinical_subgroup_glp1_5 <- renderText({
-    
-    posterior_effect <- posterior_effect()
-    
-    # GLP1 0-3 mmol/mol
-    probability_GLP1_5 <- length(which(posterior_effect > 5))/length(posterior_effect)
-    
-    if (round(probability_GLP1_5*100) == 0) {
-      paste0("Probability of HbA1c benefit on GLP-1RA >5 mmol/mol: < 0.1%")
-    } else {
-      paste0("Probability of HbA1c benefit on GLP-1RA >5 mmol/mol: ", round(probability_GLP1_5*100), "%")
-    }
+    return(predictions)
     
   })
   
   
+  # hide the message when the calculation is done
+  observeEvent(posterior_tau_mu(), {
+    removeModal()
+  })
   
-  # Probability of benefit on therapy
-  output$effect_probability <- renderPlot({
+  
+  
+  output$hba1c_outcome <- renderPlot({
     
-    posterior_effect <- posterior_effect()
+    predictions <- posterior_tau_mu()
     
-    # SGLT2 probability of achieving target and surpassing it
-    probability_SGLT2 <- length(which(posterior_effect < 0))/length(posterior_effect)
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
     
-    # GLP1 probability of achieving target and surpassing it
-    probability_GLP1 <- length(which(posterior_effect > 0))/length(posterior_effect)
-    
-    # reshape data
-    df <- data.frame(
-      SGLT2 = round(probability_SGLT2*100),
-      GLP1 = round(probability_GLP1*100)
-    ) %>%
-      gather(key, val) %>%
-      mutate(
-        key = factor(key, levels = c("GLP1", "SGLT2"), labels = c("GLP-1RA", "SGLT2i")),
-        Total = 100) %>%
-      mutate(label = paste0(key, ": ", val,"%"))
-    
-    if (probability_SGLT2 > 0.995) {
-      df$label[1] <- "SGLT2i: > 99.9%"
-    } else if (probability_SGLT2 < 0.004) {
-      df$label[1] <- "SGLT2i: <0.1%"
-    }
-    if (probability_GLP1 > 0.995) {
-      df$label[2] <- "GLP-1RA: > 99.9%"
-    } else if (probability_GLP1 < 0.004) {
-      df$label[2] <- "GLP-1RA: <0.1%"
-    }
-    
-    
-    plot_effects <- df %>%
-      filter(key == "SGLT2i") %>%
-      ggplot(aes(key, val)) +
-      geom_col(aes(y = Total), fill = "dodgerblue2", alpha = 0.6) +
-      geom_col(fill = c("#f1a340"), alpha = 1) +
+    predictions_hba1c %>%
+      ggplot(aes(x = drugclass, y = value, fill = drugclass)) +
+      geom_col() +
+      scale_fill_manual(values = c("#f1a340", "dodgerblue2")) +
+      scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i: ", round(predictions_hba1c$value[1]), " mmol/mol"),
+                                  "GLP1-RA" = paste0("GLP1-RA: ", round(predictions_hba1c$value[2]), " mmol/mol"))) +
+      scale_y_continuous(breaks = seq(0, round_any(max(predictions_hba1c$value), 5, f = ceiling), by = 5)) +
+      theme_classic() +
+      theme(legend.position = "none",
+            title = element_text(size = 20),
+            axis.title = element_blank(),
+            axis.text.y = element_text(size = 15),
+            axis.text.x = element_text(size = 15),
+            axis.ticks.y = element_blank()) +
       coord_flip() +
       labs(
-        title = "Predicted optimal therapy",
-        subtitle = paste0("<span style='color:#f1a340;'>", df$label[1], "</span>  <span style='color:dodgerblue2;'>", df$label[2], "</span>")
-      ) +
-      theme_minimal() +
-      theme(
-        axis.title = element_blank(),
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        title = element_text(size = 20),
-        plot.subtitle = element_markdown(lineheight = 1.1))
-    
-    
-    
-    plot_effects
-    
-  })
-  
-  
-  # Probability of benefit on therapy - histogram
-  output$effect_histogram <- renderPlot({
-    
-    posterior_effect <- posterior_effect()
-    
-    # SGLT2 probability of achieving target and surpassing it
-    probability_SGLT2 <- length(which(posterior_effect < 0))/length(posterior_effect)
-    
-    # GLP1 probability of achieving target and surpassing it
-    probability_GLP1 <- length(which(posterior_effect > 0))/length(posterior_effect)
-    
-    # reshape data
-    df <- data.frame(
-      SGLT2 = round(probability_SGLT2*100),
-      GLP1 = round(probability_GLP1*100)
-    ) %>%
-      gather(key, val) %>%
-      mutate(
-        key = factor(key, levels = c("GLP1", "SGLT2"), labels = c("GLP-1RA", "SGLT2i")),
-        Total = 100) %>%
-      mutate(label = paste0(key, ": ", val,"%"))
-    
-    if (probability_SGLT2 > 0.995) {
-      df$label[1] <- "SGLT2i: > 99.9%"
-    } else if (probability_SGLT2 < 0.004) {
-      df$label[1] <- "SGLT2i: <0.1%"
-    }
-    if (probability_GLP1 > 0.995) {
-      df$label[2] <- "GLP-1RA: > 99.9%"
-    } else if (probability_GLP1 < 0.004) {
-      df$label[2] <- "GLP-1RA: <0.1%"
-    }
-    
-    dat <- t(posterior_effect) %>%
-      as.data.frame() %>%
-      set_names("effects") %>%
-      mutate(above= ifelse(effects < 0, "Favours SGLT2i", "Favours GLP1-RA")) %>%
-      mutate(above = factor(above, levels = c("Favours SGLT2i", "Favours GLP1-RA")))
-    
-    # plot
-    plot <- ggplot(data = dat, aes(x = effects, fill = above)) +
-      geom_histogram(position = "identity", alpha = 0.5, color = "black", breaks = seq(floor(min(posterior_effect)), ceiling(max(posterior_effect)), by = 0.5)) +
-      geom_vline(aes(xintercept = 0), linetype = "dashed")+
-      labs(
-        title = "Predicted treatment benefit",
-        subtitle = paste0("<span style='color:#f1a340;'>Negative value corresponds to a benefit on ", df$label[1],"</span><br><span style='color:dodgerblue2;'>Positive value corresponds to a benefit on ", df$label[2],"</span>"),
-        x = "HbA1c difference (mmol/mol)"
-      ) +
-      theme_classic() +
-      theme(legend.title = element_blank(),
-            legend.direction = "horizontal",
-            legend.position = "bottom",
-            legend.box = "horizontal",
-            axis.title.y = element_blank(),
-            axis.text.y = element_blank(),
-            axis.ticks.y = element_blank(),
-            axis.text.x = element_text(size = 18),
-            title = element_text(size = 20),
-            plot.subtitle = element_markdown(lineheight = 1.1))
-    
-    if (max(posterior_effect) < 0) {
-      plot <- plot +
-        scale_fill_manual(values = c("#f1a340"))
-    } else if (min(posterior_effect) > 0) {
-      plot <- plot +
-        scale_fill_manual(values = c("dodgerblue2"))
-    } else {
-      plot <- plot +
-        scale_fill_manual(values = c("#f1a340", "dodgerblue2"))
-    }
-    
-    plot
+        title = paste0("Additional HbA1c reduction from ", as.character(predictions_hba1c[which.min(predictions_hba1c$value), "drugclass"]), ": ", abs(round(predictions_hba1c$value[1]) - round(predictions_hba1c$value[2])), " mmol/mol")
+      )
+      
+      
     
     
   })
+  
   
   
   
