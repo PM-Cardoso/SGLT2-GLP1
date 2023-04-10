@@ -404,11 +404,3 @@ server <- function(input, output, session) {
 runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
 
 
-
-
-
-
-
-
-
-
