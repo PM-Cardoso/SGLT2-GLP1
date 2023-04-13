@@ -894,12 +894,12 @@ plot_sex_strata <- group.full.cohort %>%
   scale_y_continuous(labels = scales::percent) +
   scale_fill_brewer(palette = "Accent") +
   theme_bw() +
-  annotate("point", x = 1, y = -0.1, shape = 15, colour = "#f1a340", size = 12, alpha = 1) +
-  annotate("point", x = 2, y = -0.1, shape = 15, colour = "#f1a340", size = 12, alpha = 0.6) +
-  annotate("point", x = 3, y = -0.1, shape = 15, colour = "#f1a340", size = 12, alpha = 0.2) +
-  annotate("point", x = 4, y = -0.1, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.2) +
-  annotate("point", x = 5, y = -0.1, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.6) +
-  annotate("point", x = 6, y = -0.1, shape = 15, colour = "dodgerblue2", size = 12, alpha = 1) +
+  annotate("point", x = 1, y = -0.1, shape = 15, colour = "#f1a340", size = 6, alpha = 1) +
+  annotate("point", x = 2, y = -0.1, shape = 15, colour = "#f1a340", size = 6, alpha = 0.6) +
+  annotate("point", x = 3, y = -0.1, shape = 15, colour = "#f1a340", size = 6, alpha = 0.2) +
+  annotate("point", x = 4, y = -0.1, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.2) +
+  annotate("point", x = 5, y = -0.1, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.6) +
+  annotate("point", x = 6, y = -0.1, shape = 15, colour = "dodgerblue2", size = 6, alpha = 1) +
   coord_cartesian(ylim = c(0, 1), clip = "off") +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 30),
@@ -921,12 +921,12 @@ plot_prehba1c_strata <- group.full.cohort %>%
   ggtitle("Baseline HbA1c") +
   ylab("Baseline HbA1c (mmol/mol)") +
   theme_bw() +
-  annotate("point", x = 1, y = 40, shape = 15, colour = "#f1a340", size = 12, alpha = 1) +
-  annotate("point", x = 2, y = 40, shape = 15, colour = "#f1a340", size = 12, alpha = 0.6) +
-  annotate("point", x = 3, y = 40, shape = 15, colour = "#f1a340", size = 12, alpha = 0.2) +
-  annotate("point", x = 4, y = 40, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.2) +
-  annotate("point", x = 5, y = 40, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.6) +
-  annotate("point", x = 6, y = 40, shape = 15, colour = "dodgerblue2", size = 12, alpha = 1) +
+  annotate("point", x = 1, y = 40, shape = 15, colour = "#f1a340", size = 6, alpha = 1) +
+  annotate("point", x = 2, y = 40, shape = 15, colour = "#f1a340", size = 6, alpha = 0.6) +
+  annotate("point", x = 3, y = 40, shape = 15, colour = "#f1a340", size = 6, alpha = 0.2) +
+  annotate("point", x = 4, y = 40, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.2) +
+  annotate("point", x = 5, y = 40, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.6) +
+  annotate("point", x = 6, y = 40, shape = 15, colour = "dodgerblue2", size = 6, alpha = 1) +
   coord_cartesian(ylim = c(50, 150), clip = "off") +
   scale_y_continuous(breaks = c(53, 64, 75, 86, 97, 108, 119, 150)) +
   theme(legend.position = "bottom",
@@ -972,8 +972,8 @@ plot_prehba1c_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -987,12 +987,12 @@ plot_preegfr_strata <- group.full.cohort %>%
   ylab(expression(paste("eGFR (mL/min/1.3", m^{2}, ")"))) +
   scale_y_continuous(breaks = c(30, 60, 90, 120, 150)) +
   theme_bw() +
-  annotate("point", x = 1, y = 18, shape = 15, colour = "#f1a340", size = 12, alpha = 1) +
-  annotate("point", x = 2, y = 18, shape = 15, colour = "#f1a340", size = 12, alpha = 0.6) +
-  annotate("point", x = 3, y = 18, shape = 15, colour = "#f1a340", size = 12, alpha = 0.2) +
-  annotate("point", x = 4, y = 18, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.2) +
-  annotate("point", x = 5, y = 18, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.6) +
-  annotate("point", x = 6, y = 18, shape = 15, colour = "dodgerblue2", size = 12, alpha = 1) +
+  annotate("point", x = 1, y = 18, shape = 15, colour = "#f1a340", size = 6, alpha = 1) +
+  annotate("point", x = 2, y = 18, shape = 15, colour = "#f1a340", size = 6, alpha = 0.6) +
+  annotate("point", x = 3, y = 18, shape = 15, colour = "#f1a340", size = 6, alpha = 0.2) +
+  annotate("point", x = 4, y = 18, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.2) +
+  annotate("point", x = 5, y = 18, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.6) +
+  annotate("point", x = 6, y = 18, shape = 15, colour = "dodgerblue2", size = 6, alpha = 1) +
   coord_cartesian(ylim = c(30, 150), clip = "off") +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 30),
@@ -1036,8 +1036,8 @@ plot_preegfr_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -1051,12 +1051,12 @@ plot_agetx_strata <- group.full.cohort %>%
   ggtitle("Current age") +
   ylab("Current age (years)") +
   theme_bw() +
-  annotate("point", x = 1, y = 10, shape = 15, colour = "#f1a340", size = 12, alpha = 1) +
-  annotate("point", x = 2, y = 10, shape = 15, colour = "#f1a340", size = 12, alpha = 0.6) +
-  annotate("point", x = 3, y = 10, shape = 15, colour = "#f1a340", size = 12, alpha = 0.2) +
-  annotate("point", x = 4, y = 10, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.2) +
-  annotate("point", x = 5, y = 10, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.6) +
-  annotate("point", x = 6, y = 10, shape = 15, colour = "dodgerblue2", size = 12, alpha = 1) +
+  annotate("point", x = 1, y = 10, shape = 15, colour = "#f1a340", size = 6, alpha = 1) +
+  annotate("point", x = 2, y = 10, shape = 15, colour = "#f1a340", size = 6, alpha = 0.6) +
+  annotate("point", x = 3, y = 10, shape = 15, colour = "#f1a340", size = 6, alpha = 0.2) +
+  annotate("point", x = 4, y = 10, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.2) +
+  annotate("point", x = 5, y = 10, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.6) +
+  annotate("point", x = 6, y = 10, shape = 15, colour = "dodgerblue2", size = 6, alpha = 1) +
   coord_cartesian(ylim = c(18, 100), clip = "off") +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 30),
@@ -1100,8 +1100,8 @@ plot_agetx_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
@@ -1114,12 +1114,12 @@ plot_prebmi_strata <- group.full.cohort %>%
   ggtitle("BMI") +
   ylab(expression(paste("BMI (kg/", m^{2}, ")"))) +
   theme_bw() +
-  annotate("point", x = 1, y = 10.9, shape = 15, colour = "#f1a340", size = 12, alpha = 1) +
-  annotate("point", x = 2, y = 10.9, shape = 15, colour = "#f1a340", size = 12, alpha = 0.6) +
-  annotate("point", x = 3, y = 10.9, shape = 15, colour = "#f1a340", size = 12, alpha = 0.2) +
-  annotate("point", x = 4, y = 10.9, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.2) +
-  annotate("point", x = 5, y = 10.9, shape = 15, colour = "dodgerblue2", size = 12, alpha = 0.6) +
-  annotate("point", x = 6, y = 10.9, shape = 15, colour = "dodgerblue2", size = 12, alpha = 1) +
+  annotate("point", x = 1, y = 10.9, shape = 15, colour = "#f1a340", size = 6, alpha = 1) +
+  annotate("point", x = 2, y = 10.9, shape = 15, colour = "#f1a340", size = 6, alpha = 0.6) +
+  annotate("point", x = 3, y = 10.9, shape = 15, colour = "#f1a340", size = 6, alpha = 0.2) +
+  annotate("point", x = 4, y = 10.9, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.2) +
+  annotate("point", x = 5, y = 10.9, shape = 15, colour = "dodgerblue2", size = 6, alpha = 0.6) +
+  annotate("point", x = 6, y = 10.9, shape = 15, colour = "dodgerblue2", size = 6, alpha = 1) +
   coord_cartesian(ylim = c(15, 55), clip = "off") +
   theme(legend.position = "bottom",
         axis.text.y = element_text(size = 30),
@@ -1163,45 +1163,362 @@ plot_prebmi_strata <- group.full.cohort %>%
                "GLP1-RA benefit >5 mmol/mol" = "dodgerblue2")
   ) +
   guides(
-    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
-    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 12), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
+    fill = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3),
+    colour = guide_legend(title.position="top", title.hjust = 0.5, override.aes = list(alpha = c(1, 0.6, 0.2, 1, 0.6, 0.2), size = 6), shape = c(15,15,15,15,15,15),  ncol = 2, nrow = 3)
   )
 
 
 
 plot_duk_12 <- patchwork::wrap_plots(list(
-  plot_sex_strata +
-    theme(
-      legend.position = "bottom"
-    ), 
-  
-  patchwork::wrap_plots(list(
-    
-    plot_prehba1c_strata, 
-    plot_preegfr_strata, 
-    plot_agetx_strata, 
-    plot_prebmi_strata
-    
-  ), nrow = 1) +
-    plot_layout(guides = "collect") &
-    theme(
-      legend.position = "bottom"
-    )
-), nrow = 1) +
-  plot_layout(
-    widths = c(1, 5)
+  plot_sex_strata,
+  plot_prehba1c_strata,
+  plot_preegfr_strata,
+  plot_agetx_strata
+), nrow = 2, ncol = 2) +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 18),
+    legend.title = element_text(size = 18),
+    plot.title = element_text(hjust = 0.5, size = 20),
+    axis.text.y = element_text(size = 20),
+    axis.title.y = element_text(size = 20)
   )
 
-pdf(width = 81.52/2.54, height = 21.56/2.54, "Plots/DUK_2023/11.08.plot_duk_12.pdf")
+pdf(width = 34/2.54, height = 26.88/2.54, "Plots/DUK_2023/11.08.plot_duk_12.pdf")
 plot_duk_12
 dev.off()
 
 
 
 
+#:--------------------------------------------------------------------------------
+# Histogram of predicted treatment effects for overall population - poster
+
+# load treatment effects of overall population
+patient_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# plot histogram of treatment effects
+plot_duk_13 <- hist_plot(data = patient_effects %>%
+                          rename("mean" = "effects"),
+                        title = paste0("Overall cohort (n=", format(nrow(patient_effects),big.mark=",",scientific=FALSE), ")"),
+                        xmin = -15,
+                        xmax = 20) +
+  scale_y_continuous(label=comma) +
+  scale_x_continuous(breaks = c(-15, -10, -5, 0, 5, 10, 15), limits = c(-15, 15)) +
+  # geom_vline(aes(xintercept = -5), lty = "dashed", colour = "red") +
+  # geom_vline(aes(xintercept = 5), lty = "dashed", colour = "red") +
+  ggtitle("Development cohort (n=27,319)") +
+  theme(
+    plot.title = element_text(size =30),
+    legend.position = "none",
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_text(size = 30),
+    axis.title.x = element_text(size = 32)
+  )
+
+# PDF with plot
+pdf(width = 20.72/2.54, height = 18.36/2.54, "Plots/DUK_2023/11.08.plot_duk_13.pdf")
+plot_duk_13
+dev.off()
 
 
 
+# :-------------------------------------------------------------------------------
+# Calibration plots for development and validation cohorts - poster
+
+# load validation cohort model calibration
+ATE_adjust_validation_val <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/assessment/ATE_adjust_validation_val.rds")
+
+# plot validation cohort calibration
+plot_ATE_adjust_validation_val <- ATE_plot(ATE_adjust_validation_val[["effects"]], "hba1c_diff.pred", "obs", "lci", "uci", -8, 8) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  ggtitle(paste0("Validation cohort (n=",format(sum(ATE_adjust_validation_val[["effects"]]$N),big.mark=",",scientific=FALSE), ")"))
+
+# Combine plots together
+plot_duk_14 <- plot_ATE_adjust_validation_val +
+  theme(
+    plot.title = element_text(size = 30),
+    axis.text = element_text(size = 30),
+    axis.title = element_text(size = 16)
+    )
+
+# PDF with plot
+pdf(width = 17.2/2.54, height = 18.36/2.54, "Plots/DUK_2023/11.08.plot_duk_14.pdf")
+plot_duk_14
+dev.off()
+
+
+
+#:--------------------------------------------------------------------------------
+# Forest plot of predicted treatment effect benefit vs weight change - poster
+require(forestplot)
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+## Read in propensity scores
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+## Read in treatment effects
+treatment_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# Weight change population
+weight.dataset <- set_up_data_sglt2_glp1(dataset.type = "weight.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(w.change = postweight - preweight)
+
+# Split population into subgroups
+group.weight.dataset <- group_values(data = weight.dataset,
+                                     variable = "effects",
+                                     breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+# predictions for the weight adjusted model
+predictions_weight_stan_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_adjusted_overall.rds")
+
+# predictions for the weight adjusted model full
+predictions_weight_stan_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_weight_stan_adjusted_full.rds")
+
+# limits for the plot
+weight_strata_axis_min <- plyr::round_any(floor(min(c(predictions_weight_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min(),
+                                                      predictions_weight_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% min()))), 1, f = floor)
+
+weight_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_weight_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max(),
+                                                        predictions_weight_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max()))), 2, f = ceiling)
+
+# forest plot
+plot_duk_15 <- rbind(
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_weight_stan_adjusted_overall %>%
+    slice(c(1:6)),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP-1 RA"),
+  cbind(mean = 50, lci = 50, uci = 50, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP-1 RA"),
+  predictions_weight_stan_adjusted_overall %>%
+    slice(-c(1:6)),
+  predictions_weight_stan_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.weight.dataset$intervals)[1], paste0(">5 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                            ifelse(intervals == levels(group.weight.dataset$intervals)[2], paste0("3-5 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.weight.dataset$intervals)[3], paste0("0-3 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                          ifelse(intervals == levels(group.weight.dataset$intervals)[4], paste0("0-3 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                 ifelse(intervals == levels(group.weight.dataset$intervals)[5], paste0("3-5 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE),")"),
+                                                        ifelse(intervals == levels(group.weight.dataset$intervals)[6], paste0(">5 (n=", format(group.weight.dataset%>%filter(intervals==levels(group.weight.dataset$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE),")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  mutate(group = ifelse(group == "SGLT2", "SGLT2i", "GLP-1 RA")) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.3,
+             title = "Weight change",
+             clip = c(weight_strata_axis_min, weight_strata_axis_max),
+             xticks = seq(weight_strata_axis_min, weight_strata_axis_max, 1),
+             boxsize = .4,
+             lwd.ci = 3,
+             txt_gp = fpTxtGp(ticks=gpar(cex=1.5), 
+                              title=gpar(cex=2.5),
+                              legend =gpar(cex=2),
+                              label=gpar(cex=1.5),
+                              xlab=gpar(cex=1.5)),
+             xlab = "Predicted weight change (kg) (less is better)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.weight.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+# PDF with plots
+pdf(width = 27.07/2.54, height = 18.03/2.54, "Plots/DUK_2023/11.08.plot_duk_15.pdf")
+plot_duk_15
+dev.off()
+
+
+#:--------------------------------------------------------------------------------
+# Forest plot of predicted treatment effect benefit vs discontinuation - poster
+require(forestplot)
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+## Read in propensity scores
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+## Read in treatment effects
+treatment_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# Discontinuation
+discontinuation.dataset <- set_up_data_sglt2_glp1(dataset.type = "discontinuation.dataset") %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  mutate(stopdrug_6m_3mFU = factor(stopdrug_6m_3mFU))
+
+# Split population into subgroups
+group.discontinuation.dataset <- group_values(data = discontinuation.dataset,
+                                              variable = "effects",
+                                              breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+# predictions for the discontinuation adjusted model
+predictions_discontinuation_stan_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_adjusted_overall.rds")
+
+# predictions for the discontinuation model sex strata
+predictions_discontinuation_stan_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_discontinuation_stan_adjusted_full.rds")
+
+# limits for the plot
+discontinuation_overall_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                  predictions_discontinuation_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+discontinuation_strata_axis_max <- plyr::round_any(ceiling(max(c(predictions_discontinuation_stan_adjusted_overall %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100,
+                                                                 predictions_discontinuation_stan_adjusted_full %>% select(c("mean","lci","uci")) %>% as.data.frame() %>% gather() %>% select(value) %>% unlist() %>% as.numeric() %>% max() * 100))), 5, f = ceiling)
+
+# forest plot
+plot_duk_16 <- rbind(
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  predictions_discontinuation_stan_adjusted_overall %>%
+    slice(c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "SGLT2", intervals = "Predicted HbA1c benefit on GLP-1 RA"),
+  cbind(mean = 150, lci = 150, uci = 150, drugclass = "GLP1", intervals = "Predicted HbA1c benefit on GLP-1 RA"),
+  predictions_discontinuation_stan_adjusted_overall %>%
+    slice(-c(1:6)) %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100),
+  predictions_discontinuation_stan_adjusted_full %>% cbind(intervals = "Average treatment effect") %>%
+    mutate(mean = as.numeric(mean)*100,
+           lci = as.numeric(lci)*100,
+           uci = as.numeric(uci)*100)
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         intervals = ifelse(intervals == levels(group.discontinuation.dataset$intervals)[1], paste0(">5 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[1])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.discontinuation.dataset$intervals)[2], paste0("3-5 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[2])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.discontinuation.dataset$intervals)[3], paste0("0-3 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[3])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.discontinuation.dataset$intervals)[4], paste0("0-3 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[4])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.discontinuation.dataset$intervals)[5], paste0("3-5 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[5])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.discontinuation.dataset$intervals)[6], paste0(">5 (n=", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.discontinuation.dataset%>%filter(intervals==levels(group.discontinuation.dataset$intervals)[6])%>%filter(stopdrug_6m_3mFU==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals)))))),
+         uci = as.numeric(uci)) %>%
+  rename("lower" = "lci", "upper" = "uci", "group" = "drugclass", "labeltext" = "intervals") %>%
+  group_by(group) %>%
+  mutate(group = ifelse(group == "SGLT2", "SGLT2i", "GLP-1 RA")) %>%
+  forestplot(ci.vertices = TRUE,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices.height = 0.1,
+             title = "Discontinuation",
+             clip = c(0, discontinuation_overall_axis_max),
+             xticks = seq(0, discontinuation_overall_axis_max, 5),
+             boxsize = .2,
+             # lwd.ci = 3,
+             txt_gp = fpTxtGp(ticks=gpar(cex=1.5), 
+                              title=gpar(cex=2.5),
+                              legend =gpar(cex=2),
+                              label=gpar(cex=1.5),
+                              xlab=gpar(cex=1.5)),
+             xlab = "Discontinuation (%) (less is better)") %>%
+  fp_add_header(paste0("Overall population (n=", format(group.discontinuation.dataset%>%nrow(),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_set_style(box = c("#f1a340", "dodgerblue2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+# PDF with plots
+pdf(width = 27.07/2.54, height = 18.03/2.54, "Plots/DUK_2023/11.08.plot_duk_16.pdf")
+plot_duk_16
+dev.off()
+
+
+
+
+#:--------------------------------------------------------------------------------
+# Forest plot of predicted treatment effect benefit vs microvascular complications - poster
+require(forestplot)
+
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+## Read in propensity scores
+patient_prop_scores <- readRDS("Samples/SGLT2-GLP1/Aurum/ps_model/patient_prop_scores.rds")
+
+## Read in treatment effects
+treatment_effects <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds")
+
+# load new propensity scores
+patient_prop_scores_qrisk <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/patient_prop_scores_qrisk.rds")
+
+# Microvascular complications dataset
+micro_comp.dataset <- set_up_data_sglt2_glp1(dataset.type="micro_comp.dataset") %>%
+  left_join(patient_prop_scores_qrisk, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated"))
+
+# Split population into subgroups
+group.micro_comp.dataset <- group_values(data = micro_comp.dataset,
+                                         variable = "effects",
+                                         breaks = interval_breaks) %>%
+  drop_na(intervals)
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_adjusted_overall <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_overall.rds")
+
+# predictions for the CVD outcomes in the population with no CVD/HF/CKD
+predictions_micro_comp_micro_comp_stan_adjusted_full <- readRDS("Samples/SGLT2-GLP1/Aurum/additional_outcomes/predictions_micro_comp_micro_comp_stan_adjusted_full.rds")
+
+# forest plot
+plot_duk_17 <- rbind(
+  cbind(intervals = "Predicted HbA1c benefit on SGLT2i", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_adjusted_overall %>% slice(1:3),
+  cbind(intervals = "Predicted HbA1c benefit on GLP-1 RA", mean = NA, lci = NA, uci = NA),
+  predictions_micro_comp_micro_comp_stan_adjusted_overall %>% slice(4:6),
+  predictions_micro_comp_micro_comp_stan_adjusted_full %>% cbind(intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(mean = as.numeric(mean),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == levels(group.micro_comp.dataset$intervals)[1], paste0(">5 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[1])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[1])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                            ifelse(intervals == levels(group.micro_comp.dataset$intervals)[2], paste0("3-5 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[2])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[2])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                   ifelse(intervals == levels(group.micro_comp.dataset$intervals)[3], paste0("0-3 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[3])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[3])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                          ifelse(intervals == levels(group.micro_comp.dataset$intervals)[4], paste0("0-3 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[4])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[4])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                 ifelse(intervals == levels(group.micro_comp.dataset$intervals)[5], paste0("3-5 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[5])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[5])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                                                        ifelse(intervals == levels(group.micro_comp.dataset$intervals)[6], paste0(">5 (n=", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[6])%>%nrow(),big.mark=",",scientific=FALSE), ", events = ", format(group.micro_comp.dataset%>%filter(intervals==levels(group.micro_comp.dataset$intervals)[6])%>%filter(postdrug_micro_comp_censvar==1)%>%nrow(),big.mark=",",scientific=FALSE), ")"), intervals))))))) %>%
+  rename("lower" = "lci", "upper" = "uci") %>%
+  mutate(mean = exp(mean),
+         lower = exp(lower),
+         upper = exp(upper)) %>%
+  forestplot(labeltext = intervals,
+             fn.ci_norm = c(fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawNormalCI, fpDrawDiamondCI),
+             ci.vertices = TRUE,
+             zero = 1,
+             title = "Microvascular complications",
+             xlog = TRUE,
+             ci.vertices.height = 0.3,
+             boxsize = .4,
+             lwd.ci = 3,
+             txt_gp = fpTxtGp(ticks=gpar(cex=1.5), 
+                              title=gpar(cex=2.5),
+                              legend =gpar(cex=2),
+                              label=gpar(cex=1.5),
+                              xlab=gpar(cex=1.5)),
+             xlab = "Hazard ratio (95% CI, log scale)") %>%
+  fp_add_header(paste0("Overall population (n=", format(nrow(group.micro_comp.dataset),big.mark=",",scientific=FALSE), ")")) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+# PDF with plots
+pdf(width = 27.07/2.54, height = 18.03/2.54, "Plots/DUK_2023/11.08.plot_duk_17.pdf")
+plot_duk_17
+dev.off()
 
 
 
