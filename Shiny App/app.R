@@ -27,21 +27,35 @@ ui <- fluidPage(
   tags$head(tags$style("#discontinuation_outcome_title{font-size: 23px;}")),
   ### inputs height
   
-  # Title of the page
-  h2("SGLT2-inhibitor and GLP-1 receptor agonist Research Tool Decision Aid", 
-     style="font-weight:bold;"),
-  # PSA for using the app
-  h5("Please note this is a beta version provided for academic research and validation purposes and should not be used for clinical decision making.", 
-     style="font-weight:bold;"),
-  # Info about what the app does
-  h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
+  fluidRow(
+    
+    
+    column(10, 
+           # Title of the page
+           h2("SGLT2-inhibitor and GLP-1 receptor agonist Research Tool Decision Aid", 
+              style="font-weight:bold;"),
+           # PSA for using the app
+           h5("Please note this is a beta version provided for academic research and validation purposes and should not be used for clinical decision making.", 
+              style="font-weight:bold;"),
+           # Info about what the app does
+           h5("The model uses an individual's clinical information to provide individualised estimates of likely achieved blood glucose control (HbA1c) benefit on SGLT2-inhibitor or GLP-1 receptor agonist therapy."),
+           
+    ),
+    
+         
+    column(2,
+           br(),
+           img(src='uni_logo.JPG', align = "right", width = "200"),
+    )
+    
+  ),
   
   
   column(4,
          
          fluidRow(
            class = "grey-row",
-           column(6,
+           column(12,
                   h4(class = "title-blue", "Clinical information:")
            )
          ),
@@ -85,12 +99,12 @@ ui <- fluidPage(
                                min = 0,
                                max = 200),
                   numericInput("egfr_num",
-                               label = h6("eGFR ( ml / min / 1.73 m", tags$sup("2"), ")"),
+                               label = h6("eGFR ( ml / min / 1.73 m", tags$sup("2"), ") *"),
                                value = 90,
                                min = 45,
                                max = 300),
                   numericInput("creatinine_num",
-                               label = h6("Serum creatinine ( \u03BCmol / L ) [optional]"),
+                               label = h6("Serum creatinine ( \u03BCmol / L ) [optional] *"),
                                value = NA,
                                min = 0,
                                max = 400)
@@ -146,6 +160,23 @@ ui <- fluidPage(
                   br()
            )
          ),
+         
+         fluidRow(
+           class = "grey-row",
+           column(12,
+                  h5("Notes:"),
+                  "* Either eGFR or serum creatinine can be provided. eGFR will be calculated from serum creatinine (sex and age is required) if a serum creatinine is entered. If the derived eGFR is less than 45, model outputs will be generated fixing eGFR at 45.",
+                  tags$a(href="https://www.kidney.org/professionals/kdoqi/gfr_calculator/formula", 
+                         "Find out more here!", target="_blank"),
+                  br(),
+                  br(),
+                  "For any enquiries, please contact pml204@exeter.ac.uk",
+                  br(),
+                  br()
+                  
+                  
+           )
+         )
          
          
   ),
@@ -235,10 +266,11 @@ ui <- fluidPage(
          
   )
   
-  
-  
-  
 )
+
+
+
+
 
 
 
@@ -275,10 +307,11 @@ server <- function(input, output, session) {
     # egfr (calculated from creatinine or use given egfr)
     if (!is.na(input$creatinine_num)) {
       creatinine_mg_dL <- input$creatinine_num*0.0113
-      patient$preegfr <- as.numeric(ifelse(creatinine_mg_dL<=0.7 & !!patient$sex=="Female",(142 * ((creatinine_mg_dL/0.7)^-0.241) * (0.9938^!!patient$agetx) * 1.012),
-                                           ifelse(creatinine_mg_dL>0.7 & !!patient$sex=="Female",(142 * ((creatinine_mg_dL/0.7)^-1.2) * (0.9938^!!patient$agetx) * 1.012),
-                                                  ifelse(creatinine_mg_dL<=0.9 & !!patient$sex=="Male",(142 * ((creatinine_mg_dL/0.9)^-0.302) * (0.9938^!!patient$agetx)),
-                                                         ifelse(creatinine_mg_dL>0.9 & !!patient$sex=="Male",(142 * ((creatinine_mg_dL/0.9)^-1.2) * (0.9938^!!patient$agetx)),NA)))))
+      egfr_value <- as.numeric(ifelse(creatinine_mg_dL<=0.7 & !!patient$sex=="Female",(142 * ((creatinine_mg_dL/0.7)^-0.241) * (0.9938^!!patient$agetx) * 1.012),
+                                      ifelse(creatinine_mg_dL>0.7 & !!patient$sex=="Female",(142 * ((creatinine_mg_dL/0.7)^-1.2) * (0.9938^!!patient$agetx) * 1.012),
+                                             ifelse(creatinine_mg_dL<=0.9 & !!patient$sex=="Male",(142 * ((creatinine_mg_dL/0.9)^-0.302) * (0.9938^!!patient$agetx)),
+                                                    ifelse(creatinine_mg_dL>0.9 & !!patient$sex=="Male",(142 * ((creatinine_mg_dL/0.9)^-1.2) * (0.9938^!!patient$agetx)),NA)))))
+      patient$preegfr <- as.numeric(ifelse(egfr_value < 45, 45, ifelse(egfr_value > 300, 300, egfr_value)))
     } else {
       if (is.na(input$egfr_num)) {patient$preegfr <- as.numeric(90)} else {
         patient$preegfr <- as.numeric(input$egfr_num)
@@ -310,6 +343,20 @@ server <- function(input, output, session) {
     patient$hba1cmonth <- as.numeric(12)
     # turn into data.frame
     patient <- as.data.frame(patient)
+  })
+  
+  ## if creatinine is provided, eGFR is recalculated from creatinine and input is updated.
+  observeEvent(input$calculate, {
+    if(!is.na(input$creatinine_num)) {
+      
+      patient <- patient()
+      
+      updateNumericInput(
+        session = session,
+        inputId = "egfr_num",
+        value = round(patient$preegfr, digits = 1)
+      ) 
+    }
   })
   
   
@@ -413,7 +460,7 @@ server <- function(input, output, session) {
       geom_errorbar(linewidth = 2, width = 0.7) +
       geom_richtext(aes(x = 1.5, y = patient$prehba1c, label = "Baseline HbA1c"), size = 5, colour = "black", fill = "white", angle = 0, hjust = "inward") +
       scale_colour_manual(values = c("#f1a340", "dodgerblue2")) +scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i:\n", round(predictions_hba1c$value[1], digits = 1), " mmol/mol"),
-                                  "GLP1-RA" = paste0("GLP1-RA:\n", round(predictions_hba1c$value[2], digits = 1), " mmol/mol"))) +
+                                                                                             "GLP1-RA" = paste0("GLP1-RA:\n", round(predictions_hba1c$value[2], digits = 1), " mmol/mol"))) +
       theme_classic() +
       labs(
         y = "Outcome HbA1c (mmol/mol)"
@@ -463,7 +510,7 @@ server <- function(input, output, session) {
     paste0("12-month HbA1c outcome:")
     
   })
-    
+  
   
   
   #:---------------------------------------------------------------------------------
@@ -771,7 +818,7 @@ server <- function(input, output, session) {
 
 
 
-# shinyApp(ui, server)
-runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
+shinyApp(ui, server)
+# runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
 
 
