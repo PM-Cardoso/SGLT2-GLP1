@@ -18,7 +18,13 @@ ui <- fluidPage(
   ### colour for titles
   tags$head(tags$style(HTML(".title-blue {color: #0000CC;}"))),
   ### size of title for hba1c plot
-  tags$head(tags$style("#hba1c_outcome_text{font-size: 30px;}")),
+  tags$head(tags$style("#hba1c_outcome_error_bar_text{font-size: 20px;}")),
+  tags$head(tags$style("#hba1c_outcome_error_bar_title{font-size: 23px;}")),
+  ### size of title for additional outcomes
+  tags$head(tags$style("#weight_outcome_text{font-size: 20px;}")),
+  tags$head(tags$style("#weight_outcome_title{font-size: 23px;}")),
+  tags$head(tags$style("#discontinuation_outcome_text{font-size: 20px;}")),
+  tags$head(tags$style("#discontinuation_outcome_title{font-size: 23px;}")),
   ### inputs height
   
   # Title of the page
@@ -48,14 +54,14 @@ ui <- fluidPage(
                               label = h6("Sex"),
                               choices = list("Male",
                                              "Female"),
-                              selected = "Male"),
+                              selected = "Female"),
                   numericInput("age_num",
                                label = h6("Age ( years )"),
                                value = 65,
                                min = 18,
                                max = 120),
                   numericInput("t2dmduration_num",
-                               label = h6("T2D duration"),
+                               label = h6("T2D duration ( years )"),
                                value = 8,
                                min = 0,
                                max = 102),
@@ -71,7 +77,7 @@ ui <- fluidPage(
                   numericInput("hba1c_num",
                                label = h6("Baseline HbA1c ( mmol / mol )"),
                                value = 65,
-                               min = 25,
+                               min = 53,
                                max = 120),
                   numericInput("alt_num",
                                label = h6("ALT ( U / L )"),
@@ -150,7 +156,7 @@ ui <- fluidPage(
          conditionalPanel(
            condition = "input.age_num < 18 || input.age_num > 120 ||
                       input.bmi_num < 15 || input.bmi_num > 100 ||
-                      input.hba1c_num < 25 || input.hba1c_num > 120 ||
+                      input.hba1c_num < 53 || input.hba1c_num > 120 ||
                       input.egfr_num < 45 || input.egfr_num > 300 ||
                       input.creatinine_num < 0 || input.creatinine_num > 400 ||
                       input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
@@ -170,8 +176,8 @@ ui <- fluidPage(
            h4("BMI value outside range. Please enter a value between 15 and 100.")
          ),
          conditionalPanel(
-           condition = "input.hba1c_num < 25 || input.hba1c_num > 120",
-           h4("Baseline HbA1c value outside range. Please enter a value between 25 and 120.")
+           condition = "input.hba1c_num < 53 || input.hba1c_num > 120",
+           h4("Baseline HbA1c value outside range. Please enter a value between 53 and 120.")
          ),
          conditionalPanel(
            condition = "input.alt_num < 0 || input.alt_num > 200",
@@ -191,17 +197,39 @@ ui <- fluidPage(
              condition = "input.calculate > 0 &
           !(input.age_num < 18 || input.age_num > 120 ||
           input.bmi_num < 15 || input.bmi_num > 100 ||
-          input.hba1c_num < 25 || input.hba1c_num > 120 ||
+          input.hba1c_num < 53 || input.hba1c_num > 120 ||
           input.egfr_num < 45 || input.egfr_num > 300 ||
           input.creatinine_num < 0 || input.creatinine_num > 400 ||
           input.t2dmduration_num < 0 || input.t2dmduration_num > 102 ||
           input.alt_num < 0 || input.alt_num > 200)",
+             
+             
+             # HbA1c panel
              column(12,
+                    ### HbA1c outcome error bars
+                    strong(textOutput("hba1c_outcome_error_bar_title")),
                     # title
-                    strong(textOutput("hba1c_outcome_text")),
+                    strong(textOutput("hba1c_outcome_error_bar_text")),
                     # plots
-                    plotOutput("hba1c_outcome", height = "250px")
+                    plotOutput("hba1c_outcome_error_bar", height = "200px"),
+                    ### Weight outcome
+                    strong(textOutput("weight_outcome_title")),
+                    # title
+                    strong(textOutput("weight_outcome_text")),
+                    # plots
+                    plotOutput("weight_outcome", height = "200px"),
+                    ### Discontinuation outcome
+                    strong(textOutput("discontinuation_outcome_title")),
+                    # title
+                    strong(textOutput("discontinuation_outcome_text")),
+                    # plots
+                    plotOutput("discontinuation_outcome", height = "200px")
              )
+             
+             
+             
+             
+             
            )
          )
          
@@ -220,6 +248,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   require(plyr)
+  require(ggtext)
   require(tidyverse)
   require(bcf)
   
@@ -256,7 +285,7 @@ server <- function(input, output, session) {
       }
     }
     # t2dmduration
-    if (is.na(input$t2dmduration_num)) {patient$agetx <- as.numeric(8)} else {
+    if (is.na(input$t2dmduration_num)) {patient$t2dmduration <- as.numeric(8)} else {
       patient$t2dmduration <- as.numeric(input$t2dmduration_num)
     }
     # alt
@@ -329,8 +358,6 @@ server <- function(input, output, session) {
                             save_tree_directory = ".", 
                             log_file = NULL)
     
-    # calculate effects
-    predictions <- predictions
     
     return(predictions)
     
@@ -344,7 +371,17 @@ server <- function(input, output, session) {
   
   
   
-  output$hba1c_outcome <- renderPlot({
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  #:------------------------------  HbA1c outcome  ----------------------------------
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  
+  
+  
+  output$hba1c_outcome_error_bar <- renderPlot({
+    
+    patient <- patient()
     
     predictions <- posterior_tau_mu()
     
@@ -353,16 +390,30 @@ server <- function(input, output, session) {
       as.data.frame() %>%
       mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
       set_names(c("value", "drugclass")) %>%
-      as.data.frame()
+      as.data.frame() %>%
+      mutate(
+        low_qt = as.numeric(
+          c(
+            quantile(predictions$yhat[,1], 0.025),
+            quantile(predictions$yhat[,2], 0.025)
+          )),
+        high_qt = as.numeric(
+          c(
+            quantile(predictions$yhat[,1], 0.975),
+            quantile(predictions$yhat[,2], 0.975)
+          ))
+      )
     
-    # left justify the title
+    
+    
     predictions_hba1c %>%
-      ggplot(aes(x = drugclass, y = value, fill = drugclass)) +
-      geom_col() +
-      scale_fill_manual(values = c("#f1a340", "dodgerblue2")) +
-      scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i: ", round(predictions_hba1c$value[1]), " mmol/mol"),
-                                  "GLP1-RA" = paste0("GLP1-RA: ", round(predictions_hba1c$value[2]), " mmol/mol"))) +
-      scale_y_continuous(breaks = seq(0, round_any(max(predictions_hba1c$value), 5, f = ceiling), by = 5)) +
+      ggplot(aes(x = drugclass, y = value, colour = drugclass, ymin = low_qt, ymax = high_qt)) +
+      geom_hline(yintercept = patient$prehba1c, colour = "black", linewidth = 2, alpha = 1) +
+      geom_point(size = 10) +
+      geom_errorbar(linewidth = 2, width = 0.7) +
+      geom_richtext(aes(x = 1.5, y = patient$prehba1c, label = "Baseline HbA1c"), size = 5, colour = "black", fill = "white", angle = 0, hjust = "inward") +
+      scale_colour_manual(values = c("#f1a340", "dodgerblue2")) +scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i:\n", round(predictions_hba1c$value[1], digits = 1), " mmol/mol"),
+                                  "GLP1-RA" = paste0("GLP1-RA:\n", round(predictions_hba1c$value[2], digits = 1), " mmol/mol"))) +
       theme_classic() +
       labs(
         y = "Outcome HbA1c (mmol/mol)"
@@ -375,10 +426,14 @@ server <- function(input, output, session) {
             axis.ticks.y = element_blank()) +
       coord_flip()
     
+    
+    
+    
+    
   })
   
   
-  output$hba1c_outcome_text <- renderText({
+  output$hba1c_outcome_error_bar_text <- renderText({
     
     predictions <- posterior_tau_mu()
     
@@ -390,9 +445,325 @@ server <- function(input, output, session) {
       as.data.frame()
     
     
-    paste0("Additional HbA1c reduction from ", as.character(predictions_hba1c[which.min(predictions_hba1c$value), "drugclass"]), ": ", abs(round(predictions_hba1c$value[1]) - round(predictions_hba1c$value[2])), " mmol/mol")
+    paste0("Additional average HbA1c reduction from baseline on ", as.character(predictions_hba1c[which.min(predictions_hba1c$value), "drugclass"]), ": ", round(abs(round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)), digits = 1), " mmol/mol")
     
   })
+  
+  output$hba1c_outcome_error_bar_title <- renderText({
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    paste0("12-month HbA1c outcome:")
+    
+  })
+    
+  
+  
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  #:------------------------------  Weight outcome  ---------------------------------
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  
+  
+  
+  output$weight_outcome <- renderPlot({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    weight_outcomes <- readRDS("weight_outcome.rds") %>%
+      filter(sex == patient$sex)
+    
+    if (treatment_effect <= -5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-20,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(5,31]") %>% select(-sex, -intervals)
+    }
+    
+    weight_outcomes %>%
+      ggplot(aes(x = drugclass, y = mean, colour = drugclass, ymin = lci, ymax = uci)) +
+      geom_point(size = 10) +
+      geom_hline(yintercept = 0, colour = "black", linewidth = 2, alpha = 1) +
+      geom_richtext(aes(x = 1.5, y = 0, label = "No weight change"), size = 5, colour = "black", fill = "white", angle = 0, hjust = "inward") +
+      geom_errorbar(linewidth = 2, width = 0.7) +
+      scale_colour_manual(values = c("#f1a340", "dodgerblue2")) +
+      scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i:\n", round(weight_outcomes$mean[1], digits = 1), " kg"),
+                                  "GLP1-RA" = paste0("GLP1-RA:\n", round(weight_outcomes$mean[2], digits = 1), " kg"))) +
+      theme_classic() +
+      labs(
+        y = "Average weight change (kg)"
+      ) +
+      theme(legend.position = "none",
+            title = element_text(size = 30),
+            axis.title.y = element_blank(),
+            axis.text.y = element_text(size = 25),
+            axis.text.x = element_text(size = 20),
+            axis.ticks.y = element_blank()) +
+      coord_flip()
+    
+    
+    
+    
+  })
+  
+  
+  output$weight_outcome_text <- renderText({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    weight_outcomes <- readRDS("weight_outcome.rds") %>%
+      filter(sex == patient$sex)
+    
+    if (treatment_effect <= -5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-20,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(5,31]") %>% select(-sex, -intervals)
+    }
+    
+    
+    paste0("Additional average weight change from ", as.character(weight_outcomes[which.min(weight_outcomes$mean), "drugclass"]), ": ", round(abs(round(weight_outcomes$mean[1], digits = 1) - round(weight_outcomes$mean[2], digits = 1)), digits = 1), " kg")
+    
+    
+  })
+  
+  output$weight_outcome_title <- renderText({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    weight_outcomes <- readRDS("weight_outcome.rds") %>%
+      filter(sex == patient$sex)
+    
+    if (treatment_effect <= -5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-20,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      weight_outcomes <- weight_outcomes %>% filter(intervals == "(5,31]") %>% select(-sex, -intervals)
+    }
+    
+    
+    paste0("12-month weight outcome:")
+    
+    
+  })
+  
+  
+  
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  #:-------------------------  Discontinuation outcome  -----------------------------
+  #:---------------------------------------------------------------------------------
+  #:---------------------------------------------------------------------------------
+  
+  output$discontinuation_outcome <- renderPlot({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    discontinuation_outcomes <- readRDS("discontinuation_outcome.rds") %>%
+      filter(sex == patient$sex) %>%
+      mutate(mean = mean*100,
+             lci = lci*100,
+             uci = uci*100)
+    
+    if (treatment_effect <= -5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-21,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(5,40]") %>% select(-sex, -intervals)
+    }
+    
+    discontinuation_outcomes %>%
+      ggplot(aes(x = drugclass, y = mean, colour = drugclass, ymin = lci, ymax = uci)) +
+      geom_point(size = 10) +
+      geom_errorbar(linewidth = 2, width = 0.7) +
+      scale_colour_manual(values = c("#f1a340", "dodgerblue2")) +
+      scale_x_discrete(labels = c("SGLT2i" = paste0("SGLT2i:\n", round(discontinuation_outcomes$mean[1], digits = 1), "%"),
+                                  "GLP1-RA" = paste0("GLP1-RA:\n", round(discontinuation_outcomes$mean[2], digits = 1), "%"))) +
+      theme_classic() +
+      ylim(0, max(discontinuation_outcomes[,-4])) +
+      labs(
+        y = "Discontinuation (%)"
+      ) +
+      theme(legend.position = "none",
+            title = element_text(size = 30),
+            axis.title.y = element_blank(),
+            axis.text.y = element_text(size = 25),
+            axis.text.x = element_text(size = 20),
+            axis.ticks.y = element_blank()) +
+      coord_flip()
+    
+    
+    
+    
+  })
+  
+  
+  output$discontinuation_outcome_text <- renderText({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    discontinuation_outcomes <- readRDS("discontinuation_outcome.rds") %>%
+      filter(sex == patient$sex) %>%
+      mutate(mean = mean*100,
+             lci = lci*100,
+             uci = uci*100)
+    
+    if (treatment_effect <= -5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-21,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(5,40]") %>% select(-sex, -intervals)
+    }
+    
+    
+    paste0("Reduced average discontinuation from ", as.character(discontinuation_outcomes[which.min(discontinuation_outcomes$mean), "drugclass"]), ": ", round(abs(round(discontinuation_outcomes$mean[1], digits = 1) - round(discontinuation_outcomes$mean[2], digits = 1)), digits = 1), "%")
+    
+    
+  })
+  
+  
+  
+  output$discontinuation_outcome_title <- renderText({
+    
+    patient <- patient()
+    
+    predictions <- posterior_tau_mu()
+    
+    predictions_hba1c <- predictions$yhat %>%
+      colMeans() %>%
+      as.data.frame() %>%
+      mutate(drugclass = factor(c("SGLT2i", "GLP1-RA"), levels = c("SGLT2i", "GLP1-RA"))) %>%
+      set_names(c("value", "drugclass")) %>%
+      as.data.frame()
+    
+    treatment_effect <- round(predictions_hba1c$value[1], digits = 1) - round(predictions_hba1c$value[2], digits = 1)
+    
+    discontinuation_outcomes <- readRDS("discontinuation_outcome.rds") %>%
+      filter(sex == patient$sex) %>%
+      mutate(mean = mean*100,
+             lci = lci*100,
+             uci = uci*100)
+    
+    if (treatment_effect <= -5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-21,-5]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= -3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-5,-3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 0 ) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(-3,0]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 3) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(0,3]") %>% select(-sex, -intervals)
+    } else if (treatment_effect <= 5) {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(3,5]") %>% select(-sex, -intervals)
+    } else {
+      discontinuation_outcomes <- discontinuation_outcomes %>% filter(intervals == "(5,40]") %>% select(-sex, -intervals)
+    }
+    
+    
+    paste0("6-month discontinuation outcome:")
+    
+    
+  })
+  
+  
+  
   
   
   
