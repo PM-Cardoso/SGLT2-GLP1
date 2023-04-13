@@ -42,7 +42,6 @@ ui <- fluidPage(
            
     ),
     
-    
     column(2,
            br(),
            img(src='uni_logo.JPG', align = "right", width = "200"),
@@ -788,4 +787,3 @@ server <- function(input, output, session) {
 
 shinyApp(ui, server)
 # runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
-
