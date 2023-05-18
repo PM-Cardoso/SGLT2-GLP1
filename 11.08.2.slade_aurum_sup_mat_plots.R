@@ -3091,4 +3091,99 @@ dev.off()
 
 
 
+#:--------------------------------------------------------------------------------
+### Variables ranges across HbA1c benefit subgroups 
+
+
+#:--------------------------------------------------------------------------------
+### Comparing predictions of mu and tau for BCF prop / no prop
+
+# comparing mu predictions
+var.selection.comparison.mu <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/var.selection.comparison.mu.rds") %>%
+  as.data.frame()
+
+# comparing tau predictions
+var.selection.comparison.tau <- readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/var.selection.comparison.tau.rds") %>%
+  as.data.frame()
+
+# plot comparisons
+plot_sup_15 <- patchwork::wrap_plots(
+
+  # scatter plot of mu values
+  var.selection.comparison.mu %>%
+    as.data.frame() %>%
+    ggplot(aes(x = sbcf_prop, y = bcf_prop)) +
+    geom_abline(aes(intercept = 0, slope = 1), colour = "red", lty = "dashed") +
+    geom_point() +
+    theme_bw() +
+    labs(
+      x = "Sparse BCF model with all variables",
+      y = "BCF model with selected variables",
+      title = "Predicted HbA1c outcome (mmol/mol)",
+      subtitle = "Sparse BCF model with all variables vs BCF model with selected variables"
+    )
+
+  ,
+
+  # density plot of residuals for mu (BCF with prop - sBCF with prop)
+  var.selection.comparison.mu %>%
+    as.data.frame() %>%
+    mutate(effect.difference = bcf_prop - sbcf_prop) %>%
+    ggplot() +
+    theme_bw() +
+    geom_density(aes(x = effect.difference)) +
+    labs(
+      x = "Difference in predicted HbA1c outcome (mmol/mol)",
+      y = "density",
+      title = "Predicted HbA1c outcome (mmol/mol)",
+      subtitle = "BCF model with selected variables - Sparse BCF model with all variables"
+    ) +
+    xlim(-10, 10)
+
+  ,
+
+  # scatter plot of tau values
+  var.selection.comparison.tau %>%
+    as.data.frame() %>%
+    ggplot(aes(x = sbcf_prop, y = bcf_prop)) +
+    theme_bw() +
+    geom_abline(aes(intercept = 0, slope = 1), colour = "red", lty = "dashed") +
+    geom_point() +
+    labs(
+      x = "Sparse BCF model with all variables",
+      y = "BCF model with selected variables",
+      title = "Predicted conditional average treatment effects (CATE)",
+      subtitle = "Sparse BCF model with all variables vs BCF model with selected variables"
+    )
+
+  ,
+
+  # density plot of residuals for tau (BCF with prop - sBCF with prop)
+  var.selection.comparison.tau %>%
+    as.data.frame() %>%
+    mutate(effect.difference = bcf_prop - sbcf_prop) %>%
+    ggplot() +
+    theme_bw() +
+    geom_density(aes(x = effect.difference)) +
+    labs(
+      x = "Difference in predicted CATE (mmol/mol)",
+      y = "density",
+      title = "Predicted conditional average treatment effects (CATE)",
+      subtitle = "BCF model with selected variables - Sparse BCF model with all variables"
+    ) +
+    xlim(-10, 10)
+
+  , ncol = 2, nrow = 2) +
+  plot_annotation(tag_levels = list(c("A.1", "A.2", "B.1", "B.2")))
+
+
+## PDF with the plot for the best therapy
+pdf(width = 12, height = 12, "Plots/Paper/Sup_Mat/11.08.plot_sup_15.pdf")
+plot_sup_15
+dev.off()
+
+
+
+
+
 
