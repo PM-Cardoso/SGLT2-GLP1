@@ -37,6 +37,7 @@ new.vars <- function(data){
            prebilirubin_na = ifelse(is.na(prebilirubin), "Yes", "No"),
            pretotalcholesterol_na = ifelse(is.na(pretotalcholesterol), "Yes", "No"),
            premap_na = ifelse(is.na(premap), "Yes", "No"),
+           qrisk2_10yr_score_na = ifelse(is.na(qrisk2_10yr_score), "Yes", "No"),
            posthba1cfinal_na = ifelse(is.na(posthba1cfinal), "Yes", "No"),
            hba1cmonth_na = ifelse(is.na(hba1cmonth), "Yes", "No"))
   
@@ -905,16 +906,16 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_bac
   }
   
   plot <- plot +
-    geom_point(alpha = 1) + 
+    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+    geom_point(alpha = 1, size = 4) + 
     theme_bw() +
     geom_errorbar(aes_string(ymin = obslowerci, ymax = obsupperci), colour = "black", width = 0.1) +
     ylab("Decile average treatment effect (mmol/mol)") + 
     xlab("Predicted conditional average treatment effect (mmol/mol)") +
     scale_x_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
-    scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
-    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
+    scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2)))
   
   return(plot)
   
