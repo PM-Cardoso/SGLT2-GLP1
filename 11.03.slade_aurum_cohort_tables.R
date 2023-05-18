@@ -35,8 +35,8 @@ vars <- c("yrdrugstart","agetx", "t2dmduration", "sex", "ethnicity", "drug_canag
           "premap", "premap_na", "prediabeticnephropathy", "preneuropathy", "preretinopathy",
           "preangina","CV_problems", "microvascular_complications", "ASCVD", "preaf", 
           "prerevasc", "preheartfailure", "prehypertension", "preihd", "premyocardialinfarction",
-          "prepad", "prestroke","pretia", "preckd", "precld", "posthba1cfinal",
-          "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
+          "prepad", "prestroke","pretia", "preckd", "precld", "qrisk2_10yr_score", "qrisk2_10yr_score_na",
+          "posthba1cfinal", "posthba1cfinal_na", "hba1cmonth", "hba1cmonth_na")
 
 #:-----------------------
 ############## Predicted treatment benefits
