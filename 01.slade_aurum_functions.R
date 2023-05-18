@@ -5,7 +5,12 @@
 
 
 new.vars <- function(data){
-  # data = dataset that needs new vars
+  ##### Explanation of the function:
+  # This function appends all the variables needed to make a table of characteristics.
+  # These variables are not originally included in the dataset.
+  
+  ##### Input variables
+  # data - dataset that needs new vars
   
   data.new <- data %>%
     left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort"), by = c("patid", "pated")) %>%
@@ -32,6 +37,7 @@ new.vars <- function(data){
            prebilirubin_na = ifelse(is.na(prebilirubin), "Yes", "No"),
            pretotalcholesterol_na = ifelse(is.na(pretotalcholesterol), "Yes", "No"),
            premap_na = ifelse(is.na(premap), "Yes", "No"),
+           qrisk2_10yr_score_na = ifelse(is.na(qrisk2_10yr_score), "Yes", "No"),
            posthba1cfinal_na = ifelse(is.na(posthba1cfinal), "Yes", "No"),
            hba1cmonth_na = ifelse(is.na(hba1cmonth), "Yes", "No"))
   
@@ -40,14 +46,14 @@ new.vars <- function(data){
 }
 
 
-
-
-
 ## Calculate assessments of prediction
-
 rsq <- function (x, y) cor(x, y) ^ 2
 
 calc_assessment <- function(data, posteriors, outcome_variable) {
+  ##### Explanation of the function:
+  # This function calculated R2, RSS and RMSE from posterior distributions of
+  # outcome against observed
+  
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
@@ -77,6 +83,10 @@ calc_assessment <- function(data, posteriors, outcome_variable) {
 
 ## Calculate residuals
 calc_resid <- function(data, posteriors, outcome_variable) {
+  ##### Explanation of the function:
+  # This function calculates the residuals from the posterior distributions of 
+  # predicted outcomes. Both normal and standardised.
+  
   ##### Input variables
   # data - dataset used in the fitting 
   # posteriors - posteriors values for the dataset inputed
@@ -111,38 +121,17 @@ calc_resid <- function(data, posteriors, outcome_variable) {
   return(cred_pred)
 }
 
-
 ## Plot predicted vs observed and standardised residuals
 resid_plot <- function(pred_dev, pred_val, title) {
-  ##### Imput variables
+  ##### Explanation of the function:
+  # This function plots the predicted outcome against the observed outcome with 
+  # error bars (standardised residuals)
+  
+  ##### Input variables
   # pred_dev - predicted/observed values for development dataset
   # pred_val - predicted/observed values for validation dataset
   # title - plot title
-  # 
-  # # Plot of predicted vs observed for development dataset
-  # plot_dev_pred <- pred_dev %>%
-  #   ggplot() +
-  #   theme_bw() +
-  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-  #   geom_point(aes(x = orig, y = mean)) +
-  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
-  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   xlab("Observed HbA1c (mmol/mol)") +
-  #   ylab("Predicted HbA1c (mmol/mol)")
-  # 
-  # # Plot of predicted vs observed for validation dataset
-  # plot_val_pred <- pred_val %>%
-  #   ggplot() +
-  #   theme_bw() +
-  #   geom_errorbar(aes(ymin = lower_bd, ymax = upper_bd, x = orig), colour = "grey") +
-  #   geom_point(aes(x = orig, y = mean)) +
-  #   geom_abline(aes(intercept = 0, slope = 1), linetype ="dashed", color = viridis::viridis(1, begin = 0.6), linewidth=0.75) +
-  #   xlim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   ylim(min(pred_dev$orig, pred_val$orig), max(pred_dev$orig, pred_val$orig)) +
-  #   xlab("Observed HbA1c (mmol/mol)") +
-  #   ylab("Predicted HbA1c (mmol/mol)")
-  # 
+  
   # Plot of standardised residuals for development dataset
   plot_dev_std <- pred_dev %>%
     ggplot() +
@@ -179,15 +168,17 @@ resid_plot <- function(pred_dev, pred_val, title) {
   
 }
 
-
 hist_plot <- function(data, title, xmin, xmax, xtitle = "HbA1c difference (mmol/mol)", ytitle = "Number of people") {
-  ### Input variables
-  # data: dataset with column 'mean' corresponding to treatment effect
-  # title: title for the plot
-  # xmin: lower limit of x axis
-  # xmax: upper limit of x axis
-  # xtitle: title of x axis
-  # ytitle: title of y axis
+  ##### Explanation of the function:
+  # This function plots the histogram of predicted treatment effects
+  
+  ##### Input variables
+  # data - dataset with column 'mean' corresponding to treatment effect
+  # title - title for the plot
+  # xmin - lower limit of x axis
+  # xmax - upper limit of x axis
+  # xtitle - title of x axis
+  # ytitle - title of y axis
   
   # define data
   dat <- data %>% dplyr::select(mean) %>% mutate(above=ifelse(mean< 0, "Favours SGLT2i", "Favours GLP1-RA")) %>%
@@ -498,223 +489,12 @@ calc_ATE <- function(data, validation_type, variable, quantile_var, breakdown = 
 
 
 
-
-
-
-
-
-
-
-
-# calc_ATE_validation_adjust <- function(data, variable, quantile_var = "hba1c_diff.q", breakdown = NULL, adjust = TRUE) {
-#   ##### Input variables
-#   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-#   # variable - variable with y values
-#   # quantile_var - variable containing quantile indexes
-#   # breakdown - variables used to compare quality of matching
-#   # adjust - variables to adjust linear regression of effects
-#   
-#   require(rlang)
-#   
-#   # split predicted treatment effects into deciles
-#   predicted_treatment_effect <- data %>%
-#     plyr::ddply(quantile_var, dplyr::summarise,
-#                 N = length(hba1c_diff),
-#                 hba1c_diff.pred = mean(hba1c_diff))
-#   
-#   # maximum number of deciles being tested
-#   quantiles <- length(unique(data[,quantile_var]))
-#   
-#   # create lists with results
-#   mnumber = c(1:quantiles)
-#   models  <- as.list(1:quantiles)
-#   obs <- vector(); lci <- vector(); uci <- vector();
-#   
-#   
-#   # iterate through deciles
-#   for (i in mnumber) {
-#     
-#     # do this differently if quantile_var is categorical
-#     if (is.factor(data[,quantile_var])) {
-#       # dataset being used in this quantile
-#       data.new <- data[data[,quantile_var] == levels(data[,quantile_var])[i],]
-#     } else {
-#       # dataset being used in this quantile
-#       data.new <- data[data[,quantile_var] == i,]
-#     }
-#     
-#     if (adjust == TRUE) {
-#       
-#       # variables used in adjustment
-#       breakdown_adjust <- breakdown
-#       # categorical variables in breakdown
-#       # factors <- sapply(data.new[,breakdown_adjust], is.factor)
-#       # variables with only one variable represented
-#       checker <- which(sapply(data.new[,breakdown_adjust], function(col) length(unique(col))) > 1)
-#       
-#       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
-#       
-#     } else {
-#       formula <- "posthba1cfinal ~ factor(drugclass)"
-#     }
-#     
-#     
-#     
-#     
-#     
-#     # fit linear regression for decile in the matched dataset
-#     models[[i]] <- lm(as.formula(formula),data=data.new)
-#     
-#     # collect treatment effect from regression
-#     obs <- append(obs,models[[i]]$coefficients[2])
-#     
-#     # calculate confidence intervals
-#     confint_all <- confint(models[[i]], levels=0.95)
-#     
-#     # collect lower bound CI
-#     lci <- append(lci,confint_all[2,1])
-#     
-#     # collect upper bound CI
-#     uci <- append(uci,confint_all[2,2])
-#     
-#   }
-#   
-#   # join treatment effects for deciles in a data.frame
-#   effects <- data.frame(predicted_treatment_effect,cbind(obs, lci, uci))
-#   
-#   # returned list with fitted propensity model + decile treatment effects
-#   t <- list(effects = effects)
-#   
-#   return(t)
-# }
-
-# calc_ATE_validation_prop_matching <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q", caliper = 0.05, replace = FALSE, order = "random", breakdown = NULL, adjust = FALSE) {
-#   ##### Input variables
-#   # data - Development dataset with variables + treatment effect quantiles (hba1c_diff.q)
-#   # variable - variable with y values
-#   # prop_scores - propensity scores for individuals or vector with variables from dataset
-#   # quantile_var - variable containing quantile indexes
-#   # caliper - maximum distance between propensity scores of drug 1 vs drug 2
-#   # replace - logical variables, whether we replace matched individuals of small group
-#   # order - which side we start matching individuals, "largest", "smallest", "random"
-#   # breakdown - variables used to compare quality of matching
-#   # adjust - variables to adjust linear regression of effects
-#   
-#   require(rlang)
-#   
-#   # keep propensity scores (1-score because bartMachine makes 1-GLP1 and 0-SGLT2, should be the way around)
-#   prop_score <- 1 - prop_scores
-#   
-#   # split predicted treatment effects into deciles
-#   predicted_treatment_effect <- data %>%
-#     plyr::ddply(quantile_var, dplyr::summarise,
-#                 N = length(hba1c_diff),
-#                 hba1c_diff.pred = mean(hba1c_diff))
-#   
-#   # maximum number of deciles being tested
-#   quantiles <- length(unique(data[,quantile_var]))
-#   
-#   # create lists with results
-#   mnumber = c(1:quantiles)
-#   models  <- as.list(1:quantiles)
-#   obs <- vector(); lci <- vector(); uci <- vector(); n_drug1 <- vector(); n_drug2 <- vector()
-#   
-#   data.new <- data %>%
-#     cbind(prop_score)
-#   
-#   # list of matchings
-#   if (!is.null(breakdown)) {
-#     matchit.ouputs <- list()
-#   }
-#   
-#   # iterate through deciles
-#   for (i in mnumber) {
-#     
-#     if (!is.null(breakdown)) {
-#       # model if propensity scores are provided
-#       matching_package_result <- MatchIt::matchit(
-#         formula = formula(paste0("drugclass ~ ", paste(breakdown, collapse = " + "))), # shouldn't be used since we are specifying 'distance' (propensity scores)
-#         data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
-#         method = "nearest",
-#         distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
-#         replace = replace,
-#         m.order = order,
-#         caliper = caliper,
-#         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
-#       )
-#     } else {
-#       # model if propensity scores are provided
-#       matching_package_result <- MatchIt::matchit(
-#         formula = formula("drugclass ~ posthba1cfinal"), # shouldn't be used since we are specifying 'distance' (propensity scores)
-#         data = data.new[which(data.new[,quantile_var] == i),], # select people in the quantile
-#         method = "nearest",
-#         distance = data.new[which(data.new[,quantile_var] == i),"prop_score"],
-#         replace = replace,
-#         m.order = order,
-#         caliper = caliper,
-#         mahvars = NULL, estimand = "ATT", exact = NULL, antiexact = NULL, discard = "none", reestimate = FALSE, s.weights = NULL, std.caliper = TRUE, ratio = 1, verbose = FALSE, include.obj = FALSE,
-#       )
-#     }
-#     
-#     if (!is.null(breakdown)) {
-#       matchit.ouputs[[i]] <- matching_package_result
-#     }
-#     
-#     n_drug1 <- append(n_drug1, sum(!is.na(matching_package_result$match.matrix)))
-#     n_drug2 <- append(n_drug2, length(unique(matching_package_result$match.matrix[complete.cases(matching_package_result$match.matrix)])))
-#     
-#     if (!is.null(breakdown) & adjust == TRUE) {
-#       
-#       # variables used in adjustment
-#       breakdown_adjust <- breakdown
-#       # variables with only one variable represented
-#       checker <- which(sapply(data.new[data.new[,quantile_var] == i,breakdown_adjust], function(col) length(unique(col))) > 1)
-#       
-#       
-#       formula <- paste0("posthba1cfinal ~ factor(drugclass) +", paste(breakdown_adjust[checker], collapse = "+"))
-#       
-#     } else {
-#       formula <- "posthba1cfinal ~ factor(drugclass)"
-#     }
-#     
-#     # fit linear regression for decile in the matched dataset
-#     models[[i]] <- lm(as.formula(formula),data=data.new[data.new[,quantile_var] == i,], weights = matching_package_result$weights)
-#   
-#     # collect treatment effect from regression
-#     obs <- append(obs,models[[i]]$coefficients[2])
-#     
-#     # calculate confidence intervals
-#     confint_all <- confint(models[[i]], levels=0.95)
-#     
-#     # collect lower bound CI
-#     lci <- append(lci,confint_all[2,1])
-#     
-#     # collect upper bound CI
-#     uci <- append(uci,confint_all[2,2])
-#      
-#   }
-#     
-#   
-#   
-#   # join treatment effects for deciles in a data.frame
-#   effects <- data.frame(predicted_treatment_effect,cbind(n_drug1, n_drug2, obs, lci, uci))
-#     
-#   
-#   if (!is.null(breakdown)) {
-#     # returned list with fitted propensity model + decile treatment effects
-#     t <- list(effects = effects,
-#               matching_outputs = matchit.ouputs)
-#   } else {
-#     # returned list with fitted propensity model + decile treatment effects
-#     t <- list(effects = effects)
-#   }
-#   
-#   return(t)
-# }
-
 ### inverse propensity score weighting 
-
 calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q") {
+  ##### Explanation of the function:
+  # This function checks the calibration of the model using inverse propensity 
+  # score weighting
+  
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (quantile_var)
   # variable - variable with y values
@@ -785,9 +565,13 @@ calc_ATE_validation_inverse_prop_weighting <- function(data, variable, prop_scor
   return(t)
 }
 
-### inverse propensity score weighting stabilised
 
+### inverse propensity score weighting stabilised
 calc_ATE_validation_inverse_prop_weighting_stabilised <- function(data, variable, prop_scores, quantile_var="hba1c_diff.q") {
+  ##### Explanation of the function:
+  # This function checks the calibration of the model using inverse propensity
+  # weighting stabilised.
+  
   ##### Input variables
   # data - Development dataset with variables + treatment effect quantiles (quantile_var)
   # variable - variable with y values
@@ -870,15 +654,20 @@ calc_ATE_validation_inverse_prop_weighting_stabilised <- function(data, variable
 
 
 
+
 #Function to output ATE by subgroup
 ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_background = FALSE) {
-  ###
-  # data: dataset used in fitting,
-  # pred: column with predicted values
-  # obs: observed values
-  # obslowerci: lower bound of CI for prediction
-  # obsupperci: upper bound of CI for prediction
-  # colour_background: colour of drug benefit on the background
+  ##### Explanation of the function:
+  # This function plots the average treatment effects (ATE) calculations output
+  # from the calibration functions
+  
+  ##### Input variables
+  # data - dataset used in fitting,
+  # pred - column with predicted values
+  # obs - observed values
+  # obslowerci - lower bound of CI for prediction
+  # obsupperci - upper bound of CI for prediction
+  # colour_background - colour of drug benefit on the background
   
   if (missing(ymin)) {
     ymin <- plyr::round_any(floor(min(c(unlist(data[obslowerci]), unlist(data[pred])))), 2, f = floor)
@@ -898,27 +687,32 @@ ATE_plot <- function(data,pred,obs,obslowerci,obsupperci, ymin, ymax, colour_bac
   }
   
   plot <- plot +
-    geom_point(alpha = 1) + 
+    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") +
+    geom_point(alpha = 1, size = 4) + 
     theme_bw() +
     geom_errorbar(aes_string(ymin = obslowerci, ymax = obsupperci), colour = "black", width = 0.1) +
     ylab("Decile average treatment effect (mmol/mol)") + 
     xlab("Predicted conditional average treatment effect (mmol/mol)") +
     scale_x_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
-    scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2))) +
-    geom_abline(intercept = 0, slope = 1, color = "red", lwd = 0.75) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") + 
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60") 
+    scale_y_continuous(limits = c(ymin, ymax), breaks = c(seq(ymin, ymax, by = 2)))
   
   return(plot)
   
 }
 
+
+
 # Function for grouping values into intervals
 group_values <- function(data, variable, breaks) {
-  ### Input variables
-  # data: dataset used in splitting
-  # variable: variable with values to be split
-  # breaks: break points between values
+  ##### Explanation of the function:
+  # This function groups individuals according to the 'breaks' provided
+  
+  ##### Input variables
+  # data - dataset used in splitting
+  # variable - variable with values to be split
+  # breaks - break points between values
   
   # stop in case 'variable' is not included in 'data'
   if (is.null(data[, variable])) {stop("'variable' not included in 'data'")}
