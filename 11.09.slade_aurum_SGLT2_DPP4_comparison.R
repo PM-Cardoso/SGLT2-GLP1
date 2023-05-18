@@ -104,6 +104,13 @@ pdf(width = 7, height = 7, "Plots/11.09.plot_1.pdf")
 plot_comparison
 dev.off()
   
+## r_squared 
+
+## Calculate assessments of prediction
+rsq <- function (x, y) cor(x, y) ^ 2
+
+r_squared_value <- rsq(interim.dataset$pred.SGLT2.lm, interim.dataset$pred.SGLT2.bcf)
+
 
 ## What drug is best:
 #-----------------
