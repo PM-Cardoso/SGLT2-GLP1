@@ -456,6 +456,43 @@ if (class(try(
   
 }
 
+
+
+# plot mu predictions from model BCF (prop score) vs BCF (no prop score)
+if (class(try(
+  
+  var.selection.comparison.mu <- readRDS(paste0(output_path, "/response_model_bcf/var.selection.comparison.mu.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  var.selection.comparison.mu <- NULL
+  
+  var.selection.comparison.mu[["bcf_prop"]] <- c(colMeans(bcf_model_prop$mu))
+  var.selection.comparison.mu[["sbcf_prop"]] <- c(colMeans(sparsebcf_chain_1$mu))
+  
+  saveRDS(var.selection.comparison.mu, paste0(output_path, "/response_model_bcf/var.selection.comparison.mu.rds"))
+  
+}
+
+# plot tau predictions from model BCF (prop score) vs BCF (no prop score)
+if (class(try(
+  
+  var.selection.comparison.tau <- readRDS(paste0(output_path, "/response_model_bcf/var.selection.comparison.tau.rds"))
+  
+  , silent = TRUE)) == "try-error") {
+  
+  var.selection.comparison.tau <- NULL
+  
+  var.selection.comparison.tau[["bcf_prop"]] <- c(colMeans(bcf_model_prop$tau))
+  var.selection.comparison.tau[["sbcf_prop"]] <- c(colMeans(sparsebcf_chain_1$tau))
+  
+  saveRDS(var.selection.comparison.tau, paste0(output_path, "/response_model_bcf/var.selection.comparison.tau.rds"))
+  
+}
+
+
+
+
 #:----------------------------------------------------------------------------------------------------
 # Fit BCF model without propensity score included
 
