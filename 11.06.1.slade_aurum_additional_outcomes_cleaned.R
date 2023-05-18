@@ -5059,7 +5059,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_no_co_cvd_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_no_co_cvd_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -5128,7 +5128,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -5177,7 +5177,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -5260,7 +5260,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                   data = dataset.now,
@@ -5297,7 +5297,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                      data = dataset.now,
@@ -5367,7 +5367,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                      data = dataset.now,
@@ -5429,7 +5429,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_cvd_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                            data = dataset.now,
@@ -5501,7 +5501,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                           data = dataset.now,
@@ -5538,7 +5538,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                             data = dataset.now,
@@ -5608,7 +5608,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_cvd_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                              data = dataset.now,
@@ -5670,7 +5670,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_cvd_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                    data = dataset.now,
@@ -6110,7 +6110,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_no_co_hf_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_no_co_hf_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -6179,7 +6179,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -6228,7 +6228,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -6311,7 +6311,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -6348,7 +6348,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -6418,7 +6418,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -6480,7 +6480,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_hf_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                           data = dataset.now,
@@ -6552,7 +6552,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -6589,7 +6589,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                            data = dataset.now,
@@ -6659,7 +6659,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_hf_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                             data = dataset.now,
@@ -6721,7 +6721,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_hf_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                   data = dataset.now,
@@ -7165,7 +7165,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_no_co_stage345_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_no_co_stage345_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -7234,7 +7234,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -7283,7 +7283,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -7366,7 +7366,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -7403,7 +7403,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -7473,7 +7473,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -7535,7 +7535,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_stage345_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                           data = dataset.now,
@@ -7607,7 +7607,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -7644,7 +7644,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                            data = dataset.now,
@@ -7714,7 +7714,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_stage345_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                             data = dataset.now,
@@ -7776,7 +7776,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_stage345_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                   data = dataset.now,
@@ -8219,7 +8219,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_no_co_egfr40_or_ckd5_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_no_co_egfr40_or_ckd5_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -8288,7 +8288,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -8337,7 +8337,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.no_co.dataset[,"intervals"]))
@@ -8420,7 +8420,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -8457,7 +8457,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -8527,7 +8527,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                     data = dataset.now,
@@ -8589,7 +8589,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_egfr40_or_ckd5_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                           data = dataset.now,
@@ -8661,7 +8661,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -8698,7 +8698,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                            data = dataset.now,
@@ -8768,7 +8768,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_no_co_egfr40_or_ckd5_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                             data = dataset.now,
@@ -8830,7 +8830,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_no_co_egfr40_or_ckd5_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                   data = dataset.now,
@@ -9307,7 +9307,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_cvd_cvd_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_cvd_cvd_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -9376,7 +9376,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
@@ -9425,7 +9425,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.cvd.dataset[,"intervals"]))
@@ -9508,7 +9508,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                 data = dataset.now,
@@ -9545,7 +9545,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                    data = dataset.now,
@@ -9615,7 +9615,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                    data = dataset.now,
@@ -9677,7 +9677,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_cvd_cvd_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -9749,7 +9749,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                         data = dataset.now,
@@ -9786,7 +9786,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                           data = dataset.now,
@@ -9856,7 +9856,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_cvd_cvd_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                            data = dataset.now,
@@ -9918,7 +9918,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_cvd_cvd_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                  data = dataset.now,
@@ -10394,7 +10394,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_hf_hf_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_hf_hf_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -10463,7 +10463,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.hf.dataset[,"intervals"]))
@@ -10512,7 +10512,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.hf.dataset[,"intervals"]))
@@ -10595,7 +10595,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                               data = dataset.now,
@@ -10632,7 +10632,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -10702,7 +10702,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -10764,7 +10764,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_hf_hf_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                        data = dataset.now,
@@ -10836,7 +10836,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                       data = dataset.now,
@@ -10873,7 +10873,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                         data = dataset.now,
@@ -10943,7 +10943,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_hf_hf_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -11005,7 +11005,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_hf_hf_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                data = dataset.now,
@@ -11485,7 +11485,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_micro_comp_micro_comp_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   models_micro_comp_micro_comp_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -11554,7 +11554,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.micro_comp.dataset[,"intervals"]))
@@ -11603,7 +11603,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.micro_comp.dataset[,"intervals"]))
@@ -11686,7 +11686,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                               data = dataset.now,
@@ -11723,7 +11723,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -11793,7 +11793,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -11855,7 +11855,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_micro_comp_micro_comp_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                        data = dataset.now,
@@ -11927,7 +11927,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                       data = dataset.now,
@@ -11964,7 +11964,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                         data = dataset.now,
@@ -12034,7 +12034,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_micro_comp_micro_comp_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -12096,7 +12096,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_micro_comp_micro_comp_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                data = dataset.now,
@@ -12575,7 +12575,7 @@ if (class(try(
   mnumber = c(1:quantiles)
   predictions_retinopathy_retinopathy_stan_psm_1_1_baye <- vector()
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
 
   models_retinopathy_retinopathy_psm_1_1_male_baye <- vector("list", quantiles)
 
@@ -12644,7 +12644,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.retinopathy.dataset[,"intervals"]))
@@ -12693,7 +12693,7 @@ if (class(try(
 
   , silent = TRUE)) == "try-error") {
 
-  formula_baye <- "time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
+  formula_baye <- "time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + preneuropathy + prediabeticnephropathy"
 
   # maximum number of deciles being tested
   quantiles <- length(levels(group.retinopathy.dataset[,"intervals"]))
@@ -12776,7 +12776,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_psm_1_1_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                               data = dataset.now,
@@ -12813,7 +12813,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_psm_1_1_adjusted_female_baye[[i]] <-  brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -12883,7 +12883,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_psm_1_1_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                                  data = dataset.now,
@@ -12945,7 +12945,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_retinopathy_retinopathy_psm_1_1_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                        data = dataset.now,
@@ -13017,7 +13017,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_adjusted_male_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                       data = dataset.now,
@@ -13054,7 +13054,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + sex*factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_adjusted_female_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                         data = dataset.now,
@@ -13124,7 +13124,7 @@ if (class(try(
 
     checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-    formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+    formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + intervals + factor(drugclass)*intervals + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
     models_retinopathy_retinopathy_adjusted_overall_baye[[i]] <- brms::brm(formula = formula(formula_baye),
                                                          data = dataset.now,
@@ -13186,7 +13186,7 @@ if (class(try(
 
   checker <- which(sapply(dataset.now[,breakdown_adjust[factors]], function(col) length(unique(col))) > 1)
 
-  formula_baye <- paste0("time | cens(censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
+  formula_baye <- paste0("time | cens(1 - censored) ~ factor(drugclass) + qrisk2_10yr_score_1 + qrisk2_10yr_score_2 + agetx_1 + agetx_2 + t2dmduration_1 + t2dmduration_2 + prehba1c_1 + prehba1c_2 + preegfr_1 + preegfr_2 + prealt_1 + prealt_2 +", paste(breakdown_adjust[factors][checker], collapse = " + "))
 
   models_retinopathy_retinopathy_adjusted_full_baye <- brms::brm(formula = formula(formula_baye),
                                                data = dataset.now,
