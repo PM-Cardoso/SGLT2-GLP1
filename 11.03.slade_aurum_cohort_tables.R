@@ -85,6 +85,36 @@ tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN"
 print(tab.benefits, smd = TRUE)
 
 
+### HbA1c train + test (only those used for model dev and val)
+hba1c.train.test.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness (>40%)
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+  rbind(
+    set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+      # selected variables from SparseBCF
+      select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+      # only complete cases
+      drop_na() %>%
+      as.data.frame()
+  ) %>%
+  left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
+  mutate(benefit = ifelse(effects < -5, "SGLT2i", ifelse(effects > 5, "GLP1-RA", NA_real_))) %>%
+  select(patid, pated, benefit)
+
+hba1c.train.test.benefit <- new.vars(hba1c.train.test.benefit.simple)
+
+# Abstract values (results)
+tab.benefits <- CreateTableOne(vars = c("drugclass", vars), factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "benefit", data = hba1c.train.test.benefit, test = FALSE)
+## Show table with SMD
+print(tab.benefits, smd = TRUE)
+
+
+
+
 ### HbA1c train
 hba1c.train.benefit.simple <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
   left_join(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/patient_effects.rds"), by = c("patid", "pated")) %>%
@@ -145,6 +175,15 @@ full.cohort <- new.vars(full.cohort.simple)
 tab.full.cohort <- CreateTableOne(vars = vars, factorVars = c("MFN", "SU", "DPP4", "SGLT2", "TZD", "GLP1"), includeNA = TRUE, strata = "drugclass", data = full.cohort, test = FALSE)
 ## Show table with SMD
 print(tab.full.cohort, smd = TRUE)
+
+## hba1c change: mean and sd
+interim <- full.cohort %>%
+  select(drugclass, posthba1cfinal, prehba1c) %>%
+  mutate(change = posthba1cfinal - prehba1c)
+mean(interim %>% filter(drugclass == "SGLT2") %>% select(change) %>% unlist(), na.rm = TRUE)
+sd(interim %>% filter(drugclass == "SGLT2") %>% select(change) %>% unlist(), na.rm = TRUE)
+mean(interim %>% filter(drugclass == "GLP1") %>% select(change) %>% unlist(), na.rm = TRUE)
+sd(interim %>% filter(drugclass == "GLP1") %>% select(change) %>% unlist(), na.rm = TRUE)
 
 summary(full.cohort%>%select(agetx)) # results values
 sd(full.cohort%>%select(agetx)%>%unlist(), na.rm = TRUE)
