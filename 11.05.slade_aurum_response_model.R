@@ -580,6 +580,9 @@ if (class(try(
 
 #:----------------------------------------------------------------------------------------------------
 
+## average predicted CATE for dev cohort
+# quantile(rowMeans(bcf_model$tau), probs = c(0.025, 0.5, 0.975))
+
 
 # plot mu predictions from model BCF (prop score) vs BCF (no prop score)
 if (class(try(
