@@ -499,7 +499,370 @@ dev.off()
 
 
 
+#:---------------------------------------------------------------------------------------
+# Split by clinical subgroups (1 extra subgroup - composite)
 
+# intervals
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+# Create dataset with all the variables needed
+ethnicity.dataset <- full.cohort %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau)), "prop.score", "effects"))) %>%
+  drop_na() %>%
+  mutate(ethnicity = factor(ethnicity, levels = c("White", "South Asian", "Black", "Other", "Mixed"), labels = c("White", "South Asian", "Black", "Other/Mixed", "Other/Mixed")))
+
+# Create variable corresponding to the clinical subgroups
+ethnicity.dataset.grouped <- group_values(data = ethnicity.dataset,
+                                          variable = "effects",
+                                          breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+# Subsetting dataset ethnicity - White
+predicted_observed_white <- ethnicity.dataset.grouped %>%
+  filter(ethnicity == "White")
+
+# Subsetting data ethnicity - Non-white (South Asian, Black, Other/Mixed)
+predicted_observed_non_white <- ethnicity.dataset.grouped %>%
+  filter(ethnicity != "White")
+
+# Subsetting dataset ethnicity - South Asian
+predicted_observed_asian <- ethnicity.dataset.grouped %>%
+  filter(ethnicity == "South Asian")
+
+# Subsetting dataset ethnicity - Black
+predicted_observed_black <- ethnicity.dataset.grouped %>%
+  filter(ethnicity == "Black")
+
+# Subsetting dataset ethnicity - Other/Mixed
+predicted_observed_mixed <- ethnicity.dataset.grouped %>%
+  filter(ethnicity == "Other/Mixed")
+
+
+#### ---------------------- Propensity score matching (too low numbers)
+
+#### ---------------------- Propensity score matching + adjusted (too low numbers)
+
+#### ---------------------- Adjusted
+# White
+ATE_adjust_white <- calc_ATE(data = predicted_observed_white%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# White
+ATE_adjust_non_white <- calc_ATE(data = predicted_observed_non_white%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# South Asian
+ATE_adjust_asian <- calc_ATE(data = predicted_observed_asian%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Black
+ATE_adjust_black <- calc_ATE(data = predicted_observed_black%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Mixed / Other
+ATE_adjust_mixed <- calc_ATE(data = predicted_observed_mixed%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+
+### Overall analysis (1 group)
+# White
+ATE_adjust_white_overall <- calc_ATE(data = predicted_observed_white%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Non-White
+ATE_adjust_non_white_overall <- calc_ATE(data = predicted_observed_non_white%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# South Asian
+ATE_adjust_asian_overall <- calc_ATE(data = predicted_observed_asian%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Black
+ATE_adjust_black_overall <- calc_ATE(data = predicted_observed_black%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Mixed / Other
+ATE_adjust_mixed_overall <- calc_ATE(data = predicted_observed_mixed%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+#:-----------------------------------------------------------------------------------
+# Forest plots for calibration variable
+
+# Set up axis limits for the forest plots
+hba1c_strata_axis_min <- plyr::round_any(floor(min(c(
+  ATE_adjust_white[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_non_white[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_asian[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_black[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_mixed[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_non_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_asian_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_black_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_mixed_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min()
+))), 2, f = floor)
+
+hba1c_strata_axis_max <- plyr::round_any(ceiling(max(c(
+  ATE_adjust_white[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_non_white[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_asian[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_black[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_mixed[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_non_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_asian_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_black_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_mixed_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max()
+))), 2, f = ceiling)
+
+
+
+plot_psm_1_1.1 <- rbind(
+  cbind(obs = 50, lci = 50, uci = 50, group = "White", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Non-White", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "South Asian", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Black", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Other/Mixed", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(ATE_adjust_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "White"),
+  cbind(ATE_adjust_non_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "Non-White"),
+  cbind(ATE_adjust_asian[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "South Asian"),
+  cbind(ATE_adjust_black[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "Black"),
+  cbind(ATE_adjust_mixed[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "Other/Mixed"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "White", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Non-White", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "South Asian", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Black", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Other/Mixed", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(ATE_adjust_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "White"),
+  cbind(ATE_adjust_non_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "Non-White"),
+  cbind(ATE_adjust_asian[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "South Asian"),
+  cbind(ATE_adjust_black[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "Black"),
+  cbind(ATE_adjust_mixed[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "Other/Mixed"),
+  cbind(ATE_adjust_white_overall[["effects"]] %>% select(obs, lci, uci), group = "White", intervals = "Average treatment effect"),
+  cbind(ATE_adjust_non_white_overall[["effects"]] %>% select(obs, lci, uci), group = "Non-White", intervals = "Average treatment effect"),
+  cbind(ATE_adjust_asian_overall[["effects"]] %>% select(obs, lci, uci), group = "South Asian", intervals = "Average treatment effect"),
+  cbind(ATE_adjust_black_overall[["effects"]] %>% select(obs, lci, uci), group = "Black", intervals = "Average treatment effect"),
+  cbind(ATE_adjust_mixed_overall[["effects"]] %>% select(obs, lci, uci), group = "Other/Mixed", intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, ">5 mmol/mol",
+                            ifelse(intervals == 2, "3-5 mmol/mol", 
+                                   ifelse(intervals == 3, "0-3 mmol/mol",
+                                          ifelse(intervals == 4, "0-3 mmol/mol", 
+                                                 ifelse(intervals == 5, "3-5 mmol/mol",
+                                                        ifelse(intervals == 6, ">5 mmol/mol", intervals)))))),
+         group = factor(group)) %>%
+  rename("lower" = "lci", "upper" = "uci", "mean" = "obs", "labeltext" = "intervals") %>%
+  mutate(n_white = c(rep(NA, 5), rep(ATE_adjust_white[["effects"]]$N[1:3], 5),
+                     rep(NA, 5), rep(ATE_adjust_white[["effects"]]$N[4:6], 5),
+                     rep(sum(ATE_adjust_white[["effects"]]$N), 5)),
+         n_non_white = c(rep(NA, 5), rep(ATE_adjust_non_white[["effects"]]$N[1:3], 5),
+                         rep(NA, 5), rep(ATE_adjust_non_white[["effects"]]$N[4:6], 5),
+                         rep(sum(ATE_adjust_non_white[["effects"]]$N), 5)),
+         n_asian = c(rep(NA, 5), rep(ATE_adjust_asian[["effects"]]$N[1:3], 5),
+                     rep(NA, 5), rep(ATE_adjust_asian[["effects"]]$N[4:6], 5),
+                     rep(sum(ATE_adjust_asian[["effects"]]$N), 5)),
+         n_black = c(rep(NA, 5), rep(ATE_adjust_black[["effects"]]$N[1:3], 5),
+                     rep(NA, 5), rep(ATE_adjust_black[["effects"]]$N[4:6], 5),
+                     rep(sum(ATE_adjust_black[["effects"]]$N), 5)),
+         n_mixed = c(rep(NA, 5), rep(ATE_adjust_mixed[["effects"]]$N[1:3], 5),
+                     rep(NA, 5), rep(ATE_adjust_mixed[["effects"]]$N[4:6], 5),
+                     rep(sum(ATE_adjust_mixed[["effects"]]$N), 5)),
+         mean = as.numeric(mean)) %>%
+  group_by(group) %>%
+  forestplot(labeltext = c("labeltext", "n_white", "n_non_white", "n_asian", "n_black", "n_mixed"),
+             ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             title = "Adjusted",
+             clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(labeltext = paste0("Overall population (n=", format(ethnicity.dataset.grouped%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                n_white = "White",
+                n_non_white = "Non-White",
+                n_asian = "South Asian",
+                n_black = "Black",
+                n_mixed = "Other/Mixed") %>%
+  fp_set_style(box = c("#E64B35B2", "#e6ab02", "#4DBBD5B2", "#00A087B2", "#3C5488B2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+
+pdf(width = 15, height = 6, "Plots/11.10.plot_2.1.pdf")
+plot_psm_1_1.1
+dev.off()
+
+
+
+#:---------------------------------------------------------------------------------------
+# Split by clinical subgroups (White vs Non-white)
+
+# intervals
+interval_breaks <- c(-5, -3, 0, 3, 5)
+
+# Create dataset with all the variables needed
+ethnicity.dataset <- set_up_data_sglt2_glp1(dataset.type = "hba1c.train") %>%
+  # drop the variables with the most missingness (>40%)
+  select(-preacr, -preast, -prehaematocrit, -prehaemoglobin, -pretriglyceride) %>%
+  # only complete cases
+  drop_na() %>%
+  as.data.frame() %>%
+  select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+  rbind(
+    set_up_data_sglt2_glp1(dataset.type = "hba1c.test") %>%
+      # selected variables from SparseBCF
+      select(patid, pated, posthba1cfinal, drugclass, unique(c(readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_mu.rds"), readRDS("Samples/SGLT2-GLP1/Aurum/response_model_bcf/variables_tau.rds")))) %>%
+      # only complete cases
+      drop_na() %>%
+      as.data.frame()
+  ) %>%
+  left_join(patient_prop_scores, by = c("patid", "pated")) %>%
+  left_join(treatment_effects, by = c("patid", "pated")) %>%
+  left_join(set_up_data_sglt2_glp1(dataset.type = "full.cohort") %>%
+              select(patid, pated, ethnicity), by = c("patid", "pated")) %>%
+  select(all_of(c("patid", "pated", "ethnicity", "drugclass", "posthba1cfinal", unique(c(variables_mu, variables_tau)), "prop.score", "effects"))) %>%
+  drop_na() %>%
+  mutate(ethnicity = factor(ethnicity, levels = c("White", "South Asian", "Black", "Other", "Mixed"), labels = c("White", "South Asian", "Black", "Other/Mixed", "Other/Mixed")))
+
+# Create variable corresponding to the clinical subgroups
+ethnicity.dataset.grouped <- group_values(data = ethnicity.dataset,
+                                          variable = "effects",
+                                          breaks = interval_breaks) %>%
+  drop_na(intervals) %>%
+  rename("hba1c_diff" = "effects")
+
+# Subsetting dataset ethnicity - White
+predicted_observed_white <- ethnicity.dataset.grouped %>%
+  filter(ethnicity == "White")
+
+# Subsetting data ethnicity - Non-white (South Asian, Black, Other/Mixed)
+predicted_observed_non_white <- ethnicity.dataset.grouped %>%
+  filter(ethnicity != "White")
+
+
+#### ---------------------- Propensity score matching (too low numbers)
+
+#### ---------------------- Propensity score matching + adjusted (too low numbers)
+
+#### ---------------------- Adjusted
+# White
+ATE_adjust_white <- calc_ATE(data = predicted_observed_white%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                             variable = "posthba1cfinal", quantile_var = "intervals",
+                             order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# White
+ATE_adjust_non_white <- calc_ATE(data = predicted_observed_non_white%>%mutate(intervals=as.numeric(intervals)), validation_type = "Adjust",
+                                 variable = "posthba1cfinal", quantile_var = "intervals",
+                                 order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+
+### Overall analysis (1 group)
+# White
+ATE_adjust_white_overall <- calc_ATE(data = predicted_observed_white%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                     variable = "posthba1cfinal", quantile_var = "intervals",
+                                     order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+# Non-White
+ATE_adjust_non_white_overall <- calc_ATE(data = predicted_observed_non_white%>%mutate(intervals=as.numeric(1)), validation_type = "Adjust",
+                                         variable = "posthba1cfinal", quantile_var = "intervals",
+                                         order = "largest", breakdown = unique(c(variables_mu, variables_tau)))
+
+#:-----------------------------------------------------------------------------------
+# Forest plots for calibration variable
+
+# Set up axis limits for the forest plots
+hba1c_strata_axis_min <- plyr::round_any(floor(min(c(
+  ATE_adjust_white[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_non_white[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min(),
+  ATE_adjust_non_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% min()
+))), 2, f = floor)
+
+hba1c_strata_axis_max <- plyr::round_any(ceiling(max(c(
+  ATE_adjust_white[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_non_white[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max(),
+  ATE_adjust_non_white_overall[["effects"]] %>% select(c("obs","lci","uci")) %>% max()
+))), 2, f = ceiling)
+
+
+
+plot_psm_1_1.2 <- rbind(
+  cbind(obs = 50, lci = 50, uci = 50, group = "White", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Non-White", intervals = "Predicted HbA1c benefit on SGLT2i"),
+  cbind(ATE_adjust_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "White"),
+  cbind(ATE_adjust_non_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(1:3), group = "Non-White"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "White", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(obs = 50, lci = 50, uci = 50, group = "Non-White", intervals = "Predicted HbA1c benefit on GLP1-RA"),
+  cbind(ATE_adjust_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "White"),
+  cbind(ATE_adjust_non_white[["effects"]] %>% select(intervals, obs, lci, uci) %>% slice(4:6), group = "Non-White"),
+  cbind(ATE_adjust_white_overall[["effects"]] %>% select(obs, lci, uci), group = "White", intervals = "Average treatment effect"),
+  cbind(ATE_adjust_non_white_overall[["effects"]] %>% select(obs, lci, uci), group = "Non-White", intervals = "Average treatment effect")
+) %>%
+  as.data.frame() %>%
+  mutate(obs = as.numeric(obs),
+         lci = as.numeric(lci),
+         uci = as.numeric(uci),
+         intervals = ifelse(intervals == 1, ">5 mmol/mol",
+                            ifelse(intervals == 2, "3-5 mmol/mol", 
+                                   ifelse(intervals == 3, "0-3 mmol/mol",
+                                          ifelse(intervals == 4, "0-3 mmol/mol", 
+                                                 ifelse(intervals == 5, "3-5 mmol/mol",
+                                                        ifelse(intervals == 6, ">5 mmol/mol", intervals)))))),
+         group = factor(group)) %>%
+  rename("lower" = "lci", "upper" = "uci", "mean" = "obs", "labeltext" = "intervals") %>%
+  mutate(n_white = c(rep(NA, 2), rep(ATE_adjust_white[["effects"]]$N[1:3], 2),
+                     rep(NA, 2), rep(ATE_adjust_white[["effects"]]$N[4:6], 2),
+                     rep(sum(ATE_adjust_white[["effects"]]$N), 2)),
+         n_non_white = c(rep(NA, 2), rep(ATE_adjust_non_white[["effects"]]$N[1:3], 2),
+                         rep(NA, 2), rep(ATE_adjust_non_white[["effects"]]$N[4:6], 2),
+                         rep(sum(ATE_adjust_non_white[["effects"]]$N), 2)),
+         mean = as.numeric(mean)) %>%
+  group_by(group) %>%
+  forestplot(labeltext = c("labeltext", "n_white", "n_non_white"),
+             ci.vertices = TRUE,
+             ci.vertices.height = 0.1,
+             # title = "Adjusted",
+             clip = c(hba1c_strata_axis_min, hba1c_strata_axis_max),
+             xticks = seq(hba1c_strata_axis_min, hba1c_strata_axis_max, 2),
+             boxsize = .1,
+             txt_gp = fpTxtGp(ticks=gpar(cex=0.8), xlab=gpar(cex=1)),
+             xlab = "Average treatment effect (mmol/mol)") %>%
+  fp_add_header(labeltext = paste0("Overall population (n=", format(ethnicity.dataset.grouped%>%nrow(),big.mark=",",scientific=FALSE), ")"),
+                n_white = "White",
+                n_non_white = "Non-White") %>%
+  fp_set_style(box = c("#E64B35B2", "#3C5488B2") |> lapply(function(x) gpar(fill = x, col = "#555555")),
+               default = gpar(vertices = TRUE)) %>%
+  fp_add_lines(h_2 = "black",
+               h_6 = gpar(col = "black", lty = 2),
+               h_10 = "black")
+
+
+
+pdf(width = 10, height = 6, "Plots/11.10.plot_2.2.pdf")
+plot_psm_1_1.2
+dev.off()
 
 
 #:---------------------------------------------------------------------------------------
